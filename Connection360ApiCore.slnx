@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Connection360.Api/Connection360.Api.csproj" Id="07643ac8-533a-4a88-bd7f-10effe43e4aa" />
+  <Project Path="Connection360.ApiGateway/Connection360.ApiGateway.csproj" />
+  <Project Path="Connection360.Application/Connection360.Application.csproj" Id="396f0c4b-6ba6-4a77-9416-a43653e037d8" />
+  <Project Path="Connection360.Domain/Connection360.Domain.csproj" Id="113c6118-843d-4134-adc0-59d998ac7652" />
+  <Project Path="Connection360.Infrastructure/Connection360.Infrastructure.csproj" Id="dddf4e33-2e23-4b64-a9ea-a6c0ba93b4b5" />
+</Solution>
