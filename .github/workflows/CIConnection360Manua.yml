@@ -41,11 +41,11 @@ jobs:
       with:
         dotnet-version: '10.x'  # Puedes cambiar a tu versión específica de .NET
 
-    - name: 3. Restaurar dependencias
-      run: dotnet restore ${{ matrix.api }}/${{ matrix.api }}.csproj
+    - name: 3. Restore dependencies
+      run: dotnet restore Connection360ApiCore.slnx
 
-    - name: 4. Compilar el proyecto
-      run: dotnet build ${{ matrix.api }}/${{ matrix.api }}.csproj --configuration Release --no-restore
+    - name: 4. Build solution
+      run: dotnet build Connection360ApiCore.slnx --configuration Release --no-restore
 
     - name: 5. Publicar la API
       run: dotnet publish ${{ matrix.api }}/${{ matrix.api }}.csproj --configuration Release --output ${{ github.workspace }}/publish/${{ matrix.api }}
