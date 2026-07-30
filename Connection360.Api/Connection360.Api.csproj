@@ -19,6 +19,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Connection360.Application\Connection360.Application.csproj" />
+	  <ProjectReference Include="..\Connection360.Infrastructure\Connection360.Infrastructure.csproj" />
 	</ItemGroup>
 
 </Project>

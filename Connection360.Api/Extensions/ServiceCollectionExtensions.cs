@@ -1,8 +1,9 @@
 ﻿using Asp.Versioning;
-using FluentValidation;
+using Connection360.Application.Ports;
+using Connection360.Application.UseCases;
+using Connection360.Domain.Interfaces;
+using Connection360.Domain.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 namespace Connection360.Api.Extensions
 {
@@ -10,10 +11,9 @@ namespace Connection360.Api.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            //services.AddScoped<IProductService, ProductService>();
-            //services.AddScoped<IValidator<CreateProductRequest>, CreateProductValidator>();
-            //services.AddScoped<IValidator<UpdateProductRequest>, UpdateProductValidator>();
-            //services.AddScoped<IValidator<UpdateStockRequest>, UpdateStockValidator>();
+            // Application
+            services.AddScoped<IGetClientSummaryUseCase, GetClientSummaryUseCase>();
+            services.AddScoped<IClientSummaryDomainService, ClientSummaryDomainService>();
             return services;
         }
 
@@ -44,26 +44,37 @@ namespace Connection360.Api.Extensions
             var secretKey = jwtSection["Secret"]
                 ?? throw new InvalidOperationException("Falta configurar Jwt:Secret");
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.RequireHttpsMetadata = true; // OWASP: nunca aceptar tokens sobre HTTP en produccion
-                    options.SaveToken = false; // no persistir el token innecesariamente
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidIssuer = jwtSection["Issuer"],
-                        ValidateAudience = true,
-                        ValidAudience = jwtSection["Audience"],
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-                        ValidateLifetime = true,
-                        ClockSkew = TimeSpan.FromSeconds(30) // margen minimo, no los 5 min por defecto
-                    };
-                });
+            //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            //.AddJwtBearer(options =>
+            //{
+            //    options.RequireHttpsMetadata = true; // OWASP: nunca aceptar tokens sobre HTTP en produccion
+            //    options.SaveToken = false; // no persistir el token innecesariamente
+            //    options.TokenValidationParameters = new TokenValidationParameters
+            //    {
+            //        ValidateIssuer = true,
+            //        ValidIssuer = jwtSection["Issuer"],
+            //        ValidateAudience = true,
+            //        ValidAudience = jwtSection["Audience"],
+            //        ValidateIssuerSigningKey = true,
+            //        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            //        ValidateLifetime = true,
+            //        ClockSkew = TimeSpan.FromSeconds(30) // margen minimo, no los 5 min por defecto
+            //    };
+            //});
 
-            services.AddAuthorizationBuilder()
-                .AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
+            // 1. Add Authentication Services
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.Authority = jwtSection["Issuer"];
+                options.Audience = jwtSection["Audience"];
+            });
+
+            //services.AddAuthorizationBuilder()
+            //    .AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
 
             return services;
         }

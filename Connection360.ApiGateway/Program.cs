@@ -42,7 +42,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors(Connection360.ApiGateway.Extensions.CorsExtensions.PolicyName); // 5. CORS restrictivo
 
 app.UseRateLimiter();                               // 6. Rate limiting global
-
+app.UseStaticFiles();
 app.UseAuthentication();                            // 7. Quien eres (JWT / OAuth2)
 app.UseAuthorization();                              // 8. Que puedes hacer (roles/policies)
 

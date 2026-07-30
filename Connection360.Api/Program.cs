@@ -1,5 +1,10 @@
-using Microsoft.OpenApi.Models;
 using Connection360.Api.Extensions;
+using Connection360.Api.Filters;
+using Connection360.Api.Middleware;
+using Connection360.Api.Models;
+using Connection360.Infrastructure.DependencyInjection;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +14,34 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddApiVersioningSetup();
 
+// Infrastructure
+builder.Services.AddInfrastructure(builder.Configuration);
+
 // Add services to the container.
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ApiResponseFilter>();
+});
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = String.Join(" | ", context.ModelState
+            .SelectMany(kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage)));
+
+        var response = new ApiResponse<Object>
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Error = errors,
+            Message = "Errores de validación",
+            Path = context.HttpContext.Request.Path
+        };
+
+        return new BadRequestObjectResult(response);
+    };
+});
 
 builder.Services.AddControllers();
 
@@ -61,12 +93,17 @@ else
     // OWASP: no exponer detalles de excepcion en produccion
     app.UseExceptionHandler("/error");
 }
+// El middleware de excepciones va PRIMERO en el pipeline
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection(); // Fuerza TLS
 app.UseAuthentication();
 app.UseAuthorization();
 
+
+
 app.MapControllers();
+app.UseMiddleware<NotFoundMiddleware>();
 app.MapHealthChecks("/health");
 app.Map("/error", () => Results.Problem(title: "Ha ocurrido un error inesperado."));
 
