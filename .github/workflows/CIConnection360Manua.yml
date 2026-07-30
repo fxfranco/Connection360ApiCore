@@ -1,0 +1,58 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI Connection360 Manual
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+      inputs:
+        branch:
+          description: 'Selecciona la rama para ejecutar el workflow'
+          required: true
+          default: 'main'
+          type: choice
+          options:
+            - main
+            - develop
+            - release
+            - feature/InitApplication
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build-and-publish:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    strategy:
+      # Define aquí la lista de todas tus APIs
+      matrix:
+        api: [Connection360.Api, Connection360.ApiGateway] 
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    - name: 1. Clonar el repositorio
+      uses: actions/checkout@v4  # Descarga tu código
+      with:
+          ref: ${{ inputs.branch }} # Esto asegura que se use la rama seleccionada
+
+    - name: 2. Configurar el SDK de .NET 
+      uses: actions/setup-dotnet@v4  # Instala el entorno de .NET
+      with:
+        dotnet-version: '10.x'  # Puedes cambiar a tu versión específica de .NET
+
+    - name: 3. Restaurar dependencias
+      run: dotnet restore ${{ matrix.api }}/${{ matrix.api }}.csproj
+
+    - name: 4. Compilar el proyecto
+      run: dotnet build ${{ matrix.api }}/${{ matrix.api }}.csproj --configuration Release --no-restore
+
+    - name: 5. Publicar la API
+      run: dotnet publish ${{ matrix.api }}/${{ matrix.api }}.csproj --configuration Release --output ${{ github.workspace }}/publish/${{ matrix.api }}
+
+    - name: 6. Subir el paquete de instalación como Artifact
+      uses: actions/upload-artifact@v4  # Guarda el paquete generado en la interfaz de GitHub
+      with:
+        # Crea un archivo ZIP independiente por cada API
+        name: ${{ matrix.api }}-build
+        path: ${{ github.workspace }}/publish/${{ matrix.api }}/
