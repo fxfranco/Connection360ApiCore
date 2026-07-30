@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Documents/StartApis_Connection360.bat" />
+    <File Path="Documents/StopApis_Connection360.bat" />
+  </Folder>
   <Project Path="Connection360.Api/Connection360.Api.csproj" Id="07643ac8-533a-4a88-bd7f-10effe43e4aa" />
   <Project Path="Connection360.ApiGateway/Connection360.ApiGateway.csproj" />
   <Project Path="Connection360.Application/Connection360.Application.csproj" Id="396f0c4b-6ba6-4a77-9416-a43653e037d8" />
