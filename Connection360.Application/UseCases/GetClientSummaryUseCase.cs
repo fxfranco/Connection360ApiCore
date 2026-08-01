@@ -11,15 +11,15 @@ namespace Connection360.Application.UseCases
         private const Int16 UltimosRegistrosCount = 10;
 
         private readonly IExternalDataGateway _externalDataGateway;
-        private readonly IClientSummaryDomainService _summaryService;
+        private readonly IClientSummaryDomainService _summaryyDomainService;
 
         public GetClientSummaryUseCase(IExternalDataGateway externalDataGateway, IClientSummaryDomainService summaryService)
         {
             _externalDataGateway = externalDataGateway;
-            _summaryService = summaryService;
+            _summaryyDomainService = summaryService;
         }
 
-        public async Task<ClientSummaryResponse> ExecuteAsync(ClientSummaryRequest request, CancellationToken cancellationToken)
+        public async Task<ClientSummaryResponse> ExecuteTotalsAsync(ClientSummaryRequest request, CancellationToken cancellationToken)
         {
             if (String.IsNullOrWhiteSpace(request.IdClient))
                 throw new ArgumentException("El campo 'cliente' es obligatorio.");
@@ -35,27 +35,26 @@ namespace Connection360.Application.UseCases
             DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync(filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var summary = _summaryService.Summarize(dataSet, clientId: request.IdClient, lastRecordsCount: UltimosRegistrosCount);
+            var summary = _summaryyDomainService.Summarize(dataSet, clientId: request.IdClient, lastRecordsCount: UltimosRegistrosCount);
 
             // 3. Mapear a respuesta de aplicación
             return new ClientSummaryResponse
             {
-                TotalRegistros = summary.TotalRegistros,
-                TotalImportaciones = summary.TotalImportaciones,
-                TotalExportaciones = summary.TotalExportaciones,
-                TotalModalidadAerea = summary.TotalModalidadAerea,
-                TotalModalidadMaritima = summary.TotalModalidadMaritima,
-                TotalConNovedad = summary.TotalConNovedad,
-                EnviosRecientes = summary.EnviosRecientes.Select(x => new ResumenClienteResponse
+                TotalClientRecords = summary.TotalClientRecords,
+                TotalImports = summary.TotalImports,
+                TotalExports = summary.TotalExports,
+                TotalAirShipments = summary.TotalAirShipments,
+                TotalOceanShipments = summary.TotalOceanShipments,
+                TotalWithIssues = summary.TotalWithIssues,
+                RecentShipments = summary.RecentShipments.Select(x => new ResumenClienteResponse
                 {
                     Id = x.Id,
-                    NroDocumento = x.NroDocumento,
-                    Origen = x.Origen,
-                    Destino = x.Destino,
-                    Estado = x.Estado,
-                    TipoOperacion = x.TipoOperacion,
-                    Modalidad = x.Modalidad
-
+                    DocumentNumber = x.DocumentNumber,
+                    Origin = x.Origin,
+                    Destination = x.Destination,
+                    Status = x.Status,
+                    OperationType = x.OperationType,
+                    ShipmentMode = x.ShipmentMode
                 }).ToList()
             };
         }
@@ -76,18 +75,18 @@ namespace Connection360.Application.UseCases
             DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync(filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var summary = _summaryService.Filter(dataSet, clientId: request.IdClient, filterDocument: request.FilterValue);
+            var summary = _summaryyDomainService.Filter(dataSet, clientId: request.IdClient, filterDocument: request.FilterValue);
 
             // 3. Mapear a respuesta de aplicación
             ResumenClienteResponse resumenClienteResponse = new ResumenClienteResponse
             {
                 Id = summary.Id,
-                NroDocumento = summary.NroDocumento,
-                Origen = summary.Origen,
-                Destino = summary.Destino,
-                Estado = summary.Estado,
-                TipoOperacion = summary.TipoOperacion,
-                Modalidad = summary.Modalidad
+                DocumentNumber = summary.DocumentNumber,
+                Origin = summary.Origin,
+                Destination = summary.Destination,
+                Status = summary.Status,
+                OperationType = summary.OperationType,
+                ShipmentMode = summary.ShipmentMode
             };
             return resumenClienteResponse;   
         }

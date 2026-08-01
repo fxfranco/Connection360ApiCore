@@ -4,12 +4,12 @@ namespace Connection360.Domain.Services
 {
     public class ClientSummaryDomainResult
     {
-        public Int64 TotalRegistros { get; init; }
-        public Int64 TotalImportaciones { get; init; }
-        public Int64 TotalExportaciones { get; init; }
-        public Int64 TotalModalidadAerea { get; init; }
-        public Int64 TotalModalidadMaritima { get; init; }
-        public Int64 TotalConNovedad { get; init; }
-        public List<ResumenClienteDto> EnviosRecientes { get; init; } = new List<ResumenClienteDto>();
+        public Int64 TotalClientRecords { get; init; }
+        public Int64 TotalImports { get; init; }
+        public Int64 TotalExports { get; init; }
+        public Int64 TotalAirShipments { get; init; }
+        public Int64 TotalOceanShipments { get; init; }
+        public Int64 TotalWithIssues { get; init; }
+        public List<ResumenClienteDto> RecentShipments { get; init; } = new List<ResumenClienteDto>();
     }
 }

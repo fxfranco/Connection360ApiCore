@@ -24,10 +24,10 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, [FromQuery] String rol, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, [FromQuery] String role, CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RolName = rol };
-            var result = await _getClientSummaryUseCase.ExecuteAsync(request, cancellationToken);
+            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = role };
+            var result = await _getClientSummaryUseCase.ExecuteTotalsAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
 
@@ -36,65 +36,65 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String rol, [FromQuery] String filterValue, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String role, [FromQuery] String filterValue, CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RolName = rol, FilterValue = filterValue };
+            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = role, FilterValue = filterValue };
             var result = await _getClientSummaryUseCase.ExecuteFilterAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
 
-        [HttpGet("totalsRol")]
-        //[AllowAnonymous]
-        //[Authorize]
-        [Authorize(Roles = "Client,Admin")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeTotalsV2(CancellationToken cancellationToken)
-        {
-            // 1. Verificar rol mediante helper IsInRole
-            bool esAdmin = User.IsInRole("Admin");
+        //[HttpGet("totalsRol")]
+        ////[AllowAnonymous]
+        ////[Authorize]
+        //[Authorize(Roles = "Client,Admin")]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        //public async Task<IActionResult> GetHomeTotalsV2(CancellationToken cancellationToken)
+        //{
+        //    // 1. Verificar rol mediante helper IsInRole
+        //    bool esAdmin = User.IsInRole("Admin");
             
-            // 2. Extraer todos los roles del usuario activo
-            var roles = User.Claims
-                .Where(c => c.Type == "https://mi-app.com/claims/roles" || c.Type == ClaimTypes.Role)
-                .Select(c => c.Value)
-                .ToList();
+        //    // 2. Extraer todos los roles del usuario activo
+        //    var roles = User.Claims
+        //        .Where(c => c.Type == "https://mi-app.com/claims/roles" || c.Type == ClaimTypes.Role)
+        //        .Select(c => c.Value)
+        //        .ToList();
 
-            // 3. Extraer el ID del usuario de Auth0
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //    // 3. Extraer el ID del usuario de Auth0
+        //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            return Ok(new
-            {
-                UserId = userId,
-                IsAdministrator = esAdmin,
-                AssignedRoles = roles
-            });
-        }
+        //    return Ok(new
+        //    {
+        //        UserId = userId,
+        //        IsAdministrator = esAdmin,
+        //        AssignedRoles = roles
+        //    });
+        //}
 
-        [HttpGet("totalsRolNoValid")]
-        //[AllowAnonymous]
-        //[Authorize]
-        [Authorize(Roles = "Editor")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeTotalsV3(CancellationToken cancellationToken)
-        {
-            // 1. Verificar rol mediante helper IsInRole
-            bool esAdmin = User.IsInRole("Editor");
+        //[HttpGet("totalsRolNoValid")]
+        ////[AllowAnonymous]
+        ////[Authorize]
+        //[Authorize(Roles = "Editor")]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        //public async Task<IActionResult> GetHomeTotalsV3(CancellationToken cancellationToken)
+        //{
+        //    // 1. Verificar rol mediante helper IsInRole
+        //    bool esAdmin = User.IsInRole("Editor");
 
-            // 2. Extraer todos los roles del usuario activo
-            var roles = User.Claims
-                .Where(c => c.Type == "https://mi-app.com/claims/roles" || c.Type == ClaimTypes.Role)
-                .Select(c => c.Value)
-                .ToList();
+        //    // 2. Extraer todos los roles del usuario activo
+        //    var roles = User.Claims
+        //        .Where(c => c.Type == "https://mi-app.com/claims/roles" || c.Type == ClaimTypes.Role)
+        //        .Select(c => c.Value)
+        //        .ToList();
 
-            // 3. Extraer el ID del usuario de Auth0
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //    // 3. Extraer el ID del usuario de Auth0
+        //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            return Ok(new
-            {
-                UserId = userId,
-                IsAdministrator = esAdmin,
-                AssignedRoles = roles
-            });
-        }
+        //    return Ok(new
+        //    {
+        //        UserId = userId,
+        //        IsAdministrator = esAdmin,
+        //        AssignedRoles = roles
+        //    });
+        //}
     }
 }

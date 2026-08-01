@@ -4,7 +4,7 @@ namespace Connection360.Application.Ports
 {
     public interface IGetClientSummaryUseCase
     {
-        Task<ClientSummaryResponse> ExecuteAsync(ClientSummaryRequest request, CancellationToken cancellationToken);
+        Task<ClientSummaryResponse> ExecuteTotalsAsync(ClientSummaryRequest request, CancellationToken cancellationToken);
         Task<ResumenClienteResponse> ExecuteFilterAsync(ClientSummaryRequest request, CancellationToken cancellationToken);
     }
 }

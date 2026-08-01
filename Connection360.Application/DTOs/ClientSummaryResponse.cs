@@ -4,12 +4,12 @@ namespace Connection360.Application.DTOs
 {
     public class ClientSummaryResponse
     {
-        public Int64 TotalRegistros { get; set; }
-        public Int64 TotalImportaciones { get; set; }
-        public Int64 TotalExportaciones { get; set; }
-        public Int64 TotalModalidadAerea { get; init; }
-        public Int64 TotalModalidadMaritima { get; init; }
-        public Int64 TotalConNovedad { get; init; }
-        public List<ResumenClienteResponse> EnviosRecientes { get; set; } = new();
+        public Int64 TotalClientRecords { get; set; }
+        public Int64 TotalImports { get; set; }
+        public Int64 TotalExports { get; set; }
+        public Int64 TotalAirShipments { get; init; }
+        public Int64 TotalOceanShipments { get; init; }
+        public Int64 TotalWithIssues { get; init; }
+        public List<ResumenClienteResponse> RecentShipments { get; set; } = new();
     }
 }
