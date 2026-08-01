@@ -1,6 +1,7 @@
 ﻿using Connection360.ApiGateway.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 namespace Connection360.ApiGateway.Extensions
@@ -30,6 +31,13 @@ namespace Connection360.ApiGateway.Extensions
                 options.Authority = jwtSettings.Issuer;
                 options.Audience = jwtSettings.Audience;
 
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    // Mapea el claim de Auth0 con el sistema de Roles de ASP.NET Core
+                    RoleClaimType = jwtSettings.Roles,
+                    NameClaimType = ClaimTypes.NameIdentifier
+                };
+
                 //options.RequireHttpsMetadata = true; // OWASP: nunca validar tokens sobre HTTP en produccion
                 //options.SaveToken = false;
                 //options.TokenValidationParameters = new TokenValidationParameters
@@ -42,7 +50,9 @@ namespace Connection360.ApiGateway.Extensions
                 //    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
                 //    ValidateLifetime = true,
                 //    ClockSkew = TimeSpan.FromSeconds(30),
-                //    RequireExpirationTime = true
+                //    RequireExpirationTime = true,
+                //    RoleClaimType = jwtSettings.Role,
+                //    NameClaimType = ClaimTypes.NameIdentifier
                 //};
 
                 // Evita filtrar detalles del error de autenticacion al cliente (OWASP A09)

@@ -4,6 +4,8 @@ using Connection360.Application.UseCases;
 using Connection360.Domain.Interfaces;
 using Connection360.Domain.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace Connection360.Api.Extensions
 {
@@ -44,6 +46,9 @@ namespace Connection360.Api.Extensions
             var secretKey = jwtSection["Secret"]
                 ?? throw new InvalidOperationException("Falta configurar Jwt:Secret");
 
+            var roles = jwtSection["Roles"]
+                ?? throw new InvalidOperationException("Falta configurar Jwt:Role");
+
             //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             //.AddJwtBearer(options =>
             //{
@@ -56,22 +61,31 @@ namespace Connection360.Api.Extensions
             //        ValidateAudience = true,
             //        ValidAudience = jwtSection["Audience"],
             //        ValidateIssuerSigningKey = true,
-            //        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            //        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secretKey)),
             //        ValidateLifetime = true,
-            //        ClockSkew = TimeSpan.FromSeconds(30) // margen minimo, no los 5 min por defecto
+            //        ClockSkew = TimeSpan.FromSeconds(30), // margen minimo, no los 5 min por defecto
+            //        RoleClaimType = role,
+            //        NameClaimType = ClaimTypes.NameIdentifier
             //    };
             //});
 
-            // 1. Add Authentication Services
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
-            {
-                options.Authority = jwtSection["Issuer"];
-                options.Audience = jwtSection["Audience"];
-            });
+            //1.Add Authentication Services
+
+           services.AddAuthentication(options =>
+           {
+               options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+               options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+           }).AddJwtBearer(options =>
+           {
+               options.Authority = jwtSection["Issuer"];
+               options.Audience = jwtSection["Audience"];
+               options.TokenValidationParameters = new TokenValidationParameters
+               {
+                   // Mapea el claim de Auth0 con el sistema de Roles de ASP.NET Core
+                   RoleClaimType = roles,
+                   NameClaimType = ClaimTypes.NameIdentifier
+               };
+           });
 
             //services.AddAuthorizationBuilder()
             //    .AddPolicy("AdminOnly", p => p.RequireRole("Admin"));

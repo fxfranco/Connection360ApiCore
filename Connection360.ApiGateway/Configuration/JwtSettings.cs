@@ -11,5 +11,6 @@
         public String Secret { get; init; } = default!;
         public Int16 AccessTokenMinutes { get; init; } = 15;
         public Int16 RefreshTokenDays { get; init; } = 7;
+        public String Roles { get; init; } = default!;
     }
 }

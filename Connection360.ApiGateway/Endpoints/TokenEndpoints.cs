@@ -61,12 +61,21 @@ namespace Connection360.ApiGateway.Endpoints
 
         private static String GenerateJwt(JwtSettings settings, String clientId, String role)
         {
-            var claims = new[]
+            string roleCustomClaimType = "https://mi-app.com/claims/roles";
+            IEnumerable<String> roles = new List<String> { "ADMIN", "CLIENT", "ANALISTAOPE", "ANALISTASAC"};
+            var claims = new List<Claim>
             {
-            new Claim(JwtRegisteredClaimNames.Sub, clientId),
-            new Claim(ClaimTypes.Role, role),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
+                new Claim(JwtRegisteredClaimNames.Sub, clientId),
+                //new Claim(ClaimTypes.Role, role),
+                //new Claim(roleCustomClaimType, "Admin"),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            // Añade cada rol con la clave del Custom Claim de Auth0
+            foreach (var roleAdd in roles)
+            {
+                claims.Add(new Claim(roleCustomClaimType, roleAdd));
+            }
 
             SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Secret));
             SigningCredentials credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
