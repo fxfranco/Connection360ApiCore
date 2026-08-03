@@ -2,7 +2,6 @@
 using Connection360.Application.Ports;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Connection360.Api.Controllers
 {
@@ -27,7 +26,7 @@ namespace Connection360.Api.Controllers
         public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, [FromQuery] String role, CancellationToken cancellationToken)
         {
             ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = role };
-            var result = await _getClientSummaryUseCase.ExecuteTotalsAsync(request, cancellationToken);
+            ClientSummaryResponse result = await _getClientSummaryUseCase.ExecuteTotalsAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
 
@@ -39,7 +38,7 @@ namespace Connection360.Api.Controllers
         public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String role, [FromQuery] String filterValue, CancellationToken cancellationToken)
         {
             ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = role, FilterValue = filterValue };
-            var result = await _getClientSummaryUseCase.ExecuteFilterAsync(request, cancellationToken);
+            ResumenClienteResponse result = await _getClientSummaryUseCase.ExecuteFilterAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
 
@@ -52,7 +51,7 @@ namespace Connection360.Api.Controllers
         //{
         //    // 1. Verificar rol mediante helper IsInRole
         //    bool esAdmin = User.IsInRole("Admin");
-            
+
         //    // 2. Extraer todos los roles del usuario activo
         //    var roles = User.Claims
         //        .Where(c => c.Type == "https://mi-app.com/claims/roles" || c.Type == ClaimTypes.Role)

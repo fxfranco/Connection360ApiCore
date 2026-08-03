@@ -15,23 +15,16 @@ namespace Connection360.Infrastructure.ExternalApi
         public const String SectionName = "ExternalApi";
 
         /// <summary>
-        /// Url de la api
+        /// Diccionario de configuraciones por nombre de aplicación/API
         /// </summary>
-        public String BaseUrl { get; set; } = default!;
+        public Dictionary<String, ExternalApisDetail> Apis { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Endpoint a consultar
+        /// Método helper para obtener la configuración de una API de forma segura
         /// </summary>
-        public String DataEndpoint { get; set; } = default!;
-        
-        /// <summary>
-        /// Si requiere una api key
-        /// </summary>
-        public String? ApiKey { get; set; }
-        
-        /// <summary>
-        /// Tiempo de espera de la api en segundos
-        /// </summary>
-        public Int16 TimeoutSeconds { get; set; } = 30;
+        public ExternalApisDetail? GetConfig(String apiName)
+        {
+            return Apis.TryGetValue(apiName, out var apiFonfig) ? apiFonfig : null;
+        }
     }
 }

@@ -20,16 +20,27 @@ namespace Connection360.Infrastructure.DependencyInjection
         {
             services.Configure<ExternalApiSettings>(configuration.GetSection(ExternalApiSettings.SectionName));
 
-            services.AddHttpClient<IExternalDataGateway, ExternalDataApiGateway>((sp, client) =>
+            // Cargar la sección directamente
+            var externalApiSettings = configuration.GetSection(ExternalApiSettings.SectionName).Get<ExternalApiSettings>();
+
+            if (externalApiSettings?.Apis != null)
             {
-                var settings = configuration
-                    .GetSection(ExternalApiSettings.SectionName)
-                    .Get<ExternalApiSettings>()!;
+                // Recorrer cada API definida en el appsettings y registrar su HttpClient con nombre
+                foreach (var (apiName, config) in externalApiSettings.Apis)
+                {
+                    services.AddHttpClient(apiName, client =>
+                    {
+                        client.BaseAddress = new Uri(config.BaseUrl);
+                        client.Timeout = TimeSpan.FromSeconds(config.TimeoutSeconds);
 
-                client.BaseAddress = new Uri(settings.BaseUrl);
-                client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
-            });
-
+                        if (!String.IsNullOrWhiteSpace(config.ApiKey))
+                        {
+                            client.DefaultRequestHeaders.Add("X-Api-Key", config.ApiKey);
+                        }
+                    });
+                }
+            }
+            services.AddScoped<IExternalDataGateway, ExternalDataApiGateway>();
             return services;
         }
     }

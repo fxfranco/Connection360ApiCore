@@ -12,9 +12,10 @@ namespace Connection360.Infrastructure.ExternalApi
     /// </summary>
     public class ExternalDataApiGateway : IExternalDataGateway
     {
-        private readonly HttpClient _httpClient;
+        //private readonly HttpClient _httpClient;
         private readonly ExternalApiSettings _settings;
         private readonly ILogger<ExternalDataApiGateway> _logger;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         /// <summary>
         /// Constructor de la clase
@@ -22,14 +23,14 @@ namespace Connection360.Infrastructure.ExternalApi
         /// <param name="httpClient">Objeto para hacer la petición</param>
         /// <param name="settings">Configuraciones de la api a consultar</param>
         /// <param name="logger">Objeto para realizar logs de la petición</param>
-        public ExternalDataApiGateway(HttpClient httpClient, Microsoft.Extensions.Options.IOptions<ExternalApiSettings> settings, ILogger<ExternalDataApiGateway> logger)
+        public ExternalDataApiGateway(IHttpClientFactory httpClientFactory, Microsoft.Extensions.Options.IOptions<ExternalApiSettings> settings, ILogger<ExternalDataApiGateway> logger)
         {
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _settings = settings.Value;
             _logger = logger;
 
-            if (!String.IsNullOrWhiteSpace(_settings.ApiKey))
-                _httpClient.DefaultRequestHeaders.Add("x-api-key", _settings.ApiKey);
+            //if (!String.IsNullOrWhiteSpace(_settings.ApiKey))
+            //    _httpClient.DefaultRequestHeaders.Add("x-api-key", _settings.ApiKey);
         }
 
         /// <summary>
@@ -40,16 +41,26 @@ namespace Connection360.Infrastructure.ExternalApi
         /// <returns></returns>
         /// <exception cref="HttpRequestException"></exception>
         /// <exception cref="InvalidOperationException"></exception>
-        public async Task<DynamicDataSet> FetchDataAsync(IDictionary<String, String> filters, CancellationToken cancellationToken)
+        public async Task<DynamicDataSet> FetchDataAsync(String apiName, IDictionary<String, String> filters, CancellationToken cancellationToken)
         {
+
+            // Filtrar y obtener la configuración según el nombre enviado
+            if (!_settings.Apis.TryGetValue(apiName, out var apiConfig))
+            {
+                throw new ArgumentException($"La API '{apiName}' no existe en el appsettings.");
+            }
+
             var query = String.Join("&", filters.Select(f => $"{Uri.EscapeDataString(f.Key)}={Uri.EscapeDataString(f.Value)}"));
             var url = String.IsNullOrEmpty(query)
-                ? _settings.DataEndpoint
-                : $"{_settings.DataEndpoint}?{query}";
+                ? apiConfig.DataEndpoint
+                : $"{apiConfig.DataEndpoint}?{query}";
 
             _logger.LogInformation("Consultando API externo: {Url}", url);
 
-            using var response = await _httpClient.GetAsync(url, cancellationToken);
+            // Obtiene el HttpClient previamente registrado
+            HttpClient httpClient = _httpClientFactory.CreateClient(apiName);
+
+            using var response = await httpClient.GetAsync(url, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {

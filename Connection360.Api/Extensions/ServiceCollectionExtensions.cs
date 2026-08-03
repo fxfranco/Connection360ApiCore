@@ -14,8 +14,13 @@ namespace Connection360.Api.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             // Application
+            //Home
             services.AddScoped<IGetClientSummaryUseCase, GetClientSummaryUseCase>();
             services.AddScoped<IClientSummaryDomainService, ClientSummaryDomainService>();
+
+            //MyShipments
+            services.AddScoped<IGetMyShipmentsUseCase, GetMyShipmentsUseCase>();
+            services.AddScoped<IMyShipmentsDomainService, MyShipmentsDomainService>();
             return services;
         }
 

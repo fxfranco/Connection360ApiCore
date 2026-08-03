@@ -21,7 +21,7 @@ namespace Connection360.Domain.Services
             Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadMaritima);
             Int64 totalWithIssues = clientRecords.Count(r => r[ExternalDataFields.Estado] == TipoOperacionValues.EstadoConNovedad);
 
-
+            /// ToDo: Pendiente corregir ordenamiento de fecha
             List<ResumenClienteDto> recentShipments = clientRecords
                 .OrderByDescending(r => r["FECHA DE CREACIÓN"].ToDateTimeOrMin())
                 .Select(r => new ResumenClienteDto

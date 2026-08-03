@@ -11,5 +11,6 @@
 
         //Pendiente sacar en otra clase
         public const String EstadoConNovedad = "Con novedad";
+        public const String EstadoEntregado = "Entregado";
     }
 }

@@ -32,7 +32,7 @@ namespace Connection360.Application.UseCases
 
             var filters = new Dictionary<String, String>();
             // 2. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync(filters, cancellationToken);
+            DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
             var summary = _summaryyDomainService.Summarize(dataSet, clientId: request.IdClient, lastRecordsCount: UltimosRegistrosCount);
@@ -72,7 +72,7 @@ namespace Connection360.Application.UseCases
 
             var filters = new Dictionary<String, String>();
             // 2. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync(filters, cancellationToken);
+            DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
             var summary = _summaryyDomainService.Filter(dataSet, clientId: request.IdClient, filterDocument: request.FilterValue);
