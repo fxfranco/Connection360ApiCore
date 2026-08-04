@@ -60,8 +60,7 @@ namespace Connection360.Domain.Services
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             ResumenClienteDto shipment = dataSet.Rows
                 .Where(r =>
-                    r[ExternalDataFields.Cliente] == clientId &&
-                    r["DOCUMENTO DE TRANSPORTE (HBL)"].GetDocumentoSinPrefijo().Equals(filterDocument, StringComparison.OrdinalIgnoreCase)
+                    r[ExternalDataFields.Cliente] == clientId && r["DOCUMENTO DE TRANSPORTE (HBL)"].Equals(filterDocument, StringComparison.OrdinalIgnoreCase)
                 )
                 .Select(r => new ResumenClienteDto
                 {
