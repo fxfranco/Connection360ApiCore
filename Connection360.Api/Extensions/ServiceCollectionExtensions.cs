@@ -21,6 +21,9 @@ namespace Connection360.Api.Extensions
             //MyShipments
             services.AddScoped<IGetMyShipmentsUseCase, GetMyShipmentsUseCase>();
             services.AddScoped<IMyShipmentsDomainService, MyShipmentsDomainService>();
+
+            services.AddScoped<IDynamicDataSetMerger, DynamicDataSetMerger>();
+
             return services;
         }
 

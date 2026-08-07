@@ -2,6 +2,7 @@
 using Connection360.Application.Ports;
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Entities;
+using Connection360.Domain.Enum;
 using Connection360.Domain.Interfaces;
 
 namespace Connection360.Application.UseCases
@@ -10,11 +11,13 @@ namespace Connection360.Application.UseCases
     {
         private readonly IExternalDataGateway _externalDataGateway;
         private readonly IMyShipmentsDomainService _myShipmentsDomainService;
+        private readonly IDynamicDataSetMerger _merger;
 
-        public GetMyShipmentsUseCase(IExternalDataGateway externalDataGateway, IMyShipmentsDomainService myShipmentsDomainService)
+        public GetMyShipmentsUseCase(IExternalDataGateway externalDataGateway, IMyShipmentsDomainService myShipmentsDomainService, IDynamicDataSetMerger merger)
         {
             _externalDataGateway = externalDataGateway;
             _myShipmentsDomainService = myShipmentsDomainService;
+            _merger = merger;
         }
 
         public async Task<MyShipmentsResponse> ExecuteGetAllShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken)
@@ -25,6 +28,12 @@ namespace Connection360.Application.UseCases
             var filters = new Dictionary<String, String>();
             // 1. Consultar el API externo filtrando solo por cliente
             DynamicDataSet dataSetSIM = await _externalDataGateway.FetchDataAsync("SIM", filters, cancellationToken);
+            //DynamicDataSet dataSetBPMS = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
+            //DynamicDataSet dataSetOPENCOMEX = await _externalDataGateway.FetchDataAsync("OPENCOMEX", filters, cancellationToken);
+            //DynamicDataSet dataSetASISCOMEX = await _externalDataGateway.FetchDataAsync("ASISCOMEX", filters, cancellationToken);
+            //DynamicDataSet dataSetSYSTEMCARRIER = await _externalDataGateway.FetchDataAsync("SYSTEMCARRIER", filters, cancellationToken);
+
+            //var datasetUnificado = _merger.Merge(new[] { dataSetBPMS, dataSetSIM, dataSetOPENCOMEX, dataSetASISCOMEX, dataSetSYSTEMCARRIER },joinField: "DOCUMENTO DE TRANSPORTE (HBL)", joinType: DataSetJoinType.FullOuter);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
             var myShipments = _myShipmentsDomainService.GetAllShipments(dataSetSIM, clientId: request.IdClient, page: request.Page, size: request.Size);

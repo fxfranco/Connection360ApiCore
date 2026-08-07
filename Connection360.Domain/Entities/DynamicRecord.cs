@@ -23,5 +23,8 @@ namespace Connection360.Domain.Entities
         }
 
         public bool HasField(String fieldName) => _fields.ContainsKey(fieldName);
+
+        // Exposición de solo lectura para poder iterar los campos (ej: en mergers, mappers, etc.)
+        public IReadOnlyDictionary<String, String> Fields => _fields;
     }
 }
