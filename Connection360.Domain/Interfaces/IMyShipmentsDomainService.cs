@@ -7,6 +7,8 @@ namespace Connection360.Domain.Interfaces
     public interface IMyShipmentsDomainService
     {
         MyShipmentsDomainResult GetAllShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size);
-        MyShipmentsDomainResult GetFiltersShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size, MyShipmentsFiltersDto filters);
+        MyShipmentsDomainResult GetFiltersShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size, MyShipmentsFiltersDto filters);        
+        MyShipmentsDomainResult GetHistoryAllShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size);
+        MyShipmentsDomainResult GetFiltersHistoryShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size, MyShipmentsFiltersDto filters);
     }
 }

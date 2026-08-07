@@ -44,11 +44,52 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, 
+        public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size,
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
         {
             MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size, Filters = filters };
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterShipmentsAsync(request, cancellationToken);
+
+            PagedResult<Object> pagedResult = new PagedResult<Object>
+            {
+                Items = [result.ClientSummaryResponseData],
+                TotalItems = result.ClientSummaryResponseData.TotalClientRecords,
+                CurrentPage = page,
+                Limit = size
+            };
+
+            return Ok(pagedResult);
+        }
+
+        [HttpGet("allhistory")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetHistoryAllShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
+        {
+            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size };
+            MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetHistoryAllShipmentsAsync(request, cancellationToken);
+
+            PagedResult<Object> pagedResult = new PagedResult<Object>
+            {
+                Items = [result.ClientSummaryResponseData],
+                TotalItems = result.ClientSummaryResponseData.TotalClientRecords,
+                CurrentPage = page,
+                Limit = size
+            };
+
+            return Ok(pagedResult);
+        }
+
+        [HttpGet("filterhistory")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> FilterHistoryShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, 
+            [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
+        {
+            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size, Filters = filters };
+            MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterHistoryShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
             {
