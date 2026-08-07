@@ -11,37 +11,37 @@ namespace Connection360.Domain.Services
         {
             // Crea una nueva List<DynamicRecord> con solo los registros activos
             List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.Cliente] == clientId && r[ExternalDataFields.Estado] != TipoOperacionValues.EstadoEntregado)
+                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
                 .ToList();
 
             Int64 totalClientRecords = clientRecords.Count();
-            Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Importacion);
-            Int64 totalExports = clientRecords.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Exportacion);
-            Int64 totalAirShipments = clientRecords.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadAire);
-            Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadMaritima);
+            Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
+            Int64 totalExports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
+            Int64 totalAirShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
+            Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.OceanShipment);
 
             /// ToDo: Pendiente corregir ordenamiento de fecha
             // 3. Aplicar ordenamiento (REQUISITO FUNDAMENTAL antes de Skip/Take)
             // y traer solo los registros de la página solicitada
             List<ResumenMyShipmentDto> resumenMyShipmentDto = clientRecords
-                .OrderByDescending(s => s["FECHA DE CREACIÓN"].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
-                .OrderBy(s => Int64.TryParse(s["ID"], out Int64 id) ? id : 0)
+                .OrderByDescending(s => s[ExternalDataFields.CreationDate].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
+                .OrderBy(s => Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0)
                 .Skip((Int32)((page - 1) * size))
                 .Take((Int32)size)
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
-                    Id = Int64.TryParse(s["ID"], out Int64 id) ? id : 0,
-                    ShipmentMode = s["MODALIDAD (AIR - SEA)"],
-                    DocumentNumber = s["DOCUMENTO DE TRANSPORTE (HBL)"],
-                    State = s["ESTADO"],
-                    OperationType = s["TIPO DE OPERACIÓN (IMPO - EXPO)"],
-                    ClientName = s["CLIENTE"],
-                    Origin = s["ORIGEN"],
-                    Destination = s["DESTINO"],
-                    ETDDate = s["ETD (Fecha Estimada Salida)"].ToDateTimeOrMin(),
-                    ATDDate = s["ATD (Fecha Real Salida)"].ToDateTimeOrMin(),
-                    ETADate = s["ETA (Fecha Estimada Llegada)"].ToDateTimeOrMin(),
-                    ATADate = s["ATA (Fecha Real Llegada)"].ToDateTimeOrMin(),
+                    Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ShipmentMode = s[ExternalDataFields.ShipmentMode],
+                    DocumentNumber = s[ExternalDataFields.DocumentNumber],
+                    State = s[ExternalDataFields.State],
+                    OperationType = s[ExternalDataFields.OperationType],
+                    ClientName = s[ExternalDataFields.ClientName],
+                    Origin = s[ExternalDataFields.Origin],
+                    Destination = s[ExternalDataFields.Destination],
+                    ETDDate = s[ExternalDataFields.ETDDate].ToDateTimeOrMin(),
+                    ATDDate = s[ExternalDataFields.ATDDate].ToDateTimeOrMin(),
+                    ETADate = s[ExternalDataFields.ETADate].ToDateTimeOrMin(),
+                    ATADate = s[ExternalDataFields.ATADate].ToDateTimeOrMin(),
                 })
                 .ToList();
 
@@ -63,7 +63,7 @@ namespace Connection360.Domain.Services
         {
             // Crea una nueva List<DynamicRecord> con solo los registros activos
             List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.Cliente] == clientId && r[ExternalDataFields.Estado] != TipoOperacionValues.EstadoEntregado)
+                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
                 .ToList();
 
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
@@ -74,58 +74,58 @@ namespace Connection360.Domain.Services
             {
                 // 2. Filtramos la lista buscando si coincide con CUALQUIERA (OR / ||) de los campos
                 queryFilters = queryFilters.Where(s =>
-                    (s["DOCUMENTO DE TRANSPORTE (HBL)"] != null && s["DOCUMENTO DE TRANSPORTE (HBL)"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
-                    (s["CLIENTE"] != null && s["CLIENTE"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
-                    (s["ORIGEN"] != null && s["ORIGEN"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
-                    (s["DESTINO"] != null && s["DESTINO"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase))
+                    (s[ExternalDataFields.DocumentNumber] != null && s[ExternalDataFields.DocumentNumber].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
+                    (s[ExternalDataFields.ClientName] != null && s[ExternalDataFields.ClientName].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
+                    (s[ExternalDataFields.Origin] != null && s[ExternalDataFields.Origin].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
+                    (s[ExternalDataFields.Destination] != null && s[ExternalDataFields.Destination].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase))
                 );
             }
 
             if (!String.IsNullOrWhiteSpace(filters.OperationType))
             {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.TipoOperacion]) &&
-                                         s[ExternalDataFields.TipoOperacion] == filters.OperationType);
+                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.OperationType]) &&
+                                         s[ExternalDataFields.OperationType] == filters.OperationType);
             }
 
             if (!String.IsNullOrWhiteSpace(filters.ShipmentMode))
             {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.TipoModalidad]) &&
-                                         s[ExternalDataFields.TipoModalidad] == filters.ShipmentMode);
+                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.ShipmentMode]) &&
+                                         s[ExternalDataFields.ShipmentMode] == filters.ShipmentMode);
             }
 
             if (!String.IsNullOrWhiteSpace(filters.State))
             {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.Estado]) &&
-                                         s[ExternalDataFields.Estado] == filters.State);
+                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.State]) &&
+                                         s[ExternalDataFields.State] == filters.State);
             }
 
             List<DynamicRecord> clientRecordsFinal = queryFilters.ToList();
 
             Int64 totalClientRecords = clientRecordsFinal.Count();
-            Int64 totalImports = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Importacion);
-            Int64 totalExports = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Exportacion);
-            Int64 totalAirShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadAire);
-            Int64 totalOceanShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadMaritima);
+            Int64 totalImports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
+            Int64 totalExports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
+            Int64 totalAirShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
+            Int64 totalOceanShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.OceanShipment);
 
             List<ResumenMyShipmentDto> resumenMyShipmentDto = clientRecordsFinal
-                .OrderByDescending(s => s["FECHA DE CREACIÓN"].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
-                .OrderBy(s => Int64.TryParse(s["ID"], out Int64 id) ? id : 0)
+                .OrderByDescending(s => s[ExternalDataFields.CreationDate].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
+                .OrderBy(s => Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0)
                 .Skip((Int32)((page - 1) * size))
                 .Take((Int32)size)
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
-                    Id = Int64.TryParse(s["ID"], out Int64 id) ? id : 0,
-                    ShipmentMode = s["MODALIDAD (AIR - SEA)"],
-                    DocumentNumber = s["DOCUMENTO DE TRANSPORTE (HBL)"],
-                    State = s["ESTADO"],
-                    OperationType = s["TIPO DE OPERACIÓN (IMPO - EXPO)"],
-                    ClientName = s["CLIENTE"],
-                    Origin = s["ORIGEN"],
-                    Destination = s["DESTINO"],
-                    ETDDate = s["ETD (Fecha Estimada Salida)"].ToDateTimeOrMin(),
-                    ATDDate = s["ATD (Fecha Real Salida)"].ToDateTimeOrMin(),
-                    ETADate = s["ETA (Fecha Estimada Llegada)"].ToDateTimeOrMin(),
-                    ATADate = s["ATA (Fecha Real Llegada)"].ToDateTimeOrMin(),
+                    Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ShipmentMode = s[ExternalDataFields.ShipmentMode],
+                    DocumentNumber = s[ExternalDataFields.DocumentNumber],
+                    State = s[ExternalDataFields.State],
+                    OperationType = s[ExternalDataFields.OperationType],
+                    ClientName = s[ExternalDataFields.ClientName],
+                    Origin = s[ExternalDataFields.Origin],
+                    Destination = s[ExternalDataFields.Destination],
+                    ETDDate = s[ExternalDataFields.ETDDate].ToDateTimeOrMin(),
+                    ATDDate = s[ExternalDataFields.ATDDate].ToDateTimeOrMin(),
+                    ETADate = s[ExternalDataFields.ETADate].ToDateTimeOrMin(),
+                    ATADate = s[ExternalDataFields.ATADate].ToDateTimeOrMin(),
                 })
                 .ToList();
 
@@ -147,37 +147,37 @@ namespace Connection360.Domain.Services
         {
             // Crea una nueva List<DynamicRecord> con solo los registros activos
             List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.Cliente] == clientId && r[ExternalDataFields.Estado] == TipoOperacionValues.EstadoEntregado)
+                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
                 .ToList();
 
             Int64 totalClientRecords = clientRecords.Count();
-            Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Importacion);
-            Int64 totalExports = clientRecords.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Exportacion);
-            Int64 totalAirShipments = clientRecords.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadAire);
-            Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadMaritima);
+            Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
+            Int64 totalExports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
+            Int64 totalAirShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
+            Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.OceanShipment);
 
             /// ToDo: Pendiente corregir ordenamiento de fecha
             // 3. Aplicar ordenamiento (REQUISITO FUNDAMENTAL antes de Skip/Take)
             // y traer solo los registros de la página solicitada
             List<ResumenMyShipmentDto> resumenMyShipmentDto = clientRecords
-                .OrderByDescending(s => s["FECHA DE CREACIÓN"].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
-                .OrderBy(s => Int64.TryParse(s["ID"], out Int64 id) ? id : 0)
+                .OrderByDescending(s => s[ExternalDataFields.CreationDate].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
+                .OrderBy(s => Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0)
                 .Skip((Int32)((page - 1) * size))
                 .Take((Int32)size)
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
-                    Id = Int64.TryParse(s["ID"], out Int64 id) ? id : 0,
-                    ShipmentMode = s["MODALIDAD (AIR - SEA)"],
-                    DocumentNumber = s["DOCUMENTO DE TRANSPORTE (HBL)"],
-                    State = s["ESTADO"],
-                    OperationType = s["TIPO DE OPERACIÓN (IMPO - EXPO)"],
-                    ClientName = s["CLIENTE"],
-                    Origin = s["ORIGEN"],
-                    Destination = s["DESTINO"],
-                    ETDDate = s["ETD (Fecha Estimada Salida)"].ToDateTimeOrMin(),
-                    ATDDate = s["ATD (Fecha Real Salida)"].ToDateTimeOrMin(),
-                    ETADate = s["ETA (Fecha Estimada Llegada)"].ToDateTimeOrMin(),
-                    ATADate = s["ATA (Fecha Real Llegada)"].ToDateTimeOrMin(),
+                    Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ShipmentMode = s[ExternalDataFields.ShipmentMode],
+                    DocumentNumber = s[ExternalDataFields.DocumentNumber],
+                    State = s[ExternalDataFields.State],
+                    OperationType = s[ExternalDataFields.OperationType],
+                    ClientName = s[ExternalDataFields.ClientName],
+                    Origin = s[ExternalDataFields.Origin],
+                    Destination = s[ExternalDataFields.Destination],
+                    ETDDate = s[ExternalDataFields.ETDDate].ToDateTimeOrMin(),
+                    ATDDate = s[ExternalDataFields.ATDDate].ToDateTimeOrMin(),
+                    ETADate = s[ExternalDataFields.ETADate].ToDateTimeOrMin(),
+                    ATADate = s[ExternalDataFields.ATADate].ToDateTimeOrMin(),
                 })
                 .ToList();
 
@@ -199,7 +199,7 @@ namespace Connection360.Domain.Services
         {
             // Crea una nueva List<DynamicRecord> con solo los registros activos
             List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.Cliente] == clientId && r[ExternalDataFields.Estado] == TipoOperacionValues.EstadoEntregado)
+                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
                 .ToList();
 
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
@@ -210,52 +210,52 @@ namespace Connection360.Domain.Services
             {
                 // 2. Filtramos la lista buscando si coincide con CUALQUIERA (OR / ||) de los campos
                 queryFilters = queryFilters.Where(s =>
-                    (s["DOCUMENTO DE TRANSPORTE (HBL)"] != null && s["DOCUMENTO DE TRANSPORTE (HBL)"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
-                    (s["CLIENTE"] != null && s["CLIENTE"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
-                    (s["ORIGEN"] != null && s["ORIGEN"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
-                    (s["DESTINO"] != null && s["DESTINO"].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase))
+                    (s[ExternalDataFields.DocumentNumber] != null && s[ExternalDataFields.DocumentNumber].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
+                    (s[ExternalDataFields.ClientName] != null && s[ExternalDataFields.ClientName].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
+                    (s[ExternalDataFields.Origin] != null && s[ExternalDataFields.Origin].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase)) ||
+                    (s[ExternalDataFields.Destination] != null && s[ExternalDataFields.Destination].Contains(filters.ValueFilter, StringComparison.OrdinalIgnoreCase))
                 );
             }
 
             if (!String.IsNullOrWhiteSpace(filters.OperationType))
             {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.TipoOperacion]) &&
-                                         s[ExternalDataFields.TipoOperacion] == filters.OperationType);
+                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.OperationType]) &&
+                                         s[ExternalDataFields.OperationType] == filters.OperationType);
             }
 
             if (!String.IsNullOrWhiteSpace(filters.ShipmentMode))
             {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.TipoModalidad]) &&
-                                         s[ExternalDataFields.TipoModalidad] == filters.ShipmentMode);
+                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.ShipmentMode]) &&
+                                         s[ExternalDataFields.ShipmentMode] == filters.ShipmentMode);
             }
 
             List<DynamicRecord> clientRecordsFinal = queryFilters.ToList();
 
             Int64 totalClientRecords = clientRecordsFinal.Count();
-            Int64 totalImports = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Importacion);
-            Int64 totalExports = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoOperacion] == TipoOperacionValues.Exportacion);
-            Int64 totalAirShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadAire);
-            Int64 totalOceanShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.TipoModalidad] == TipoOperacionValues.ModalidadMaritima);
+            Int64 totalImports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
+            Int64 totalExports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
+            Int64 totalAirShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
+            Int64 totalOceanShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.OceanShipment);
 
             List<ResumenMyShipmentDto> resumenMyShipmentDto = clientRecordsFinal
-                .OrderByDescending(s => s["FECHA DE CREACIÓN"].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
-                .OrderBy(s => Int64.TryParse(s["ID"], out Int64 id) ? id : 0)
+                .OrderByDescending(s => s[ExternalDataFields.CreationDate].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
+                .OrderBy(s => Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0)
                 .Skip((Int32)((page - 1) * size))
                 .Take((Int32)size)
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
-                    Id = Int64.TryParse(s["ID"], out Int64 id) ? id : 0,
-                    ShipmentMode = s["MODALIDAD (AIR - SEA)"],
-                    DocumentNumber = s["DOCUMENTO DE TRANSPORTE (HBL)"],
-                    State = s["ESTADO"],
-                    OperationType = s["TIPO DE OPERACIÓN (IMPO - EXPO)"],
-                    ClientName = s["CLIENTE"],
-                    Origin = s["ORIGEN"],
-                    Destination = s["DESTINO"],
-                    ETDDate = s["ETD (Fecha Estimada Salida)"].ToDateTimeOrMin(),
-                    ATDDate = s["ATD (Fecha Real Salida)"].ToDateTimeOrMin(),
-                    ETADate = s["ETA (Fecha Estimada Llegada)"].ToDateTimeOrMin(),
-                    ATADate = s["ATA (Fecha Real Llegada)"].ToDateTimeOrMin(),
+                    Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ShipmentMode = s[ExternalDataFields.ShipmentMode],
+                    DocumentNumber = s[ExternalDataFields.DocumentNumber],
+                    State = s[ExternalDataFields.State],
+                    OperationType = s[ExternalDataFields.OperationType],
+                    ClientName = s[ExternalDataFields.ClientName],
+                    Origin = s[ExternalDataFields.Origin],
+                    Destination = s[ExternalDataFields.Destination],
+                    ETDDate = s[ExternalDataFields.ETDDate].ToDateTimeOrMin(),
+                    ATDDate = s[ExternalDataFields.ATDDate].ToDateTimeOrMin(),
+                    ETADate = s[ExternalDataFields.ETADate].ToDateTimeOrMin(),
+                    ATADate = s[ExternalDataFields.ATADate].ToDateTimeOrMin(),
                 })
                 .ToList();
 

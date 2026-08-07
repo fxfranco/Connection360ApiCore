@@ -27,7 +27,7 @@ namespace Connection360.Application.UseCases
             // 1. Aplica filtros a la api si se tienen
             //var filters = new Dictionary<String, String>
             //{
-            //    [ExternalDataFields.Cliente] = request.Cliente
+            //    [ExternalDataFields.ClientNit] = request.Cliente
             //};
 
             var filters = new Dictionary<String, String>();
@@ -67,7 +67,7 @@ namespace Connection360.Application.UseCases
             // 1. Aplica filtros a la api si se tienen
             //var filters = new Dictionary<String, String>
             //{
-            //    [ExternalDataFields.Cliente] = request.Cliente
+            //    [ExternalDataFields.ClientNit] = request.Cliente
             //};
 
             var filters = new Dictionary<String, String>();
