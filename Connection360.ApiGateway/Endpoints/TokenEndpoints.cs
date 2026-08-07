@@ -61,7 +61,7 @@ namespace Connection360.ApiGateway.Endpoints
 
         private static String GenerateJwt(JwtSettings settings, String clientId, String role)
         {
-            string roleCustomClaimType = "https://mi-app.com/claims/roles";
+            string roleCustomClaimType = "https://conexion360.space/roles";
             IEnumerable<String> roles = new List<String> { "ADMIN", "CLIENT", "ANALISTAOPE", "ANALISTASAC"};
             var claims = new List<Claim>
             {
