@@ -23,9 +23,9 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, [FromQuery] String role, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = role };
+            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
             ClientSummaryResponse result = await _getClientSummaryUseCase.ExecuteTotalsAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
@@ -35,9 +35,9 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String role, [FromQuery] String filterValue, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String filterValue, CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = role, FilterValue = filterValue };
+            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty, FilterValue = filterValue };
             ResumenClienteResponse result = await _getClientSummaryUseCase.ExecuteFilterAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }

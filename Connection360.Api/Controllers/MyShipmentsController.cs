@@ -24,9 +24,9 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllShipments([FromQuery] String idClient, [FromQuery] String role, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
         {
-            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = role, Page = page, Size = size };
+            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size };
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetAllShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -44,10 +44,10 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] String role, [FromQuery] Int64 page, [FromQuery] Int64 size, 
+        public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, 
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
         {
-            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = role, Page = page, Size = size, Filters = filters };
+            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size, Filters = filters };
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
