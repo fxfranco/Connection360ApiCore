@@ -20,8 +20,8 @@ namespace Connection360.Api.Controllers
 
         /// https://localhost:44369/api/v1/home/totals?idClient=123&rol=cliente
         [HttpGet("totals")]
-        //[AllowAnonymous]
-        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [AllowAnonymous]
+        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, CancellationToken cancellationToken)
         {
@@ -32,8 +32,8 @@ namespace Connection360.Api.Controllers
 
         /// https://localhost:44369/api/v1/home/filters?idClient=123&rol=cliente&filterValue=HR12354
         [HttpGet("filters")]
-        //[AllowAnonymous]
-        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [AllowAnonymous]
+        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String filterValue, CancellationToken cancellationToken)
         {

@@ -10,5 +10,4 @@
         public String OperationType { get; set; } = String.Empty;
         public String ShipmentMode { get; set; } = String.Empty;
     }
-
 }

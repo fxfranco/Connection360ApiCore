@@ -101,5 +101,16 @@ namespace Connection360.Api.Controllers
 
             return Ok(pagedResult);
         }
+
+        [HttpGet("detailsshipments")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetDetailsShipments([FromQuery] String idClient, [FromQuery] String documentNumber, CancellationToken cancellationToken)
+        {
+            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, DocumentNumber = documentNumber };
+            DetailsShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteDetailsShipmentsAsync(request, cancellationToken);
+            return Ok(result);
+        }
     }
 }

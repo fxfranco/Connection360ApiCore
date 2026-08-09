@@ -10,5 +10,6 @@ namespace Connection360.Domain.Interfaces
         MyShipmentsDomainResult GetFiltersShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size, MyShipmentsFiltersDto filters);        
         MyShipmentsDomainResult GetHistoryAllShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size);
         MyShipmentsDomainResult GetFiltersHistoryShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size, MyShipmentsFiltersDto filters);
+        DetailsShipmentsDomainDtoResult GetDetailsShipments(DynamicDataSet dataSet, String clientId, String DocumentNumber);
     }
 }

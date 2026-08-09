@@ -8,5 +8,6 @@ namespace Connection360.Application.Ports
         Task<MyShipmentsResponse> ExecuteFilterShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken);
         Task<MyShipmentsResponse> ExecuteGetHistoryAllShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken);
         Task<MyShipmentsResponse> ExecuteFilterHistoryShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken);
+        Task<DetailsShipmentsResponse> ExecuteDetailsShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken);
     }
 }
