@@ -260,5 +260,34 @@
         /// </summary>
         public const String TotalInvoiceUSD = "TOTAL FACTURA (USD)";
 
+        /// <summary>
+        /// ID Log de la base de datos de logs de cambios de estado
+        /// </summary>
+        public const String IdLog = "ID_LOG";
+
+        /// <summary>
+        /// Fecha del cambio del log
+        /// </summary>
+        public const String ChangeDateLog = "FECHA DE CAMBIO";
+
+        /// <summary>
+        /// Usuario que hizo el cambio en el log
+        /// </summary>
+        public const String ChangeUserLog = "USUARIO DE CAMBIO";
+
+        /// <summary>
+        /// Mensaje guardado como log
+        /// </summary>
+        public const String MessageLog = "MENSAJE";
+
+        /// <summary>
+        /// Estado anterior
+        /// </summary>
+        public const String OldStateLog = "ESTADO ANTERIOR";
+
+        /// <summary>
+        /// Nuevo estado
+        /// </summary>
+        public const String NewStateLog = "NUEVO ESTADO";
     }
 }

@@ -346,61 +346,6 @@ namespace Connection360.Domain.Services
                     InvoiceSubtotalUSD = clientRecords[ExternalDataFields.InvoiceSubtotalUSD],
                     IvaUSD = clientRecords[ExternalDataFields.IvaUSD],
                     TotalInvoiceUSD = clientRecords[ExternalDataFields.TotalInvoiceUSD],
-                },
-                HistoryShipments = new HistoryShipmentsDomainDtoResult
-                {
-                    //ToDo: Pendiente implementar logica de consulta de logs de cambios de estado
-                    DetailsHistoryShipments = new List<DetailsHistoryShipmentsDomainDtoResult>()
-                    {
-                        new DetailsHistoryShipmentsDomainDtoResult
-                        {
-                            ChangeDate = DateTime.Now,
-                            ChangeUser = "ANALISTASAC",
-                            Message = "Creación del envio",
-                            OldState = "",
-                            NewState = "Pendiente"
-                        },
-                        new DetailsHistoryShipmentsDomainDtoResult
-                        {
-                            ChangeDate = DateTime.Now.AddMonths(1),
-                            ChangeUser = "ANALISTASAC",
-                            Message = "Se asigna el envio para iniciar su despacho",
-                            OldState = "Pendiente",
-                            NewState = "En tránsito"
-                        },
-                        new DetailsHistoryShipmentsDomainDtoResult
-                        {
-                            ChangeDate = DateTime.Now.AddMonths(2),
-                            ChangeUser = "ANALISTAOPE",
-                            Message = "Llega a la aduana origen para revisar",
-                            OldState = "En tránsito",
-                            NewState = "En Aduana origen"
-                        },
-                        new DetailsHistoryShipmentsDomainDtoResult
-                        {
-                            ChangeDate = DateTime.Now.AddMonths(4),
-                            ChangeUser = "ANALISTAOPE",
-                            Message = "Llega a la aduana destinoi para revisar",
-                            OldState = "En Aduana origen",
-                            NewState = "En Aduana destino"
-                        },
-                        new DetailsHistoryShipmentsDomainDtoResult
-                        {
-                            ChangeDate = DateTime.Now.AddMonths(6),
-                            ChangeUser = "CLIENT",
-                            Message = "Presentan demoras en el envío",
-                            OldState = "En Aduana destino",
-                            NewState = "Con novedad"
-                        },
-                        new DetailsHistoryShipmentsDomainDtoResult
-                        {
-                            ChangeDate = DateTime.Now.AddMonths(7),
-                            ChangeUser = "ADMIN",
-                            Message = "El envìo a sido entregado",
-                            OldState = "Con novedad",
-                            NewState = "Entregado"
-                        }
-                    }
                 }
             };
         }
