@@ -49,6 +49,7 @@ namespace Connection360.Application.UseCases
                     TotalExports = myShipments.ClientSummaryResponse.TotalExports,
                     TotalAirShipments = myShipments.ClientSummaryResponse.TotalAirShipments,
                     TotalOceanShipments = myShipments.ClientSummaryResponse.TotalOceanShipments,
+                    TotalWithIssues = null,
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
@@ -99,6 +100,7 @@ namespace Connection360.Application.UseCases
                     TotalExports = myShipments.ClientSummaryResponse.TotalExports,
                     TotalAirShipments = myShipments.ClientSummaryResponse.TotalAirShipments,
                     TotalOceanShipments = myShipments.ClientSummaryResponse.TotalOceanShipments,
+                    TotalWithIssues = null,
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
@@ -143,6 +145,7 @@ namespace Connection360.Application.UseCases
                     TotalExports = myShipments.ClientSummaryResponse.TotalExports,
                     TotalAirShipments = myShipments.ClientSummaryResponse.TotalAirShipments,
                     TotalOceanShipments = myShipments.ClientSummaryResponse.TotalOceanShipments,
+                    TotalWithIssues = null,
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
@@ -193,6 +196,7 @@ namespace Connection360.Application.UseCases
                     TotalExports = myShipments.ClientSummaryResponse.TotalExports,
                     TotalAirShipments = myShipments.ClientSummaryResponse.TotalAirShipments,
                     TotalOceanShipments = myShipments.ClientSummaryResponse.TotalOceanShipments,
+                    TotalWithIssues = null,
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
@@ -230,7 +234,7 @@ namespace Connection360.Application.UseCases
             DynamicDataSet dataSetSYSTEMCARRIER = await _externalDataGateway.FetchDataAsync("SYSTEMCARRIER", filters, cancellationToken);
             DynamicDataSet dataSetDATALOGS = await _externalDataGateway.FetchDataAsync("DATALOGS", filters, cancellationToken);
 
-            DynamicDataSet datasetUnificado = _merger.Merge(new[] { dataSetBPMS, dataSetSIM, dataSetOPENCOMEX, dataSetASISCOMEX, dataSetSYSTEMCARRIER },joinField: "DOCUMENTO DE TRANSPORTE (HBL)", joinType: DataSetJoinType.FullOuter);
+            DynamicDataSet datasetUnificado = _merger.Merge(new[] { dataSetBPMS, dataSetSIM, dataSetOPENCOMEX, dataSetASISCOMEX, dataSetSYSTEMCARRIER },joinField: ExternalDataFields.DocumentNumber, joinType: DataSetJoinType.FullOuter);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
             var myShipmentsDetails = _myShipmentsDomainService.GetDetailsShipments(datasetUnificado, clientId: request.IdClient, DocumentNumber: request.DocumentNumber);

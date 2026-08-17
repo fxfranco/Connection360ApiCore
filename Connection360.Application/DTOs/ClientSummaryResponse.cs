@@ -1,4 +1,4 @@
-﻿using Connection360.Domain.Entities;
+﻿using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 namespace Connection360.Application.DTOs
@@ -10,7 +10,9 @@ namespace Connection360.Application.DTOs
         public Int64 TotalExports { get; set; }
         public Int64 TotalAirShipments { get; init; }
         public Int64 TotalOceanShipments { get; init; }
-        public Int64 TotalWithIssues { get; init; }
+        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Int64? TotalWithIssues { get; init; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<ResumenClienteResponse>? RecentShipments { get; set; }
