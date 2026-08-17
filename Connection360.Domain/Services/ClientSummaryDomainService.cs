@@ -34,7 +34,7 @@ namespace Connection360.Domain.Services
                     OperationType = r[ExternalDataFields.OperationType],
                     ShipmentMode = r[ExternalDataFields.ShipmentMode]
                 })
-                .Take(10)
+                .Take(lastRecordsCount)
                 .ToList();
 
             return new ClientSummaryDomainResult

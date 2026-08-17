@@ -17,6 +17,7 @@ namespace Connection360.Api.Extensions
             //Home
             services.AddScoped<IGetClientSummaryUseCase, GetClientSummaryUseCase>();
             services.AddScoped<IClientSummaryDomainService, ClientSummaryDomainService>();
+            
 
             //MyShipments
             services.AddScoped<IGetMyShipmentsUseCase, GetMyShipmentsUseCase>();
@@ -24,6 +25,10 @@ namespace Connection360.Api.Extensions
 
             //Detail History Shipments
             services.AddScoped<IDetailsHistoryShipmentsDomainService, DetailsHistoryShipmentsDomainService>();
+
+            //Reports 
+            services.AddScoped<IGetReportsUseCase, GetReportsUseCase>();
+            services.AddScoped<IReportsDomainService, ReportsDomainService>();
 
             services.AddScoped<IDynamicDataSetMerger, DynamicDataSetMerger>();
 

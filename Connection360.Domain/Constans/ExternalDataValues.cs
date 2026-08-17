@@ -41,6 +41,27 @@
         /// Estado "Entregado"
         /// </summary>
         public const String DeliveredState = "Entregado";
+
+        /// <summary>
+        /// Estado "En Aduana destino"
+        /// </summary>
+        public const String DestinationCustomsState = "En Aduana destino";
+
+        /// <summary>
+        /// Estado "En Aduana origen"
+        /// </summary>
+        public const String OriginCustomsState = "En Aduana origen";
+
+        /// <summary>
+        /// Estado "En tránsito"
+        /// </summary>
+        public const String InTransitState = "En tránsito";
+
+        /// <summary>
+        /// Estado "Pendiente"
+        /// </summary>
+        public const String PendingState = "Pendiente";
+
         #endregion
     }
 }

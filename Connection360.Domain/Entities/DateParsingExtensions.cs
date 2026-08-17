@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Connection360.Domain.Entities
 {
@@ -46,6 +47,12 @@ namespace Connection360.Domain.Entities
             }
 
             return DateTime.MinValue;
+        }
+
+        public static Double ToDouble(this String doubleString)
+        {
+            Double.TryParse(doubleString, NumberStyles.Any, CultureInfo.InvariantCulture, out Double result);
+            return result;
         }
     }
 }
