@@ -30,6 +30,9 @@ namespace Connection360.Api.Extensions
             services.AddScoped<IGetReportsUseCase, GetReportsUseCase>();
             services.AddScoped<IReportsDomainService, ReportsDomainService>();
 
+            //Notifications
+            services.AddScoped<IGetNotificationsUseCase, GetNotificationsUseCase>();
+
             services.AddScoped<IDynamicDataSetMerger, DynamicDataSetMerger>();
 
             return services;
