@@ -1,5 +1,9 @@
 ﻿using Connection360.Application.Ports;
+using Connection360.Application.Ports.Output;
+using Connection360.Infrastructure.Adapters.Input;
+using Connection360.Infrastructure.Adapters.Output;
 using Connection360.Infrastructure.ExternalApi;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,6 +46,13 @@ namespace Connection360.Infrastructure.DependencyInjection
             }
             services.AddScoped<IExternalDataGateway, ExternalDataApiGateway>();
             services.AddScoped<IExternalApiOpenStreetMap, ExternalApiOpenStreetMap>();
+
+
+            services.AddSignalR();
+            // Registrar el proveedor personalizado de ID de usuario para SignalR
+            services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+            services.AddScoped<INotifierService, SignalRNotifierService>();
+
             return services;
         }
     }

@@ -27,7 +27,7 @@ namespace Connection360.Api.Extensions
             services.AddScoped<IDetailsHistoryShipmentsDomainService, DetailsHistoryShipmentsDomainService>();
 
             //Reports 
-            services.AddScoped<IGetReportsUseCase, GetReportsUseCase>();
+            services.AddScoped<IGetReportsUseCase, GetReportsUseCase>();            
             services.AddScoped<IReportsDomainService, ReportsDomainService>();
 
             //Notifications
@@ -83,14 +83,32 @@ namespace Connection360.Api.Extensions
             //        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secretKey)),
             //        ValidateLifetime = true,
             //        ClockSkew = TimeSpan.FromSeconds(30), // margen minimo, no los 5 min por defecto
-            //        RoleClaimType = role,
+            //        RoleClaimType = roles,
             //        NameClaimType = ClaimTypes.NameIdentifier
+            //    };
+
+            //    options.Events = new JwtBearerEvents
+            //    {
+            //        OnMessageReceived = context =>
+            //        {
+            //            var accessToken = context.Request.Query["access_token"];
+            //            //var idClient = context.Request.Query["idClient"];
+            //            var path = context.HttpContext.Request.Path;
+
+            //            // Si la petición va dirigida al Hub de SignalR, extraemos el token de la query string
+            //            if (!String.IsNullOrEmpty(accessToken) && path.Value?.Contains("/hubs/notifications") == true)
+            //            {
+            //                context.Token = accessToken;
+            //                //context.idClient = idClient;
+            //            }
+            //            return Task.CompletedTask;
+            //        }
             //    };
             //});
 
             //1.Add Authentication Services
 
-           services.AddAuthentication(options =>
+            services.AddAuthentication(options =>
            {
                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -104,12 +122,25 @@ namespace Connection360.Api.Extensions
                    RoleClaimType = roles,
                    NameClaimType = ClaimTypes.NameIdentifier
                };
+
+               options.Events = new JwtBearerEvents
+               {
+                   OnMessageReceived = context =>
+                   {
+                       var accessToken = context.Request.Query["access_token"];
+                       var path = context.HttpContext.Request.Path;
+
+                       // Si la petición va dirigida al Hub de SignalR, extraemos el token de la query string
+                       if (!String.IsNullOrEmpty(accessToken) && path.Value?.Contains("/hubs/notifications") == true)
+                       {
+                           context.Token = accessToken;
+                       }
+                       return Task.CompletedTask;
+                   }
+               };
            });
 
-            //services.AddAuthorizationBuilder()
-            //    .AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
-
-            return services;
+           return services;
         }
     }
 }

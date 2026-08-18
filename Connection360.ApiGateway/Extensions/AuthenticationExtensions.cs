@@ -51,7 +51,7 @@ namespace Connection360.ApiGateway.Extensions
                 //    ValidateLifetime = true,
                 //    ClockSkew = TimeSpan.FromSeconds(30),
                 //    RequireExpirationTime = true,
-                //    RoleClaimType = jwtSettings.Role,
+                //    RoleClaimType = jwtSettings.Roles,
                 //    NameClaimType = ClaimTypes.NameIdentifier
                 //};
 
@@ -73,6 +73,18 @@ namespace Connection360.ApiGateway.Extensions
                             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                             context.Response.ContentType = "application/json";
                             return context.Response.WriteAsync("{\"error\":\"No autenticado.\"}");
+                        }
+                        return Task.CompletedTask;
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        // Si la petición va dirigida al Hub de SignalR, extraemos el token de la query string
+                        if (!String.IsNullOrEmpty(accessToken) && path.Value?.Contains("/hubs/notifications") == true)
+                        {
+                            context.Token = accessToken;
                         }
                         return Task.CompletedTask;
                     }

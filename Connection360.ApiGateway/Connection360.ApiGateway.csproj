@@ -11,7 +11,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
 		<!-- YARP: reverse proxy / enrutamiento hacia los microservicios internos -->
 		<PackageReference Include="Yarp.ReverseProxy" Version="2.2.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
 		<!-- Rate limiting usa System.Threading.RateLimiting, incluido nativamente en el SDK Web de ASP.NET Core >= 7 -->
 	</ItemGroup>
 

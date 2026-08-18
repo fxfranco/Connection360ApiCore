@@ -12,20 +12,23 @@
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var headers = context.Response.Headers;
+            // 1. Agregar los headers antes de que inicie la respuesta
+            if (!context.Response.HasStarted)
+            {
+                var headers = context.Response.Headers;
+                // OWASP A05:2021 - Security Misconfiguration
+                headers.Append("X-Content-Type-Options", "nosniff");
+                headers.Append("X-Frame-Options", "DENY");
+                headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+                headers.Append("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+                headers.Append("X-XSS-Protection", "0"); // deprecado en navegadores modernos; se confia en CSP
+                headers.Append("Content-Security-Policy",
+                    "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
 
-            // OWASP A05:2021 - Security Misconfiguration
-            headers.Append("X-Content-Type-Options", "nosniff");
-            headers.Append("X-Frame-Options", "DENY");
-            headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
-            headers.Append("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
-            headers.Append("X-XSS-Protection", "0"); // deprecado en navegadores modernos; se confia en CSP
-            headers.Append("Content-Security-Policy",
-                "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
-
-            // Elimina cabeceras que revelan tecnologia usada (Server, X-Powered-By)
-            headers.Remove("Server");
-            headers.Remove("X-Powered-By");
+                // Elimina cabeceras que revelan tecnologia usada (Server, X-Powered-By)
+                headers.Remove("Server");
+                headers.Remove("X-Powered-By");
+            }
 
             await _next(context);
         }

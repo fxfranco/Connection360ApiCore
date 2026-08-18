@@ -28,6 +28,16 @@ namespace Connection360.ApiGateway.Middleware
             {
                 _logger.LogError(ex, "Error no controlado procesando {Path}", context.Request.Path);
 
+                // Si la respuesta ya comenzó a escribirse (ej: WebSockets / SignalR Streaming)
+                // NO se pueden reescribir los encabezados ni el cuerpo JSON.
+                if (context.Response.HasStarted)
+                {
+                    _logger.LogWarning("La respuesta ya había comenzado a enviarse para {Path}. No se pudo modificar la respuesta de error.", context.Request.Path);
+                    // Forzar el cierre limpio del socket en el pipeline sin propagar la excepción
+                    context.Abort();
+                    return;
+                }
+
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 

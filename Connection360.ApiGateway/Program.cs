@@ -11,6 +11,13 @@ builder.Services.AddGatewayAuthentication(builder.Configuration);
 builder.Services.AddGatewayRateLimiting(builder.Configuration);
 builder.Services.AddGatewayCors(builder.Configuration);
 
+
+// Configurar Kestrel para permitir streaming sin buffer en notificaciones
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MinRequestBodyDataRate = null; // Desactiva la tasa mínima de envío del Request Body
+});
+
 // ---------- Enrutamiento (YARP Reverse Proxy hacia los microservicios internos) ----------
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
@@ -29,6 +36,9 @@ var app = builder.Build();
 app.UseMiddleware<ExceptionHandlingMiddleware>();   // 1. Captura cualquier fallo primero
 app.UseMiddleware<SecurityHeadersMiddleware>();     // 2. Cabeceras de seguridad en toda respuesta
 app.UseMiddleware<RequestLoggingMiddleware>();      // 3. Auditoria de cada peticion
+
+// Habilitar soporte WebSockets explícito en YARP / ASP.NET Core
+app.UseWebSockets();
 
 app.UseHttpsRedirection();                          // 4. Fuerza HTTPS/TLS
 

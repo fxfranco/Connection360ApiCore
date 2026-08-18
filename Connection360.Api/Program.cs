@@ -2,6 +2,7 @@ using Connection360.Api.Extensions;
 using Connection360.Api.Filters;
 using Connection360.Api.Middleware;
 using Connection360.Api.Models;
+using Connection360.Infrastructure.Adapters.Input;
 using Connection360.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
@@ -13,6 +14,22 @@ builder.Services.AddApplicationServices();               // Application (casos d
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddApiVersioningSetup();
+
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("AllowAll",
+//        policy =>
+//        {
+//            policy
+//                .WithOrigins(
+//                    "http://localhost:4200"
+//                 )
+//                //.AllowAnyOrigin()
+//                .AllowAnyMethod()
+//                .AllowAnyHeader()
+//                .AllowCredentials();
+//        });
+//});
 
 // Infrastructure
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -95,7 +112,7 @@ else
 }
 // El middleware de excepciones va PRIMERO en el pipeline
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
+//app.UseCors("AllowAll");	
 app.UseHttpsRedirection(); // Fuerza TLS
 app.UseAuthentication();
 app.UseAuthorization();
@@ -107,5 +124,7 @@ app.UseMiddleware<NotFoundMiddleware>();
 app.MapHealthChecks("/health");
 app.Map("/error", () => Results.Problem(title: "Ha ocurrido un error inesperado."));
 
+// Mapeo del Endpoint del Hub (El Hub vive en la capa de Infrastructure)
+app.MapHub<NotificationHub>("api/v{version:apiVersion}/hubs/notifications");
 
 app.Run();
