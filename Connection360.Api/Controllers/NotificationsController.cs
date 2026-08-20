@@ -26,12 +26,25 @@ namespace Connection360.Api.Controllers
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetReportTotals([FromQuery] String idClient, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllNotifications([FromQuery] String idClient, CancellationToken cancellationToken)
         {
             ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
             List<NotificationsListResponse> result = _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(request, cancellationToken);
             return Ok(result);
         }
+
+        [HttpPatch("readnotification/{idClient}/{idNotification}")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> UpdateReadNotification([FromRoute] String idClient, [FromRoute] Int64 idNotification,  CancellationToken cancellationToken)
+        {
+            //Todo: Falta implementar lògica de actualizaciòón real
+            NotificationsRequest request = new NotificationsRequest { IdClient = idClient, IdNotification = idNotification, RoleName = String.Empty };
+            //List<NotificationsListResponse> result = _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(request, cancellationToken);
+            return NoContent();
+        }
+
 
         [HttpGet("generatenotifications")]
         [AllowAnonymous]
