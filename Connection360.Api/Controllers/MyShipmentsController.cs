@@ -1,4 +1,5 @@
-﻿using Connection360.Api.Models;
+﻿using Asp.Versioning;
+using Connection360.Api.Models;
 using Connection360.Application.DTOs;
 using Connection360.Application.Ports;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,7 @@ namespace Connection360.Api.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/myshipments")]
     [Authorize]
+    [ApiVersion("1.0")]
     [Produces("application/json")]
     public sealed class MyShipmentsController : ControllerBase
     {
@@ -21,8 +23,8 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("allshipments")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
         {
@@ -41,8 +43,8 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("filterShipments")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size,
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
@@ -62,8 +64,8 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("allhistory")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetHistoryAllShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
         {
@@ -82,8 +84,8 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("filterhistory")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> FilterHistoryShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, 
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
@@ -103,8 +105,8 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("detailsshipments")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetDetailsShipments([FromQuery] String idClient, [FromQuery] String documentNumber, CancellationToken cancellationToken)
         {

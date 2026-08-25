@@ -1,4 +1,5 @@
-﻿using Connection360.Application.DTOs;
+﻿using Asp.Versioning;
+using Connection360.Application.DTOs;
 using Connection360.Application.Enum;
 using Connection360.Application.Ports;
 using Connection360.Application.Ports.Output;
@@ -10,6 +11,7 @@ namespace Connection360.Api.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/notifications")]
     [Authorize]
+    [ApiVersion("1.0")]
     [Produces("application/json")]
     public class NotificationsController : ControllerBase
     {

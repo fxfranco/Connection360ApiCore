@@ -1,4 +1,5 @@
-﻿using Connection360.Application.DTOs;
+﻿using Asp.Versioning;
+using Connection360.Application.DTOs;
 using Connection360.Application.Ports;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ namespace Connection360.Api.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/reports")]
     [Authorize]
+    [ApiVersion("1.0")]
     [Produces("application/json")]
     public sealed class ReportsController : ControllerBase
     {
