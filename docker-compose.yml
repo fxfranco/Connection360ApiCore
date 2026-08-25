@@ -1,0 +1,45 @@
+services:
+  # SERVICIO 1: Tu API Gateway  
+  api-gateway:
+    image: fxfranco13/connection360.apigateway:1.0.0-alphabaseinit.1
+    build:
+      context: ./Connection360.ApiGateway
+      dockerfile: Dockerfile
+    container_name: connection360_apigateway
+    ports:
+      - "44368:44368"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:44368
+      # Le indicamos a Kestrel la ruta interna del archivo publicado y su contraseña
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=36oApi*netCo.
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/aspnetapp.pfx
+    networks:
+      - connection360-network
+    depends_on:
+      - api-connection360  
+  # SERVICIO 2: Tu Microservicio de Productos (AÑADIDO AQUÍ)
+  
+  api-connection360:
+    image: fxfranco13/connection360.api:1.0.0-alphabaseinit.1
+    build:
+      context: .  # Ajusta a la carpeta de tu segundo proyecto
+      dockerfile: ./Connection360.Api/Dockerfile
+    container_name: connection360_api
+    # NOTA: No es obligatorio mapear ports si solo le va a hablar el Gateway,
+    # pero lo ponemos para que puedas probarlo desde Windows de forma independiente
+    ports:
+      - "44369:44369" 
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:44369
+      # Le indicamos a Kestrel la ruta interna del archivo publicado y su contraseña
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=36oApi*netCo.
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/aspnetapp.pfx
+    networks:
+      - connection360-network
+
+# CREACIÓN DE LA RED DE COMUNICACIÓN INTERNA
+networks:
+  connection360-network:
+    driver: bridge  

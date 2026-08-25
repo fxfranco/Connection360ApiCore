@@ -1,0 +1,26 @@
+# Carpetas de compilación y salida local
+**/bin/
+**/obj/
+**/out/
+
+# Archivos de configuración locales de Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# Control de versiones
+.git/
+.gitignore
+.gitattributes
+
+# Archivos de Docker locales
+Dockerfile
+.dockerignore
+docker-compose*
+
+# Documentación, logs y reportes de pruebas
+**/TestResults/
+*.md
+*.log

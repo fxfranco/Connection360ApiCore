@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yml" />
     <File Path="Documents/StartApis_Connection360.bat" />
     <File Path="Documents/StopApis_Connection360.bat" />
   </Folder>

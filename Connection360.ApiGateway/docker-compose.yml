@@ -1,0 +1,27 @@
+services:
+  mi-api:
+    image: fxfranco13/connection360.apigateway:1.0.0-alphabaseinit.1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: connection360_apigateway
+    ports:
+      - "44368:44368"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:44368
+      # Le indicamos a Kestrel la ruta interna del archivo publicado y su contraseña
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=36oApi*netCo.
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/aspnetapp.pfx
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  
+  
+    #volumes:
+      # Mapea las carpetas de datos de usuario de .NET del host al contenedor.
+      # Esto permite que .NET dentro de Linux lea el almacén de certificados sin contraseña.
+      # Modificador universal que funciona en PowerShell, CMD, Bash y WSL de forma nativa
+      #- ${USERPROFILE:-$HOME}/.dotnet:/root/.dotnet:ro
+      #- ${USERPROFILE:-$HOME}/.aspnet/https:/root/.aspnet/https:ro
+
+
