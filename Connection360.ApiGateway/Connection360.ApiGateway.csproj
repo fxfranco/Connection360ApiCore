@@ -5,6 +5,10 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>Connection360.ApiGateway</RootNamespace>
+		<Version>1.0.0-alphaBaseInit.1</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -13,10 +17,6 @@
 		<PackageReference Include="Yarp.ReverseProxy" Version="2.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
 		<!-- Rate limiting usa System.Threading.RateLimiting, incluido nativamente en el SDK Web de ASP.NET Core >= 7 -->
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\Connection360.Application\Connection360.Application.csproj" />
 	</ItemGroup>
 
 </Project>
