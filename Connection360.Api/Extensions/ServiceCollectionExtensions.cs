@@ -33,6 +33,9 @@ namespace Connection360.Api.Extensions
             //Notifications
             services.AddScoped<IGetNotificationsUseCase, GetNotificationsUseCase>();
 
+            //Auth0 UserManagement
+            services.AddScoped<IGetUserManagementUseCase, GetUserManagementUseCase>();
+
             services.AddScoped<IDynamicDataSetMerger, DynamicDataSetMerger>();
 
             return services;

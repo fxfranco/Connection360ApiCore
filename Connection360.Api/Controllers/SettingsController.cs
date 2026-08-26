@@ -1,5 +1,8 @@
 ﻿using Asp.Versioning;
+using Connection360.Api.Models;
 using Connection360.Application.DTOs;
+using Connection360.Application.Ports;
+using Connection360.Domain.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +15,10 @@ namespace Connection360.Api.Controllers
     [Produces("application/json")]
     public sealed class SettingsController : ControllerBase
     {
-        public SettingsController()
+        private readonly IGetUserManagementUseCase _getUserManagementUseCase;
+        public SettingsController(IGetUserManagementUseCase getUserManagementUseCase)
         {
-            
+            _getUserManagementUseCase = getUserManagementUseCase;
         }
 
         [HttpGet("viewnotifications")]
@@ -51,7 +55,7 @@ namespace Connection360.Api.Controllers
 
         [HttpGet("viewmaster")]
         //[AllowAnonymous]
-        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMasterSettings([FromQuery] String idClient, CancellationToken cancellationToken)
         {
@@ -84,5 +88,113 @@ namespace Connection360.Api.Controllers
             return Ok(masterSettings);
         }
 
+        [HttpGet("listusers")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetUsersListSettings([FromQuery] Int32 page, [FromQuery] Int32 size, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (page > 0)
+                {
+                    page--;
+                }
+
+                UsersManagementRequest request = new UsersManagementRequest { RoleName = String.Empty, Page = page, Size = size };
+                IList<Auth0UserDto> result = await _getUserManagementUseCase.GetAllUsersAsync(request);
+
+                if (result != null)
+                {
+                    PagedResult<Object> pagedResult = new PagedResult<Object>
+                    {
+                        Items = [result],
+                        TotalItems = 6,
+                        CurrentPage = page,
+                        Limit = size
+                    };
+                    return Ok(pagedResult);
+                }
+                return Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al listar usuarios en el servidor");
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message,
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al listar usuarios en el servidor");
+            }
+
+        }
+
+        [HttpGet("getuser")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetUsersByIdSettings([FromQuery] String userId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                Auth0UserDto result = await _getUserManagementUseCase.GetUsersByIdAsync(userId);
+                return result != null ? Ok(result) : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al consultando un usuario en el servidor");
+            }
+            catch (Exception ex )
+            {
+                return Problem(detail: ex.Message,
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al consultar un usuario en el servidor");
+                throw;
+            }
+
+        }
+
+        [HttpPatch("updateuser/{idClient}")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateUsersByIdSettings([FromRoute] String idClient, [FromBody] Auth0UserDto UsersUpdate, CancellationToken cancellationToken)
+        {
+            try
+            {
+                Boolean result = await _getUserManagementUseCase.UpdateUserAsync(idClient, UsersUpdate);
+                return result ? NoContent() : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al actualizando usuario en el servidor");
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message,
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al borrar usuario en el servidor");
+            }
+        }
+
+        [HttpDelete("deleteuser/{userId}")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteUsersByIdSettings([FromRoute] String userId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                Boolean result = await _getUserManagementUseCase.DeleteUserAsync(userId);
+                return result ? NoContent() : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al borrar usuario en el servidor");
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message,
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al borrar usuario en el servidor");
+            }
+        }
     }
 }

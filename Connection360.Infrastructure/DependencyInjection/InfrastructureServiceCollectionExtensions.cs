@@ -1,5 +1,6 @@
 ﻿using Connection360.Application.Ports;
 using Connection360.Application.Ports.Output;
+using Connection360.Domain.Interfaces;
 using Connection360.Infrastructure.Adapters.Input;
 using Connection360.Infrastructure.Adapters.Output;
 using Connection360.Infrastructure.ExternalApi;
@@ -52,6 +53,9 @@ namespace Connection360.Infrastructure.DependencyInjection
             // Registrar el proveedor personalizado de ID de usuario para SignalR
             services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
             services.AddScoped<INotifierService, SignalRNotifierService>();
+
+            // Auth0 UserManagements
+            services.AddScoped<IAuth0UserService, Auth0UserService>();
 
             return services;
         }
