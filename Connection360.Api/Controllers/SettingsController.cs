@@ -153,16 +153,16 @@ namespace Connection360.Api.Controllers
 
         }
 
-        [HttpPatch("updateuser/{idClient}")]
+        [HttpPatch("updateuser/{userId}")]
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateUsersByIdSettings([FromRoute] String idClient, [FromBody] Auth0UserDto UsersUpdate, CancellationToken cancellationToken)
+        public async Task<IActionResult> UpdateUsersByIdSettings([FromRoute] String userId, [FromBody] Auth0UserDto UsersUpdate, CancellationToken cancellationToken)
         {
             try
             {
-                Boolean result = await _getUserManagementUseCase.UpdateUserAsync(idClient, UsersUpdate);
+                Boolean result = await _getUserManagementUseCase.UpdateUserAsync(userId, UsersUpdate);
                 return result ? NoContent() : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
                     statusCode: StatusCodes.Status500InternalServerError,
                     title: "Error al actualizando usuario en el servidor");
