@@ -1,6 +1,8 @@
 ﻿using Asp.Versioning;
 using Connection360.Application.Ports;
+using Connection360.Application.Ports.Persistence;
 using Connection360.Application.UseCases;
+using Connection360.Application.UseCases.Persistence;
 using Connection360.Domain.Interfaces;
 using Connection360.Domain.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -37,6 +39,11 @@ namespace Connection360.Api.Extensions
             services.AddScoped<IGetUserManagementUseCase, GetUserManagementUseCase>();
 
             services.AddScoped<IDynamicDataSetMerger, DynamicDataSetMerger>();
+
+
+            // 4. Servicios de aplicación (Persistencia)
+            services.AddScoped<ICustomerNotificationChannelsUseCase, CustomerNotificationChannelsUseCase>();
+            services.AddScoped<ICustomerNotificationEventsUseCase, CustomerNotificationEventsUseCase>();
 
             return services;
         }

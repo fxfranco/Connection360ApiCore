@@ -2,14 +2,27 @@ using Connection360.Api.Extensions;
 using Connection360.Api.Filters;
 using Connection360.Api.Middleware;
 using Connection360.Api.Models;
+using Connection360.Domain.Ports.Persistence;
 using Connection360.Infrastructure.Adapters.Input;
 using Connection360.Infrastructure.DependencyInjection;
+using Connection360.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ---------- Registro de capas (composition root) ----------
+
+// 1. Obtener la cadena de conexión
+var connectionString = builder.Configuration.GetConnectionString("PostgresConnection")
+    ?? throw new InvalidOperationException("La conexión PostgresConnection no está configurada.");
+
+// 2. Registrar NpgsqlDataSource como SINGLETON (Gestiona el pool global sin reabrir sockets)
+builder.Services.AddSingleton(sp => NpgsqlDataSource.Create(connectionString));
+
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
 builder.Services.AddApplicationServices();               // Application (casos de uso)
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();

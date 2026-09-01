@@ -1,9 +1,12 @@
 ﻿using Connection360.Application.Ports;
 using Connection360.Application.Ports.Output;
 using Connection360.Domain.Interfaces;
+using Connection360.Domain.Ports.Persistence;
 using Connection360.Infrastructure.Adapters.Input;
 using Connection360.Infrastructure.Adapters.Output;
 using Connection360.Infrastructure.ExternalApi;
+using Connection360.Infrastructure.Persistence;
+using Connection360.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,6 +59,17 @@ namespace Connection360.Infrastructure.DependencyInjection
 
             // Auth0 UserManagements
             services.AddScoped<IAuth0UserService, Auth0UserService>();
+
+
+            // 2. Sesión por Request (SCOPED) - Maneja el ciclo de vida de la IDbConnection y la Transacción activa
+            services.AddScoped<DbSession>();
+
+            // 3. Repositorios (SCOPED) - Piden la misma DbSession del request actual
+            services.AddScoped<ICustomerNotificationChannelsRepository, CustomerNotificationChannelsRepository>();
+            services.AddScoped<ICustomerNotificationEventRepository, CustomerNotificationEventRepository>();
+
+            // 3. Registrar UnitOfWork como SCOPED (Garantiza 1 conexión/transacción por petición HTTP) (Persistencia)
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;
         }

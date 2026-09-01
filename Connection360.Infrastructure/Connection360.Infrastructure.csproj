@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Auth0.ManagementApi" Version="10.0.0" />
+		<PackageReference Include="Dapper" Version="2.1.79" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.12" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
@@ -20,10 +21,12 @@
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
 		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
+		<PackageReference Include="Npgsql" Version="10.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Connection360.Application\Connection360.Application.csproj" />
+		<ProjectReference Include="..\Connection360.Domain\Connection360.Domain.csproj" />
 	</ItemGroup>
 
 </Project>

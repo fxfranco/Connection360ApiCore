@@ -1,7 +1,9 @@
 ﻿using Asp.Versioning;
 using Connection360.Api.Models;
 using Connection360.Application.DTOs;
+using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.Ports;
+using Connection360.Application.Ports.Persistence;
 using Connection360.Domain.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,14 +13,19 @@ namespace Connection360.Api.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/settings")]
     [Authorize]
+    //[AllowAnonymous]
     [ApiVersion("1.0")]
     [Produces("application/json")]
     public sealed class SettingsController : ControllerBase
     {
         private readonly IGetUserManagementUseCase _getUserManagementUseCase;
-        public SettingsController(IGetUserManagementUseCase getUserManagementUseCase)
+        private readonly ICustomerNotificationChannelsUseCase _customerNotificationChannelsUseCase;
+        private readonly ICustomerNotificationEventsUseCase _customerNotificationEventsUseCase;
+        public SettingsController(IGetUserManagementUseCase getUserManagementUseCase, ICustomerNotificationChannelsUseCase customerNotificationChannelsUseCase, ICustomerNotificationEventsUseCase customerNotificationEventsUseCase)
         {
             _getUserManagementUseCase = getUserManagementUseCase;
+            _customerNotificationChannelsUseCase = customerNotificationChannelsUseCase;
+            _customerNotificationEventsUseCase = customerNotificationEventsUseCase;
         }
 
         [HttpGet("viewnotifications")]
@@ -196,5 +203,60 @@ namespace Connection360.Api.Controllers
                     title: "Error al borrar usuario en el servidor");
             }
         }
+
+        //Persistencia
+        [HttpGet("listallnotificationChannelsdb")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<CustomerNotificationChannelsResponseDto>>> ListAllNotificationChannel(CancellationToken cancellationToken)
+        {
+            var productos = await _customerNotificationChannelsUseCase.ListAllAsync(cancellationToken);
+            return Ok(productos);
+        }
+
+        [HttpGet("getByIdnotificationChannelsdb")]
+        [AllowAnonymous]
+        public async Task<ActionResult<CustomerNotificationChannelsResponseDto>> GetByIdNotificationChannel(Int64 id, CancellationToken cancellationToken)
+        {
+            var producto = await _customerNotificationChannelsUseCase.GetByIdAsync(id, cancellationToken);
+            if (producto is null) return Ok(new {});
+
+            return Ok(producto);
+        }
+
+        [HttpPost("createnotificationChannelsdb")]
+        [AllowAnonymous]
+        public async Task<ActionResult<CustomerNotificationChannelsResponseDto>> CreateNotificationChannel([FromBody] CreateCustomerNotificationChannelsDto request, CancellationToken cancellationToken)
+        {
+            var resultado = await _customerNotificationChannelsUseCase.CrearAsync(request, cancellationToken);
+            return CreatedAtRoute(nameof(GetByIdNotificationChannel), new { id = resultado.IdNotificationChannels}, resultado);
+        }
+
+        //Persistencia
+        [HttpGet("listallnotificationEventsdb")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<CustomerNotificationEventsResponseDto>>> ListAllNotificationEvent(CancellationToken cancellationToken)
+        {
+            var productos = await _customerNotificationEventsUseCase.ListAllAsync(cancellationToken);
+            return Ok(productos);
+        }
+
+        [HttpGet("getByIdnotificationEventsdb")]
+        [AllowAnonymous]
+        public async Task<ActionResult<CustomerNotificationEventsResponseDto>> GetByIdNotificationEvent(Int64 id, CancellationToken cancellationToken)
+        {
+            var producto = await _customerNotificationEventsUseCase.GetByIdAsync(id, cancellationToken);
+            if (producto is null) return Ok(new { });
+
+            return Ok(producto);
+        }
+
+        [HttpPost("createnotificationEventsdb")]
+        [AllowAnonymous]
+        public async Task<ActionResult<CustomerNotificationEventsResponseDto>> CreateNotificationEvent([FromBody] CreateCustomerNotificationEventsDto request, CancellationToken cancellationToken)
+        {
+            var resultado = await _customerNotificationEventsUseCase.CrearAsync(request, cancellationToken);
+            return CreatedAtRoute(nameof(GetByIdNotificationEvent), new { id = resultado.IdNotificationEvent }, resultado);
+        }
+
     }
 }
