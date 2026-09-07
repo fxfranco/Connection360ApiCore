@@ -19,13 +19,19 @@ namespace Connection360.Api.Controllers
     public sealed class SettingsController : ControllerBase
     {
         private readonly IGetUserManagementUseCase _getUserManagementUseCase;
-        private readonly ICustomerNotificationChannelsUseCase _customerNotificationChannelsUseCase;
-        private readonly ICustomerNotificationEventsUseCase _customerNotificationEventsUseCase;
-        public SettingsController(IGetUserManagementUseCase getUserManagementUseCase, ICustomerNotificationChannelsUseCase customerNotificationChannelsUseCase, ICustomerNotificationEventsUseCase customerNotificationEventsUseCase)
+        private readonly ICustomerUseCase _customerUseCase;
+        private readonly ICustomerNotificationsSettingsUseCase _customerNotificationsSettingsUseCase;
+        private readonly IMasterSettingsUseCase _masterSettingsUseCase;
+
+
+        public SettingsController(IGetUserManagementUseCase getUserManagementUseCase, ICustomerUseCase customerUseCase, 
+            ICustomerNotificationsSettingsUseCase customerNotificationsSettingsUseCase,
+            IMasterSettingsUseCase masterSettingsUseCase)
         {
             _getUserManagementUseCase = getUserManagementUseCase;
-            _customerNotificationChannelsUseCase = customerNotificationChannelsUseCase;
-            _customerNotificationEventsUseCase = customerNotificationEventsUseCase;
+            _customerUseCase = customerUseCase;
+            _customerNotificationsSettingsUseCase = customerNotificationsSettingsUseCase;
+            _masterSettingsUseCase = masterSettingsUseCase;
         }
 
         [HttpGet("viewnotifications")]
@@ -34,65 +40,61 @@ namespace Connection360.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetNotificationsSettings([FromQuery] String idClient, CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
+            CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.GetCustomerNotificationSettings(idClient, cancellationToken);
+            return Ok(result);
+        }
 
-            NotificationsSettingsResponse notificationsSettings = new NotificationsSettingsResponse
-            {
-                NotificationChannels = new NotificationChannelsResponse
-                {
-                    Application = true,
-                    Email = true,
-                    TextMessages = false
-                },
-                NotificationEvents = new NotificationEventsResponse
-                {
-                    ChangeState = true,
-                    SuccessfulDelivery = true,
-                    WithIssues = true,
-                    ShipmentTransit = false,
-                    DeliveryReminder = false
-                  }
-            };
+        [HttpPost("createnotifications")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateNotificationsSettings([FromBody] CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken)
+        {
+            CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.CreateCustomerNotificationSettings(customerNotificationsSettings, cancellationToken);
+            return CreatedAtRoute(nameof(GetNotificationsSettings), new { idChannel = result.NotificationChannels.NotificationChannelId, idEvent = result.NotificationEvents.NotificationEventId}, result);
+        }
 
-            //ToDo: Pendiente hacer logica 
-            //MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetAllShipmentsAsync(request, cancellationToken);
-
-            return Ok(notificationsSettings);
+        [HttpPatch("updatenotifications")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> UpdateNotificationsSettings([FromBody] CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken)
+        {
+            Boolean result = await _customerNotificationsSettingsUseCase.UpdateCustomerNotificationSettings(customerNotificationsSettings, cancellationToken);
+            return NoContent();
         }
 
         [HttpGet("viewmaster")]
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetMasterSettings([FromQuery] String idClient, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetMasterSettings(CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
+            MasterSettingsResponse MasterSettingsResponse = await _masterSettingsUseCase.GetAsync(cancellationToken);
+            return Ok(MasterSettingsResponse);
+        }
 
+        [HttpPost("createmaster")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        public async Task<IActionResult> CreateMasterSettings([FromBody] CreateMasterSettingsDto createMasterSettingsDto, CancellationToken cancellationToken)
+        {
+            MasterSettingsResponseDto masterSettingsResponseDto = await _masterSettingsUseCase.CreateAsync(createMasterSettingsDto, cancellationToken);
+            return CreatedAtRoute(nameof(GetMasterSettings), new { id = masterSettingsResponseDto.IdMasterSettings }, masterSettingsResponseDto);
+        }
 
-            MasterSettingsResponse masterSettings = new MasterSettingsResponse
-            {
-                GeneralParameters = new GeneralParametersResponse
-                {
-                    AutomaticTrackingUpdate = true,
-                    RequireDocumentUpload = false,
-                    PublicMonitoring = true
-                },
-                Location = new LocationResponse
-                {
-                    CurrencyType = "USD - Dólar",
-                    Language = "Español",
-                },
-                System = new SystemResponse
-                {
-                    TimeZone = "America/Bogota(UTC-5)",
-                    DataRetentionDays = 365,
-                }
-            };
-
-            //ToDo: Pendiente hacer logica 
-            //MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetAllShipmentsAsync(request, cancellationToken);
-
-            return Ok(masterSettings);
+        [HttpPatch("updatemaster")]
+        //[AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> UpdateMasterSettings([FromBody] MasterSettingsResponseDto masterSettingsUpdate, CancellationToken cancellationToken)
+        {
+            MasterSettingsResponseDto masterSettingsResponseDto = await _masterSettingsUseCase.UpdateAsync(masterSettingsUpdate, cancellationToken);
+            return NoContent();
         }
 
         [HttpGet("listusers")]
@@ -204,58 +206,12 @@ namespace Connection360.Api.Controllers
             }
         }
 
-        //Persistencia
-        [HttpGet("listallnotificationChannelsdb")]
+        [HttpGet("createcustomerdb")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<CustomerNotificationChannelsResponseDto>>> ListAllNotificationChannel(CancellationToken cancellationToken)
+        public async Task<ActionResult> CreateCustomerDataBase(String clientId, CancellationToken cancellationToken)
         {
-            var productos = await _customerNotificationChannelsUseCase.ListAllAsync(cancellationToken);
-            return Ok(productos);
-        }
-
-        [HttpGet("getByIdnotificationChannelsdb")]
-        [AllowAnonymous]
-        public async Task<ActionResult<CustomerNotificationChannelsResponseDto>> GetByIdNotificationChannel(Int64 id, CancellationToken cancellationToken)
-        {
-            var producto = await _customerNotificationChannelsUseCase.GetByIdAsync(id, cancellationToken);
-            if (producto is null) return Ok(new {});
-
-            return Ok(producto);
-        }
-
-        [HttpPost("createnotificationChannelsdb")]
-        [AllowAnonymous]
-        public async Task<ActionResult<CustomerNotificationChannelsResponseDto>> CreateNotificationChannel([FromBody] CreateCustomerNotificationChannelsDto request, CancellationToken cancellationToken)
-        {
-            var resultado = await _customerNotificationChannelsUseCase.CrearAsync(request, cancellationToken);
-            return CreatedAtRoute(nameof(GetByIdNotificationChannel), new { id = resultado.IdNotificationChannels}, resultado);
-        }
-
-        //Persistencia
-        [HttpGet("listallnotificationEventsdb")]
-        [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<CustomerNotificationEventsResponseDto>>> ListAllNotificationEvent(CancellationToken cancellationToken)
-        {
-            var productos = await _customerNotificationEventsUseCase.ListAllAsync(cancellationToken);
-            return Ok(productos);
-        }
-
-        [HttpGet("getByIdnotificationEventsdb")]
-        [AllowAnonymous]
-        public async Task<ActionResult<CustomerNotificationEventsResponseDto>> GetByIdNotificationEvent(Int64 id, CancellationToken cancellationToken)
-        {
-            var producto = await _customerNotificationEventsUseCase.GetByIdAsync(id, cancellationToken);
-            if (producto is null) return Ok(new { });
-
-            return Ok(producto);
-        }
-
-        [HttpPost("createnotificationEventsdb")]
-        [AllowAnonymous]
-        public async Task<ActionResult<CustomerNotificationEventsResponseDto>> CreateNotificationEvent([FromBody] CreateCustomerNotificationEventsDto request, CancellationToken cancellationToken)
-        {
-            var resultado = await _customerNotificationEventsUseCase.CrearAsync(request, cancellationToken);
-            return CreatedAtRoute(nameof(GetByIdNotificationEvent), new { id = resultado.IdNotificationEvent }, resultado);
+            var resultado = await _customerUseCase.CrearAsync(clientId, cancellationToken);
+            return CreatedAtRoute(nameof(CreateCustomerDataBase), new { id = resultado }, resultado);
         }
 
     }

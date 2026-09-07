@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Connection360.Application.DTOs
 {
     public class MasterSettingsResponse
     {
+        public Int64 IdMasterSettings {  get; set; }
+
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public GeneralParametersResponse? GeneralParameters {  get; set; }
         

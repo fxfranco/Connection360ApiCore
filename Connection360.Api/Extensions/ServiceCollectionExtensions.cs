@@ -44,6 +44,9 @@ namespace Connection360.Api.Extensions
             // 4. Servicios de aplicación (Persistencia)
             services.AddScoped<ICustomerNotificationChannelsUseCase, CustomerNotificationChannelsUseCase>();
             services.AddScoped<ICustomerNotificationEventsUseCase, CustomerNotificationEventsUseCase>();
+            services.AddScoped<ICustomerNotificationsSettingsUseCase, CustomerNotificationsSettingsUseCase>();
+            services.AddScoped<ICustomerUseCase, CustomerUseCase>();
+            services.AddScoped<IMasterSettingsUseCase, MasterSettingsUseCase>();
 
             return services;
         }

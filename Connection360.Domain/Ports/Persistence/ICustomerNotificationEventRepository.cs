@@ -6,6 +6,8 @@ namespace Connection360.Domain.Ports.Persistence
     {
         Task<IEnumerable<CustomerNotificationEvents>> ListAllAsync(CancellationToken cancellationToken = default);
         Task<CustomerNotificationEvents?> GetByIdAsync(Int64 id, CancellationToken cancellationToken = default);
-        Task<Int32> CrearAsync(CustomerNotificationEvents CustomerNotificationChannels, CancellationToken cancellationToken = default);
+        Task<CustomerNotificationEvents?> GetByCustomerIdAsync(Int64 customerId, CancellationToken cancellationToken = default);
+        Task<Int64> CrearAsync(CustomerNotificationEvents customerNotificationEvents, CancellationToken cancellationToken = default);
+        Task<Boolean> UpdateAsync(CustomerNotificationEvents customerNotificationEvents, CancellationToken cancellationToken = default);
     }
 }
