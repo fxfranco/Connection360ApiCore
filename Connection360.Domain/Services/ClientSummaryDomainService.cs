@@ -1,4 +1,5 @@
 ﻿using Connection360.Domain.Constans;
+using Connection360.Domain.Dtos;
 using Connection360.Domain.Entities;
 using Connection360.Domain.Interfaces;
 using System.Data;
@@ -7,12 +8,17 @@ namespace Connection360.Domain.Services
 {
     public class ClientSummaryDomainService : IClientSummaryDomainService
     {
-        public ClientSummaryDomainResult Summarize(DynamicDataSet dataSet, String clientId, Int16 lastRecordsCount)
+        private readonly IClientRecordsFilterService _clientRecordsFilterService;
+
+        public ClientSummaryDomainService(IClientRecordsFilterService clientRecordsFilterService)
         {
-            // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.ClientNit] == clientId)
-                .ToList();
+            _clientRecordsFilterService = clientRecordsFilterService;
+        }
+
+        public ClientSummaryDomainResult Summarize(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int16 lastRecordsCount)
+        {
+
+            List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
 
             Int64 totalClientRecords = clientRecords.Count();
             Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
@@ -27,6 +33,7 @@ namespace Connection360.Domain.Services
                 .Select(r => new ResumenClienteDto
                 {
                     Id = Int64.TryParse(r[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ClientNit = r[ExternalDataFields.ClientNit],
                     DocumentNumber = r[ExternalDataFields.DocumentNumber],
                     Origin = r[ExternalDataFields.Origin],
                     Destination = r[ExternalDataFields.Destination],
@@ -48,7 +55,7 @@ namespace Connection360.Domain.Services
                 RecentShipments = recentShipments
             };
         }
-        public ResumenClienteDto Filter(DynamicDataSet dataSet, String clientId, String filterDocument)
+        public ResumenClienteDto Filter(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, String filterDocument)
         {
             //List<DynamicRecord> searchResults = dataSet.Rows
             //    .Where(r =>
@@ -57,14 +64,21 @@ namespace Connection360.Domain.Services
             //    )
             //    .ToList();
 
+            List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
+
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            ResumenClienteDto shipment = dataSet.Rows
+            //ResumenClienteDto shipment = dataSet.Rows
+            //    .Where(r =>
+            //        r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.DocumentNumber].Equals(filterDocument, StringComparison.OrdinalIgnoreCase)
+            //    )
+            ResumenClienteDto shipment = clientRecords
                 .Where(r =>
-                    r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.DocumentNumber].Equals(filterDocument, StringComparison.OrdinalIgnoreCase)
+                    r[ExternalDataFields.DocumentNumber].Equals(filterDocument, StringComparison.OrdinalIgnoreCase)
                 )
                 .Select(r => new ResumenClienteDto
                 {
                     Id = Int64.TryParse(r[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ClientNit = r[ExternalDataFields.ClientNit],
                     DocumentNumber = r[ExternalDataFields.DocumentNumber],
                     Origin = r[ExternalDataFields.Origin],
                     Destination = r[ExternalDataFields.Destination],

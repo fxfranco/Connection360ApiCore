@@ -10,6 +10,8 @@
         /// </summary>
         public String Id { get; set; } = String.Empty;
 
+        public String ClientNit { get; set; } = String.Empty;
+
         /// <summary>
         /// Nombre del cliente
         /// </summary>

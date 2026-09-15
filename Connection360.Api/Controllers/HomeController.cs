@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Connection360.Application.DTOs;
 using Connection360.Application.Ports;
+using Connection360.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,25 +23,43 @@ namespace Connection360.Api.Controllers
 
         /// https://localhost:44369/api/v1/home/totals?idClient=123&rol=cliente
         [HttpGet("totals")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, [FromQuery] String? idQueryClient, CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
+            ClientSummaryRequest clientSummaryRequest = new ClientSummaryRequest 
+            { 
+                IdClient = idClient, 
+                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false, 
+                IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty 
+            };
+
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            clientSummaryRequest.RoleName = role.ToString();
+
+            ClientSummaryRequest request = clientSummaryRequest;
             ClientSummaryResponse result = await _getClientSummaryUseCase.ExecuteTotalsAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
 
         /// https://localhost:44369/api/v1/home/filters?idClient=123&rol=cliente&filterValue=HR12354
         [HttpGet("filters")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String filterValue, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] String filterValue, CancellationToken cancellationToken)
         {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty, FilterValue = filterValue };
-            ResumenClienteResponse result = await _getClientSummaryUseCase.ExecuteFilterAsync(request, cancellationToken);
+            ClientSummaryRequest clientSummaryRequest = new ClientSummaryRequest
+            {
+                IdClient = idClient,
+                FilterValue = filterValue,
+                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty
+            };
+
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            clientSummaryRequest.RoleName = role.ToString();
+
+            ResumenClienteResponse result = await _getClientSummaryUseCase.ExecuteFilterAsync(clientSummaryRequest, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
 

@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Connection360.Application.Ports;
 using Connection360.Application.Ports.Persistence;
+using Connection360.Application.Services;
 using Connection360.Application.UseCases;
 using Connection360.Application.UseCases.Persistence;
 using Connection360.Domain.Interfaces;
@@ -19,6 +20,8 @@ namespace Connection360.Api.Extensions
             //Home
             services.AddScoped<IGetClientSummaryUseCase, GetClientSummaryUseCase>();
             services.AddScoped<IClientSummaryDomainService, ClientSummaryDomainService>();
+            services.AddScoped<IClientAccessResolver, ClientAccessResolver>();
+            services.AddScoped<IClientRecordsFilterService, ClientRecordsFilterService>();
             
 
             //MyShipments
@@ -47,6 +50,7 @@ namespace Connection360.Api.Extensions
             services.AddScoped<ICustomerNotificationsSettingsUseCase, CustomerNotificationsSettingsUseCase>();
             services.AddScoped<ICustomerUseCase, CustomerUseCase>();
             services.AddScoped<IMasterSettingsUseCase, MasterSettingsUseCase>();
+            services.AddScoped<ICollaboratorUseCase, CollaboratorUseCase>();
 
             return services;
         }

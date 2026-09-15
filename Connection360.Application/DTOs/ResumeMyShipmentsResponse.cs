@@ -7,6 +7,7 @@ namespace Connection360.Application.DTOs
     public class ResumeMyShipmentsResponse
     {
         public Int64 Id { get; set; }
+        public String ClientNit { get; set; } = String.Empty;
         public String ShipmentMode { get; set; } = String.Empty;
         public String DocumentNumber { get; set; } = String.Empty;
         public String State { get; set; } = String.Empty;

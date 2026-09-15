@@ -7,11 +7,20 @@ namespace Connection360.Domain.Services
 {
     public class MyShipmentsDomainService : IMyShipmentsDomainService
     {
-        public MyShipmentsDomainResult GetAllShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size)
+        private readonly IClientRecordsFilterService _clientRecordsFilterService;
+
+        public MyShipmentsDomainService(IClientRecordsFilterService clientRecordsFilterService)
         {
+            _clientRecordsFilterService = clientRecordsFilterService;
+        }
+
+        public MyShipmentsDomainResult GetAllShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size)
+        {
+            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
+
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
+            List<DynamicRecord> clientRecords = clientRecordsTotal
+                .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
                 .ToList();
 
             Int64 totalClientRecords = clientRecords.Count();
@@ -31,6 +40,7 @@ namespace Connection360.Domain.Services
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
                     Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ClientNit = s[ExternalDataFields.ClientNit],
                     ShipmentMode = s[ExternalDataFields.ShipmentMode],
                     DocumentNumber = s[ExternalDataFields.DocumentNumber],
                     State = s[ExternalDataFields.State],
@@ -59,11 +69,13 @@ namespace Connection360.Domain.Services
             };
         }
 
-        public MyShipmentsDomainResult GetFiltersShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size, MyShipmentsFiltersDto filters)
+        public MyShipmentsDomainResult GetFiltersShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size, MyShipmentsFiltersDto filters)
         {
+
+            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
+            List<DynamicRecord> clientRecords = clientRecordsTotal
+                .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
                 .ToList();
 
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
@@ -115,6 +127,7 @@ namespace Connection360.Domain.Services
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
                     Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ClientNit = s[ExternalDataFields.ClientNit],
                     ShipmentMode = s[ExternalDataFields.ShipmentMode],
                     DocumentNumber = s[ExternalDataFields.DocumentNumber],
                     State = s[ExternalDataFields.State],
@@ -143,11 +156,12 @@ namespace Connection360.Domain.Services
             };
         }
 
-        public MyShipmentsDomainResult GetHistoryAllShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size)
+        public MyShipmentsDomainResult GetHistoryAllShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size)
         {
+            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
+            List<DynamicRecord> clientRecords = clientRecordsTotal
+                .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
                 .ToList();
 
             Int64 totalClientRecords = clientRecords.Count();
@@ -167,6 +181,7 @@ namespace Connection360.Domain.Services
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
                     Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ClientNit = s[ExternalDataFields.ClientNit],
                     ShipmentMode = s[ExternalDataFields.ShipmentMode],
                     DocumentNumber = s[ExternalDataFields.DocumentNumber],
                     State = s[ExternalDataFields.State],
@@ -195,11 +210,12 @@ namespace Connection360.Domain.Services
             };
         }
 
-        public MyShipmentsDomainResult GetFiltersHistoryShipments(DynamicDataSet dataSet, String clientId, Int64 page, Int64 size, MyShipmentsFiltersDto filters)
+        public MyShipmentsDomainResult GetFiltersHistoryShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size, MyShipmentsFiltersDto filters)
         {
+            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = dataSet.Rows
-                .Where(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
+            List<DynamicRecord> clientRecords = clientRecordsTotal
+                .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
                 .ToList();
 
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
@@ -245,6 +261,7 @@ namespace Connection360.Domain.Services
                 .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
                 {
                     Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
+                    ClientNit = s[ExternalDataFields.ClientNit],
                     ShipmentMode = s[ExternalDataFields.ShipmentMode],
                     DocumentNumber = s[ExternalDataFields.DocumentNumber],
                     State = s[ExternalDataFields.State],
@@ -273,11 +290,12 @@ namespace Connection360.Domain.Services
             };
         }
 
-        public DetailsShipmentsDomainDtoResult GetDetailsShipments(DynamicDataSet dataSet, String clientId, String DocumentNumber)
+        public DetailsShipmentsDomainDtoResult GetDetailsShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, String DocumentNumber)
         {
+            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            DynamicRecord clientRecords = dataSet.Rows
-                .First(r => r[ExternalDataFields.ClientNit] == clientId && r[ExternalDataFields.DocumentNumber] == DocumentNumber);
+            DynamicRecord clientRecords = clientRecordsTotal
+                .First(r => r[ExternalDataFields.DocumentNumber] == DocumentNumber);
 
             clientRecords = clientRecords ?? new DynamicRecord(new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase));
 
@@ -286,6 +304,7 @@ namespace Connection360.Domain.Services
                 ResumenShipments = new SummaryShipmentsDomainDtoResult
                 {
                     Id = clientRecords[ExternalDataFields.ID],
+                    ClientNit = clientRecords[ExternalDataFields.ClientNit],
                     ClientName = clientRecords[ExternalDataFields.ClientName],
                     Supplier = clientRecords[ExternalDataFields.Supplier],
                     Carrier = clientRecords[ExternalDataFields.Carrier],

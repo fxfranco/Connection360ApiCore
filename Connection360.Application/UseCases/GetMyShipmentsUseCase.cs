@@ -4,6 +4,7 @@ using Connection360.Domain.Constans;
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Entities;
 using Connection360.Domain.Enum;
+using Connection360.Domain.Enums;
 using Connection360.Domain.Interfaces;
 
 namespace Connection360.Application.UseCases
@@ -16,27 +17,38 @@ namespace Connection360.Application.UseCases
         private readonly IExternalApiOpenStreetMap _externalApiOpenStreetMap;
         private readonly IDetailsHistoryShipmentsDomainService _detailsHistoryShipmentsDomainService;
 
+        private readonly IClientAccessResolver _clientAccessResolver;
+
         public GetMyShipmentsUseCase(IExternalDataGateway externalDataGateway, IMyShipmentsDomainService myShipmentsDomainService, IDynamicDataSetMerger merger, 
-            IExternalApiOpenStreetMap externalApiOpenStreetMap, IDetailsHistoryShipmentsDomainService detailsHistoryShipmentsDomainService)
+            IExternalApiOpenStreetMap externalApiOpenStreetMap, IDetailsHistoryShipmentsDomainService detailsHistoryShipmentsDomainService, IClientAccessResolver clientAccessResolver)
         {
             _externalDataGateway = externalDataGateway;
             _myShipmentsDomainService = myShipmentsDomainService;
             _merger = merger;
             _externalApiOpenStreetMap = externalApiOpenStreetMap;
             _detailsHistoryShipmentsDomainService = detailsHistoryShipmentsDomainService;
+            _clientAccessResolver = clientAccessResolver;
         }
 
         public async Task<MyShipmentsResponse> ExecuteGetAllShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(request.IdClient))
-                throw new ArgumentException("El campo 'cliente' es obligatorio.");
+            ResolveClientAccessRequest resolveRequest = new ResolveClientAccessRequest
+            {
+                IdClient = request.IdClient,
+                RoleName = request.RoleName,
+                AllClient = request.AllClient,
+                IdQueryClient = request.IdQueryClient
+            };
+            List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             // 1. Consultar el API externo filtrando solo por cliente
             DynamicDataSet dataSetSIM = await _externalDataGateway.FetchDataAsync("SIM", filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetAllShipments(dataSetSIM, clientId: request.IdClient, page: request.Page, size: request.Size);
+            var myShipments = _myShipmentsDomainService.GetAllShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators,
+                page: request.Page, size: request.Size);
 
 
             // 3. Mapear a respuesta de aplicación
@@ -53,6 +65,7 @@ namespace Connection360.Application.UseCases
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
+                        ClientNit = x.ClientNit,
                         ShipmentMode = x.ShipmentMode,
                         DocumentNumber = x.DocumentNumber,
                         State = x.State,
@@ -72,8 +85,15 @@ namespace Connection360.Application.UseCases
 
         public async Task<MyShipmentsResponse> ExecuteFilterShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(request.IdClient))
-                throw new ArgumentException("El campo 'cliente' es obligatorio.");
+            ResolveClientAccessRequest resolveRequest = new ResolveClientAccessRequest
+            {
+                IdClient = request.IdClient,
+                RoleName = request.RoleName,
+                AllClient = request.AllClient,
+                IdQueryClient = request.IdQueryClient
+            };
+            List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             // 1. Consultar el API externo filtrando solo por cliente
@@ -88,7 +108,7 @@ namespace Connection360.Application.UseCases
             };
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetFiltersShipments(dataSetSIM, clientId: request.IdClient, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
+            var myShipments = _myShipmentsDomainService.GetFiltersShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
 
             // 3. Mapear a respuesta de aplicación
             return new MyShipmentsResponse
@@ -104,6 +124,7 @@ namespace Connection360.Application.UseCases
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
+                        ClientNit = x.ClientNit,
                         ShipmentMode = x.ShipmentMode,
                         DocumentNumber = x.DocumentNumber,
                         State = x.State,
@@ -123,8 +144,15 @@ namespace Connection360.Application.UseCases
 
         public async Task<MyShipmentsResponse> ExecuteGetHistoryAllShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(request.IdClient))
-                throw new ArgumentException("El campo 'cliente' es obligatorio.");
+            ResolveClientAccessRequest resolveRequest = new ResolveClientAccessRequest
+            {
+                IdClient = request.IdClient,
+                RoleName = request.RoleName,
+                AllClient = request.AllClient,
+                IdQueryClient = request.IdQueryClient
+            };
+            List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             // 1. Consultar el API externo filtrando solo por cliente
@@ -132,7 +160,7 @@ namespace Connection360.Application.UseCases
             //DynamicDataSet dataSetBPMS = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetHistoryAllShipments(dataSetSIM, clientId: request.IdClient, page: request.Page, size: request.Size);
+            var myShipments = _myShipmentsDomainService.GetHistoryAllShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size);
 
 
             // 3. Mapear a respuesta de aplicación
@@ -149,6 +177,7 @@ namespace Connection360.Application.UseCases
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
+                        ClientNit = x.ClientNit,
                         ShipmentMode = x.ShipmentMode,
                         DocumentNumber = x.DocumentNumber,
                         State = x.State,
@@ -168,8 +197,15 @@ namespace Connection360.Application.UseCases
 
         public async Task<MyShipmentsResponse> ExecuteFilterHistoryShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(request.IdClient))
-                throw new ArgumentException("El campo 'cliente' es obligatorio.");
+            ResolveClientAccessRequest resolveRequest = new ResolveClientAccessRequest
+            {
+                IdClient = request.IdClient,
+                RoleName = request.RoleName,
+                AllClient = request.AllClient,
+                IdQueryClient = request.IdQueryClient
+            };
+            List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             // 1. Consultar el API externo filtrando solo por cliente
@@ -184,7 +220,7 @@ namespace Connection360.Application.UseCases
             };
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetFiltersHistoryShipments(dataSetSIM, clientId: request.IdClient, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
+            var myShipments = _myShipmentsDomainService.GetFiltersHistoryShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
 
             // 3. Mapear a respuesta de aplicación
             return new MyShipmentsResponse
@@ -200,6 +236,7 @@ namespace Connection360.Application.UseCases
                     MyShipments = myShipments.MyShipments.Select(x => new ResumeMyShipmentsResponse
                     {
                         Id = x.Id,
+                        ClientNit = x.ClientNit,
                         ShipmentMode = x.ShipmentMode,
                         DocumentNumber = x.DocumentNumber,
                         State = x.State,
@@ -219,11 +256,18 @@ namespace Connection360.Application.UseCases
 
         public async Task<DetailsShipmentsResponse> ExecuteDetailsShipmentsAsync(MyShipmentsRequest request, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(request.IdClient))
-                throw new ArgumentException("El campo 'cliente' es obligatorio.");
-
             if (String.IsNullOrWhiteSpace(request.DocumentNumber))
                 throw new ArgumentException("El campo 'Documento' es obligatorio.");
+
+            ResolveClientAccessRequest resolveRequest = new ResolveClientAccessRequest
+            {
+                IdClient = request.IdClient,
+                RoleName = request.RoleName,
+                AllClient = request.AllClient,
+                IdQueryClient = request.IdQueryClient
+            };
+            List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             // 1. Consultar el API externo filtrando solo por cliente
@@ -237,7 +281,7 @@ namespace Connection360.Application.UseCases
             DynamicDataSet datasetUnificado = _merger.Merge(new[] { dataSetBPMS, dataSetSIM, dataSetOPENCOMEX, dataSetASISCOMEX, dataSetSYSTEMCARRIER },joinField: ExternalDataFields.DocumentNumber, joinType: DataSetJoinType.FullOuter);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipmentsDetails = _myShipmentsDomainService.GetDetailsShipments(datasetUnificado, clientId: request.IdClient, DocumentNumber: request.DocumentNumber);
+            var myShipmentsDetails = _myShipmentsDomainService.GetDetailsShipments(datasetUnificado, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, DocumentNumber: request.DocumentNumber);
             var detailsHistory = _detailsHistoryShipmentsDomainService.GetDetailsHistoryShipments(dataSetDATALOGS, DocumentNumber: request.DocumentNumber);
 
             String originName = myShipmentsDetails.ResumenShipments.Origin;
@@ -251,6 +295,7 @@ namespace Connection360.Application.UseCases
                 ResumenShipments = new SummaryShipmentsResponse
                 {
                     Id = myShipmentsDetails.ResumenShipments.Id,
+                    ClientId = myShipmentsDetails.ResumenShipments.ClientNit,
                     ClientName = myShipmentsDetails.ResumenShipments.ClientName,
                     Supplier = myShipmentsDetails.ResumenShipments.Supplier,
                     Carrier = myShipmentsDetails.ResumenShipments.Carrier,

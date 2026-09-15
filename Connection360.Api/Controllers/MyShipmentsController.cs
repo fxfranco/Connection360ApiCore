@@ -2,6 +2,7 @@
 using Connection360.Api.Models;
 using Connection360.Application.DTOs;
 using Connection360.Application.Ports;
+using Connection360.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,12 +24,22 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("allshipments")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
         {
-            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size };
+            MyShipmentsRequest request = new MyShipmentsRequest 
+            { 
+                IdClient = idClient,
+                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
+                Page = page, 
+                Size = size 
+            };
+
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            request.RoleName = role.ToString();
+            
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetAllShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -43,13 +54,24 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("filterShipments")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size,
+        public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size,
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
         {
-            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size, Filters = filters };
+
+            MyShipmentsRequest request = new MyShipmentsRequest
+            {
+                IdClient = idClient,
+                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
+                Page = page,
+                Size = size
+            };
+
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            request.RoleName = role.ToString();
+
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -64,12 +86,22 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("allhistory")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetHistoryAllShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHistoryAllShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
         {
-            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size };
+            MyShipmentsRequest request = new MyShipmentsRequest
+            {
+                IdClient = idClient,
+                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
+                Page = page,
+                Size = size
+            };
+
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            request.RoleName = role.ToString();
+
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetHistoryAllShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -84,13 +116,24 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("filterhistory")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> FilterHistoryShipments([FromQuery] String idClient, [FromQuery] Int64 page, [FromQuery] Int64 size, 
+        public async Task<IActionResult> FilterHistoryShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size, 
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
         {
-            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, Page = page, Size = size, Filters = filters };
+            MyShipmentsRequest request = new MyShipmentsRequest
+            {
+                IdClient = idClient,
+                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
+                Page = page,
+                Size = size,
+                Filters = filters
+            };
+
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            request.RoleName = role.ToString();
+
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterHistoryShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -105,12 +148,21 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("detailsshipments")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetDetailsShipments([FromQuery] String idClient, [FromQuery] String documentNumber, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetDetailsShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] String documentNumber, CancellationToken cancellationToken)
         {
-            MyShipmentsRequest request = new MyShipmentsRequest { IdClient = idClient, RoleName = String.Empty, DocumentNumber = documentNumber };
+            MyShipmentsRequest request = new MyShipmentsRequest
+            {
+                IdClient = idClient,
+                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
+                DocumentNumber = documentNumber
+            };
+
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            request.RoleName = role.ToString();
+
             DetailsShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteDetailsShipmentsAsync(request, cancellationToken);
             return Ok(result);
         }

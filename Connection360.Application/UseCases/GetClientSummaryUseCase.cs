@@ -1,6 +1,8 @@
 ﻿using Connection360.Application.DTOs;
 using Connection360.Application.Ports;
+using Connection360.Domain.Dtos;
 using Connection360.Domain.Entities;
+using Connection360.Domain.Enums;
 using Connection360.Domain.Interfaces;
 using System.Data;
 
@@ -12,17 +14,26 @@ namespace Connection360.Application.UseCases
 
         private readonly IExternalDataGateway _externalDataGateway;
         private readonly IClientSummaryDomainService _summaryyDomainService;
+        private readonly IClientAccessResolver _clientAccessResolver;
 
-        public GetClientSummaryUseCase(IExternalDataGateway externalDataGateway, IClientSummaryDomainService summaryService)
+        public GetClientSummaryUseCase(IExternalDataGateway externalDataGateway, IClientSummaryDomainService summaryService, IClientAccessResolver clientAccessResolver)
         {
             _externalDataGateway = externalDataGateway;
             _summaryyDomainService = summaryService;
+            _clientAccessResolver = clientAccessResolver;
         }
 
         public async Task<ClientSummaryResponse> ExecuteTotalsAsync(ClientSummaryRequest request, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(request.IdClient))
-                throw new ArgumentException("El campo 'cliente' es obligatorio.");
+            ResolveClientAccessRequest resolveRequest = new ResolveClientAccessRequest
+            {
+                IdClient = request.IdClient,
+                RoleName = request.RoleName,
+                AllClient = request.AllClient,
+                IdQueryClient = request.IdQueryClient
+            };
+            List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             // 1. Aplica filtros a la api si se tienen
             //var filters = new Dictionary<String, String>
@@ -35,7 +46,7 @@ namespace Connection360.Application.UseCases
             DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var summary = _summaryyDomainService.Summarize(dataSet, clientId: request.IdClient, lastRecordsCount: UltimosRegistrosCount);
+            var summary = _summaryyDomainService.Summarize(dataSet, clientId: request.IdClient, customersByCollaborators, lastRecordsCount: UltimosRegistrosCount);
 
             // 3. Mapear a respuesta de aplicación
             return new ClientSummaryResponse
@@ -49,6 +60,7 @@ namespace Connection360.Application.UseCases
                 RecentShipments = summary.RecentShipments.Select(x => new ResumenClienteResponse
                 {
                     Id = x.Id,
+                    ClientNit = x.ClientNit,
                     DocumentNumber = x.DocumentNumber,
                     Origin = x.Origin,
                     Destination = x.Destination,
@@ -61,8 +73,15 @@ namespace Connection360.Application.UseCases
 
         public async Task<ResumenClienteResponse> ExecuteFilterAsync(ClientSummaryRequest request, CancellationToken cancellationToken)
         {
-            if (String.IsNullOrWhiteSpace(request.IdClient))
-                throw new ArgumentException("El campo 'cliente' es obligatorio.");
+            ResolveClientAccessRequest resolveRequest = new ResolveClientAccessRequest
+            {
+                IdClient = request.IdClient,
+                RoleName = request.RoleName,
+                AllClient = request.AllClient,
+                IdQueryClient = request.IdQueryClient
+            };
+            List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             // 1. Aplica filtros a la api si se tienen
             //var filters = new Dictionary<String, String>
@@ -75,12 +94,13 @@ namespace Connection360.Application.UseCases
             DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var summary = _summaryyDomainService.Filter(dataSet, clientId: request.IdClient, filterDocument: request.FilterValue);
+            var summary = _summaryyDomainService.Filter(dataSet, clientId: request.IdClient, customersByCollaborators, filterDocument: request.FilterValue);
 
             // 3. Mapear a respuesta de aplicación
             ResumenClienteResponse resumenClienteResponse = new ResumenClienteResponse
             {
                 Id = summary.Id,
+                ClientNit = summary.ClientNit,
                 DocumentNumber = summary.DocumentNumber,
                 Origin = summary.Origin,
                 Destination = summary.Destination,
@@ -88,7 +108,7 @@ namespace Connection360.Application.UseCases
                 OperationType = summary.OperationType,
                 ShipmentMode = summary.ShipmentMode
             };
-            return resumenClienteResponse;   
+            return resumenClienteResponse;
         }
     }
 }

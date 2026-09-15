@@ -8,5 +8,7 @@
         public Int64 Page { get; set; } = default!;
         public Int64 Size { get; set; } = default!;
         public MyShipmentsFiltersRequest? Filters { get; set; }
+        public String IdQueryClient { get; set; } = default!;
+        public Boolean AllClient { get; set; } = default!;
     }
 }

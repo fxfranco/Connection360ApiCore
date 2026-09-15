@@ -13,7 +13,6 @@ namespace Connection360.Api.Controllers
     [ApiController]
     [Route("api/v{version:apiVersion}/settings")]
     [Authorize]
-    //[AllowAnonymous]
     [ApiVersion("1.0")]
     [Produces("application/json")]
     public sealed class SettingsController : ControllerBase
@@ -22,20 +21,20 @@ namespace Connection360.Api.Controllers
         private readonly ICustomerUseCase _customerUseCase;
         private readonly ICustomerNotificationsSettingsUseCase _customerNotificationsSettingsUseCase;
         private readonly IMasterSettingsUseCase _masterSettingsUseCase;
-
+        private readonly ICollaboratorUseCase _collaboratorUseCase;
 
         public SettingsController(IGetUserManagementUseCase getUserManagementUseCase, ICustomerUseCase customerUseCase, 
             ICustomerNotificationsSettingsUseCase customerNotificationsSettingsUseCase,
-            IMasterSettingsUseCase masterSettingsUseCase)
+            IMasterSettingsUseCase masterSettingsUseCase, ICollaboratorUseCase collaboratorUseCase)
         {
             _getUserManagementUseCase = getUserManagementUseCase;
             _customerUseCase = customerUseCase;
             _customerNotificationsSettingsUseCase = customerNotificationsSettingsUseCase;
             _masterSettingsUseCase = masterSettingsUseCase;
+            _collaboratorUseCase = collaboratorUseCase;
         }
 
         [HttpGet("viewnotifications")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetNotificationsSettings([FromQuery] String idClient, CancellationToken cancellationToken)
@@ -45,7 +44,6 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpPost("createnotifications")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateNotificationsSettings([FromBody] CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken)
@@ -55,7 +53,6 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpPatch("updatenotifications")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -66,7 +63,6 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("viewmaster")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMasterSettings(CancellationToken cancellationToken)
@@ -76,7 +72,6 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpPost("createmaster")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -87,7 +82,6 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpPatch("updatemaster")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -214,5 +208,20 @@ namespace Connection360.Api.Controllers
             return CreatedAtRoute(nameof(CreateCustomerDataBase), new { id = resultado }, resultado);
         }
 
+        [HttpGet("createcollaboratordb")]
+        [AllowAnonymous]
+        public async Task<ActionResult> CreateCollaboratorDataBase(String clientId, CancellationToken cancellationToken)
+        {
+            var resultado = await _collaboratorUseCase.CreateAsync(clientId, cancellationToken);
+            return CreatedAtRoute(nameof(CreateCollaboratorDataBase), new { id = resultado }, resultado);
+        }
+
+        [HttpGet("createcustomercollaboratordb")]
+        [AllowAnonymous]
+        public async Task<ActionResult> CreateCustomerCollaboratorDataBase(String clientId, String collaborator, CancellationToken cancellationToken)
+        {
+            var resultado = await _collaboratorUseCase.CreateCustomerCollaboratorAsync(clientId, collaborator, cancellationToken);
+            return CreatedAtRoute(nameof(CreateCustomerCollaboratorDataBase), new { id = resultado }, resultado);
+        }
     }
 }

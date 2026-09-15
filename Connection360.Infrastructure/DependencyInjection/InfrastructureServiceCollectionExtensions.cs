@@ -69,6 +69,8 @@ namespace Connection360.Infrastructure.DependencyInjection
             services.AddScoped<ICustomerNotificationEventRepository, CustomerNotificationEventRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped<IMasterSettingsRepository, MasterSettingsRepository>();
+            services.AddScoped<ICollaboratorRepository, CollaboratorRepository>();
+            services.AddScoped<ICustomersOfCollaboratorsRepository, CustomersOfCollaboratorsRepository>();
 
             // 3. Registrar UnitOfWork como SCOPED (Garantiza 1 conexión/transacción por petición HTTP) (Persistencia)
             services.AddScoped<IUnitOfWork, UnitOfWork>();
