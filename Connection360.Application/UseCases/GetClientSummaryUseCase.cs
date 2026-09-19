@@ -61,6 +61,7 @@ namespace Connection360.Application.UseCases
                 {
                     Id = x.Id,
                     ClientNit = x.ClientNit,
+                    ClientName = x.ClientName,
                     DocumentNumber = x.DocumentNumber,
                     Origin = x.Origin,
                     Destination = x.Destination,
@@ -101,6 +102,7 @@ namespace Connection360.Application.UseCases
             {
                 Id = summary.Id,
                 ClientNit = summary.ClientNit,
+                ClientName = summary.ClientName,
                 DocumentNumber = summary.DocumentNumber,
                 Origin = summary.Origin,
                 Destination = summary.Destination,

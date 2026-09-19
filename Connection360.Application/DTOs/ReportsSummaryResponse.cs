@@ -4,6 +4,8 @@ namespace Connection360.Application.DTOs
 {
     public class ReportsSummaryResponse
     {
+        public String ClientNit { get; set; } = String.Empty;
+        public String ClientName { get; set; } = String.Empty;
         public Int64 TotalClientRecords { get; set; }
         public Int64 TotalWithIssuesStatus { get; init; }
         public Int64 TotalDeliveredStatus { get; set; }

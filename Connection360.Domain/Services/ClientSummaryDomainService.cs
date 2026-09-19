@@ -34,6 +34,7 @@ namespace Connection360.Domain.Services
                 {
                     Id = Int64.TryParse(r[ExternalDataFields.ID], out Int64 id) ? id : 0,
                     ClientNit = r[ExternalDataFields.ClientNit],
+                    ClientName = r[ExternalDataFields.ClientName],
                     DocumentNumber = r[ExternalDataFields.DocumentNumber],
                     Origin = r[ExternalDataFields.Origin],
                     Destination = r[ExternalDataFields.Destination],
@@ -79,6 +80,7 @@ namespace Connection360.Domain.Services
                 {
                     Id = Int64.TryParse(r[ExternalDataFields.ID], out Int64 id) ? id : 0,
                     ClientNit = r[ExternalDataFields.ClientNit],
+                    ClientName = r[ExternalDataFields.ClientName],
                     DocumentNumber = r[ExternalDataFields.DocumentNumber],
                     Origin = r[ExternalDataFields.Origin],
                     Destination = r[ExternalDataFields.Destination],
