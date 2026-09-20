@@ -68,16 +68,6 @@ namespace Connection360.Application.UseCases.Persistence
             }
         }
 
-        public async Task<Int64?> GetByIdAsync(String collaboratorId, CancellationToken cancellationToken = default)
-        {
-            // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
-            ICustomerRepository customerRepository = _unitOfWork.GetRepository<ICustomerRepository>();
-
-            Int64? idResult = (Int64?)await customerRepository.GetCustomerByIdAsync(collaboratorId, cancellationToken);
-
-            return idResult;
-        }
-
         private async Task<Int64> GetCustomerId(String clientId, CancellationToken cancellationToken = default)
         {
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea

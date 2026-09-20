@@ -25,7 +25,6 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpGet("allnotifications")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllNotifications([FromQuery] String idClient, CancellationToken cancellationToken)
@@ -36,7 +35,6 @@ namespace Connection360.Api.Controllers
         }
 
         [HttpPatch("readnotification/{idClient}/{idNotification}")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> UpdateReadNotification([FromRoute] String idClient, [FromRoute] Int64 idNotification,  CancellationToken cancellationToken)

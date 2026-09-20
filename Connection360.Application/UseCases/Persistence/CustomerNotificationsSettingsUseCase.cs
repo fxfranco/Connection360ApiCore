@@ -131,7 +131,7 @@ namespace Connection360.Application.UseCases.Persistence
             }
             catch (Exception)
             {
-                await _unitOfWork.CommitAsync(cancellationToken);
+                await _unitOfWork.RollbackAsync(cancellationToken);
                 throw;
             }
 
@@ -191,7 +191,7 @@ namespace Connection360.Application.UseCases.Persistence
             }
             catch (Exception)
             {
-                await _unitOfWork.CommitAsync(cancellationToken);
+                await _unitOfWork.RollbackAsync(cancellationToken);
                 throw;
             }
         }

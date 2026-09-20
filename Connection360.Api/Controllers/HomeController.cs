@@ -58,7 +58,6 @@ namespace Connection360.Api.Controllers
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             clientSummaryRequest.RoleName = role.ToString();
-
             ResumenClienteResponse result = await _getClientSummaryUseCase.ExecuteFilterAsync(clientSummaryRequest, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }

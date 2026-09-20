@@ -39,7 +39,6 @@ namespace Connection360.Api.Controllers
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             request.RoleName = role.ToString();
-            
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetAllShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -66,12 +65,12 @@ namespace Connection360.Api.Controllers
                 AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
                 Page = page,
-                Size = size
+                Size = size,
+                Filters = filters
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             request.RoleName = role.ToString();
-
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -101,7 +100,6 @@ namespace Connection360.Api.Controllers
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             request.RoleName = role.ToString();
-
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetHistoryAllShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -133,7 +131,6 @@ namespace Connection360.Api.Controllers
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             request.RoleName = role.ToString();
-
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterHistoryShipmentsAsync(request, cancellationToken);
 
             PagedResult<Object> pagedResult = new PagedResult<Object>
@@ -162,7 +159,6 @@ namespace Connection360.Api.Controllers
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             request.RoleName = role.ToString();
-
             DetailsShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteDetailsShipmentsAsync(request, cancellationToken);
             return Ok(result);
         }

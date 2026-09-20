@@ -324,7 +324,7 @@ namespace Connection360.Application.UseCases
                 },
                 LogisticsDatesShipments = new LogisticsDatesShipmentsResponse
                 {
-                    StoreOriginDate = myShipmentsDetails.LogisticsDatesShipments.StoreDestinationDate,
+                    StoreOriginDate = myShipmentsDetails.LogisticsDatesShipments.StoreOriginDate,
                     ETDDate = myShipmentsDetails.LogisticsDatesShipments.ETDDate,
                     ATDDate = myShipmentsDetails.LogisticsDatesShipments.ATDDate,
                     ETADate = myShipmentsDetails.LogisticsDatesShipments.ETADate,
