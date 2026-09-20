@@ -19,4 +19,9 @@
 		<!-- Rate limiting usa System.Threading.RateLimiting, incluido nativamente en el SDK Web de ASP.NET Core >= 7 -->
 	</ItemGroup>
 
+	<!-- Necesario para que Connection360.ApiGateway.IntegrationTests pueda usar WebApplicationFactory<Program>. -->
+	<ItemGroup>
+		<InternalsVisibleTo Include="Connection360.ApiGateway.IntegrationTests" />
+	</ItemGroup>
+	
 </Project>

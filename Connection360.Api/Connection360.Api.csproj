@@ -26,4 +26,11 @@
 		<ProjectReference Include="..\Connection360.Infrastructure\Connection360.Infrastructure.csproj" />
 	</ItemGroup>
 
+	<!-- Necesario para que Connection360.Api.IntegrationTests pueda usar WebApplicationFactory<Program>:
+	     con top-level statements, la clase Program generada es 'internal'. Esto NO cambia
+	     ningún comportamiento en tiempo de ejecución de la aplicación. -->
+	<ItemGroup>
+		<InternalsVisibleTo Include="Connection360.Api.IntegrationTests" />
+	</ItemGroup>
+
 </Project>
