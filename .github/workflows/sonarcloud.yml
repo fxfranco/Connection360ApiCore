@@ -26,6 +26,14 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4  # Descarga tu código
+        with:
+            ref: ${{ inputs.branch }} # Esto asegura que se use la rama seleccionada  
+      - name: 2. Configurar el SDK de .NET 
+        uses: actions/setup-dotnet@v4  # Instala el entorno de .NET
+        with:
+          dotnet-version: '10.x'  # Puedes cambiar a tu versión específica de .NET            
       - name: Cache SonarQube Cloud packages
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -51,6 +59,6 @@ jobs:
         shell: powershell
         run: |
           ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"fxfranco_Connection360ApiCore" /o:"fxfranco" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/*.opencover.xml" 
-          dotnet build
-          dotnet test --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover 
+          dotnet build Connection360ApiCore.slnx
+          dotnet test Connection360ApiCore.slnx --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover 
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
