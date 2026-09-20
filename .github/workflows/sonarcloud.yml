@@ -59,6 +59,7 @@ jobs:
         shell: powershell
         run: |
           ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"fxfranco_Connection360ApiCore" /o:"fxfranco" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/TestResults/coverage.opencover.xml" /d:sonar.coverage.exclusions="**Test*/**, **/Migrations/**, **/*.json"
-          dotnet test Connection360ApiCore.slnx --configuration Release /p:DebugSymbols=true /p:DebugType=portable --collect:"XPlat Code Coverage" --results-directory ./TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*Test*]*"
+          dotnet build Connection360ApiCore.slnx --configuration Debug /p:DebugSymbols=true /p:DebugType=portable
+          dotnet test Connection360ApiCore.slnx --configuration Debug --no-build --collect:"XPlat Code Coverage" --results-directory ./TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*Test*]*"
           Get-ChildItem -Path ./TestResults -Filter coverage.opencover.xml -Recurse | Copy-Item -Destination ./TestResults/coverage.opencover.xml -Force
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
