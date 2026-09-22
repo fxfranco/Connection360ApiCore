@@ -35,9 +35,6 @@ namespace Connection360.Api.Extensions
             services.AddScoped<IGetReportsUseCase, GetReportsUseCase>();            
             services.AddScoped<IReportsDomainService, ReportsDomainService>();
 
-            //Notifications
-            services.AddScoped<IGetNotificationsUseCase, GetNotificationsUseCase>();
-
             //Auth0 UserManagement
             services.AddScoped<IGetUserManagementUseCase, GetUserManagementUseCase>();
 

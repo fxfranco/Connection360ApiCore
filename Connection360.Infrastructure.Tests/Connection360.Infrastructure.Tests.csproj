@@ -27,4 +27,8 @@
 		<ProjectReference Include="..\Connection360.Domain\Connection360.Domain.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Adapters\" />
+	</ItemGroup>
+
 </Project>

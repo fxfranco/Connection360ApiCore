@@ -1,6 +1,5 @@
 using Connection360.Application.DTOs;
 using Connection360.Application.DTOs.Persistence;
-using Connection360.Application.Enum;
 using FluentAssertions;
 using Xunit;
 
@@ -55,26 +54,6 @@ namespace Connection360.Application.Tests.DTOs
             var dto = new MyShipmentsResponse();
 
             dto.ClientSummaryResponseData.Should().NotBeNull();
-        }
-
-        [Fact]
-        public void NotificationsListResponse_DebeAsignarEnumsYFechas()
-        {
-            var fecha = new DateTime(2024, 1, 1);
-            var dto = new NotificationsListResponse
-            {
-                IdNotification = 1,
-                NotificationType = NotificationType.Comment,
-                DocumentNumber = "HBL-1",
-                Title = "Titulo",
-                Message = "Mensaje",
-                MessageDate = fecha,
-                NotificationStatus = NotificationStatus.Unread,
-                NotificationDate = fecha
-            };
-
-            dto.NotificationType.Should().Be(NotificationType.Comment);
-            dto.NotificationStatus.Should().Be(NotificationStatus.Unread);
         }
 
         [Fact]

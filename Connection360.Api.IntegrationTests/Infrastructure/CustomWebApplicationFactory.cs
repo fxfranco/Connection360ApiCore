@@ -1,7 +1,5 @@
 using Connection360.Application.Ports;
-using Connection360.Application.Ports.Output;
 using Connection360.Application.Ports.Persistence;
-using Connection360.Domain.Dtos;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -28,8 +26,6 @@ namespace Connection360.Api.IntegrationTests.Infrastructure
         public Mock<IGetClientSummaryUseCase> ClientSummaryUseCaseMock { get; } = new();
         public Mock<IGetMyShipmentsUseCase> MyShipmentsUseCaseMock { get; } = new();
         public Mock<IGetReportsUseCase> ReportsUseCaseMock { get; } = new();
-        public Mock<IGetNotificationsUseCase> NotificationsUseCaseMock { get; } = new();
-        public Mock<INotifierService> NotifierServiceMock { get; } = new();
         public Mock<IGetUserManagementUseCase> UserManagementUseCaseMock { get; } = new();
         public Mock<ICustomerNotificationsSettingsUseCase> NotificationsSettingsUseCaseMock { get; } = new();
         public Mock<IMasterSettingsUseCase> MasterSettingsUseCaseMock { get; } = new();
@@ -45,8 +41,6 @@ namespace Connection360.Api.IntegrationTests.Infrastructure
             ClientSummaryUseCaseMock.Reset();
             MyShipmentsUseCaseMock.Reset();
             ReportsUseCaseMock.Reset();
-            NotificationsUseCaseMock.Reset();
-            NotifierServiceMock.Reset();
             UserManagementUseCaseMock.Reset();
             NotificationsSettingsUseCaseMock.Reset();
             MasterSettingsUseCaseMock.Reset();
@@ -75,8 +69,6 @@ namespace Connection360.Api.IntegrationTests.Infrastructure
                 ReplaceWithMock(services, ClientSummaryUseCaseMock.Object);
                 ReplaceWithMock(services, MyShipmentsUseCaseMock.Object);
                 ReplaceWithMock(services, ReportsUseCaseMock.Object);
-                ReplaceWithMock(services, NotificationsUseCaseMock.Object);
-                ReplaceWithMock(services, NotifierServiceMock.Object);
                 ReplaceWithMock(services, UserManagementUseCaseMock.Object);
                 ReplaceWithMock(services, NotificationsSettingsUseCaseMock.Object);
                 ReplaceWithMock(services, MasterSettingsUseCaseMock.Object);

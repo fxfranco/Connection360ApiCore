@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Notifications/">
+    <Project Path="Connection360Notification.Api/Connection360Notification.Api.csproj" Id="de037868-2d58-4b6d-a20b-dc856c699028" />
+    <Project Path="Connection360Notification.Application/Connection360Notification.Application.csproj" Id="ae72951d-36ab-43d4-b38c-b293b5283ae9" />
+    <Project Path="Connection360Notification.Domain/Connection360Notification.Domain.csproj" Id="4673e52c-3638-43b1-8b44-a7e95c4d061a" />
+    <Project Path="Connection360Notification.Infrastructure/Connection360Notification.Infrastructure.csproj" Id="86f79de8-b219-4378-9f7f-7cd683e4923f" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="docker-compose.yml" />
     <File Path="Documents/StartApis_Connection360.bat" />
@@ -12,6 +18,11 @@
     <Project Path="Connection360.Application.Tests/Connection360.Application.Tests.csproj" />
     <Project Path="Connection360.Domain.Tests/Connection360.Domain.Tests.csproj" />
     <Project Path="Connection360.Infrastructure.Tests/Connection360.Infrastructure.Tests.csproj" />
+    <Project Path="Connection360Notification.Api.IntegrationTests/Connection360Notification.Api.IntegrationTests.csproj" Id="83fe249c-b18f-4679-9a7d-85171ff4da7e" />
+    <Project Path="Connection360Notification.Api.Test/Connection360Notification.Api.Test.csproj" Id="bf52942f-405f-485f-b51a-01e8e7e95f04" />
+    <Project Path="Connection360Notification.Domain.Test/Connection360Notification.Domain.Test.csproj" Id="daef4583-86cf-41fe-b8c6-f024bd42d447" />
+    <Project Path="Connection360Notification.Infrastructure.Test/Connection360Notification.Infrastructure.Test.csproj" Id="5101a3ff-aa7e-4c32-9c96-1fb39ca0f48f" />
+    <Project Path="TestProject1Connection360Notification.Application.Test/Connection360Notification.Application.Test.csproj" Id="4b0631b5-133d-4c20-ae39-6297f02b73ac" />
   </Folder>
   <Project Path="Connection360.Api/Connection360.Api.csproj" Id="07643ac8-533a-4a88-bd7f-10effe43e4aa" />
   <Project Path="Connection360.ApiGateway/Connection360.ApiGateway.csproj" />

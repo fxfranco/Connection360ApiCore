@@ -23,7 +23,6 @@ namespace Connection360.Api.Tests.Extensions
             services.Should().Contain(sd => sd.ServiceType == typeof(IGetClientSummaryUseCase));
             services.Should().Contain(sd => sd.ServiceType == typeof(IGetMyShipmentsUseCase));
             services.Should().Contain(sd => sd.ServiceType == typeof(IGetReportsUseCase));
-            services.Should().Contain(sd => sd.ServiceType == typeof(IGetNotificationsUseCase));
             services.Should().Contain(sd => sd.ServiceType == typeof(IGetUserManagementUseCase));
         }
 

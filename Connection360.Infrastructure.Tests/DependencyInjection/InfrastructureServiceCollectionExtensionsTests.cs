@@ -1,5 +1,4 @@
 using Connection360.Application.Ports;
-using Connection360.Application.Ports.Output;
 using Connection360.Domain.Interfaces;
 using Connection360.Domain.Ports.Persistence;
 using Connection360.Infrastructure.DependencyInjection;
@@ -40,25 +39,11 @@ namespace Connection360.Infrastructure.Tests.DependencyInjection
         }
 
         [Fact]
-        public void AddInfrastructure_RegistraElProveedorDeUsuarioDeSignalRComoSingleton()
+        public void AddInfrastructure_RegistraElAuth0UserService()
         {
             var services = new ServiceCollection();
 
             services.AddInfrastructure(BuildConfiguration());
-
-            services.Should().Contain(sd => sd.ServiceType == typeof(IUserIdProvider)
-                && sd.ImplementationType == typeof(Connection360.Infrastructure.Adapters.Input.CustomUserIdProvider)
-                && sd.Lifetime == ServiceLifetime.Singleton);
-        }
-
-        [Fact]
-        public void AddInfrastructure_RegistraElNotifierServiceYAuth0UserService()
-        {
-            var services = new ServiceCollection();
-
-            services.AddInfrastructure(BuildConfiguration());
-
-            services.Should().Contain(sd => sd.ServiceType == typeof(INotifierService));
             services.Should().Contain(sd => sd.ServiceType == typeof(IAuth0UserService));
         }
 

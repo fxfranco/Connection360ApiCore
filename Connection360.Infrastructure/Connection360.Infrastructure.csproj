@@ -14,7 +14,6 @@
 		<PackageReference Include="Auth0.ManagementApi" Version="10.0.0" />
 		<PackageReference Include="Dapper" Version="2.1.79" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.12" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.10" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
@@ -27,6 +26,10 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Connection360.Application\Connection360.Application.csproj" />
 		<ProjectReference Include="..\Connection360.Domain\Connection360.Domain.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Adapters\Input\" />
 	</ItemGroup>
 
 </Project>

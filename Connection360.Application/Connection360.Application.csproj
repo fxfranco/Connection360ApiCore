@@ -14,4 +14,9 @@
 		<ProjectReference Include="..\Connection360.Domain\Connection360.Domain.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Enum\" />
+	  <Folder Include="Ports\Output\" />
+	</ItemGroup>
+
 </Project>

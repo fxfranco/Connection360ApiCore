@@ -2,10 +2,7 @@ using Connection360.Api.Extensions;
 using Connection360.Api.Filters;
 using Connection360.Api.Middleware;
 using Connection360.Api.Models;
-using Connection360.Domain.Ports.Persistence;
-using Connection360.Infrastructure.Adapters.Input;
 using Connection360.Infrastructure.DependencyInjection;
-using Connection360.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Npgsql;
@@ -136,8 +133,5 @@ app.MapControllers();
 app.UseMiddleware<NotFoundMiddleware>();
 app.MapHealthChecks("/health");
 app.Map("/error", () => Results.Problem(title: "Ha ocurrido un error inesperado."));
-
-// Mapeo del Endpoint del Hub (El Hub vive en la capa de Infrastructure)
-app.MapHub<NotificationHub>("api/v{version:apiVersion}/hubs/notifications");
 
 app.Run();
