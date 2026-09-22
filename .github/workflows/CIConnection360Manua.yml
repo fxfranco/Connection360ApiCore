@@ -27,7 +27,7 @@ jobs:
     strategy:
       # Define aquí la lista de todas tus APIs
       matrix:
-        api: [Connection360.Api, Connection360.ApiGateway] 
+        api: [Connection360.Api, Connection360.ApiGateway, Connection360Notification.Api] 
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
