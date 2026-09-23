@@ -19,80 +19,58 @@ namespace Connection360Notification.Api.Controllers
     public class NotificationsController : ControllerBase
     {
         private readonly IGetNotificationsUseCase _getNotificationsUseCase;
+        
+        //Productor Kafka enviar notificaciones
         private readonly INotificationUseCase _notificationUseCase;
 
-        //ToDo: Este se debe pasar al caso de uso
-        private readonly INotificationRepository _notificationRepository;
-
-        private readonly INotifierService _notifierService;
-
-        public NotificationsController(IGetNotificationsUseCase getNotificationsUseCase, INotificationUseCase notificationUseCase, INotificationRepository notificationRepository, INotifierService notifierService)
+        public NotificationsController(IGetNotificationsUseCase getNotificationsUseCase, INotificationUseCase notificationUseCase)
         {
             _getNotificationsUseCase = getNotificationsUseCase;
             _notificationUseCase = notificationUseCase;
-            _notificationRepository = notificationRepository;
-            _notifierService = notifierService;
         }
 
-        [HttpGet("allnotifications")]
+        [HttpGet("getclientnotificatios")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllNotifications([FromQuery] String idClient, CancellationToken cancellationToken)
         {
             ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
-            List<NotificationsListResponse> result = _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(request, cancellationToken);
+            List<NotificationsListResponse> result = await _getNotificationsUseCase.ExecuteGetNotificationsByClientAsync(request, cancellationToken);
             return Ok(result);
         }
 
-        [HttpGet("allnotificationsdb")]
+        [HttpGet("allnotifications")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(IEnumerable<NotificationMessage>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllNotificationsDB([FromQuery] String idClient, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllNotificationsDB(CancellationToken cancellationToken)
         {
-            var notifications = await _notificationRepository.GetAllAsync(cancellationToken);
+            //var notifications = await _notificationRepository.GetAllAsync(cancellationToken);
+            var notifications = await _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(cancellationToken);
             return Ok(notifications);
         }
 
         [HttpPatch("readnotification/{idClient}/{idNotification}")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateReadNotification([FromRoute] String idClient, [FromRoute] Int64 idNotification, CancellationToken cancellationToken)
         {
-            //Todo: Falta implementar lògica de actualizaciòón real
             NotificationsRequest request = new NotificationsRequest { IdClient = idClient, IdNotification = idNotification, RoleName = String.Empty };
-            //List<NotificationsListResponse> result = _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(request, cancellationToken);
-            return NoContent();
-        }
+            Boolean updated = await _getNotificationsUseCase.ExecuteMarkAsReadAsync(request, cancellationToken);
 
-        [HttpGet("generatenotifications")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GenerateNotifications([FromQuery] String idClient, String Message, CancellationToken cancellationToken)
-        {
-            ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
-
-            NotificationsListResponse notificationsListResponse = new NotificationsListResponse
+            if (!updated)
             {
-                IdNotification = 10,
-                NotificationType = NotificationType.Comment,
-                DocumentNumber = "HBL-5U6HC36K",
-                Title = "Notificacion generada de prueba",
-                Message = Message,
-                MessageDate = DateTime.Now.AddDays(-3),
-                NotificationStatus = NotificationStatus.Unread,
-                NotificationDate = DateTime.Now
-            };
+                return NotFound();
+            }
 
-            await _notifierService.SendNotificationToUserAsync(idClient, Message, notificationsListResponse);
-            return Ok("result");
+            return NoContent();
         }
 
         /// <summary>
         /// Envía una notificación produciendo un evento en Kafka.
         /// </summary>
-        [HttpPost("generatenotificationsdb")]
+        [HttpPost("simulatenotifications")]
         [AllowAnonymous]
         //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status202Accepted)]

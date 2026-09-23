@@ -1,4 +1,4 @@
-using Connection360Notification.Api.Controllers;
+﻿using Connection360Notification.Api.Controllers;
 using Connection360Notification.Application.DTOs;
 using Connection360Notification.Application.Ports;
 using Connection360Notification.Application.Ports.Inbound;
@@ -15,44 +15,43 @@ namespace Connection360Notification.Api.Tests.Controllers
     {
         private readonly Mock<IGetNotificationsUseCase> _useCaseMock = new();
         private readonly Mock<INotificationUseCase> _notificationUseCaseMock = new();
-
-        //ToDo: Este se debe pasar al caso de uso
-        private readonly Mock<INotificationRepository> _notificationRepositoryMock = new();
-        private readonly Mock<INotifierService> _notifierMock = new();
         private readonly NotificationsController _sut;
 
         public NotificationsControllerTests()
         {
-            _sut = new NotificationsController(_useCaseMock.Object, _notificationUseCaseMock.Object, _notificationRepositoryMock.Object, _notifierMock.Object);
+            _sut = new NotificationsController(_useCaseMock.Object, _notificationUseCaseMock.Object);
         }
 
         [Fact]
         public async Task GetAllNotifications_RetornaOkConLaListaDelUseCase()
         {
             var expected = new List<NotificationsListResponse> { new() { IdNotification = 1 } };
-            _useCaseMock.Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>())).Returns(expected);
+            _useCaseMock.Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(expected);
 
-            IActionResult result = await _sut.GetAllNotifications("123", CancellationToken.None);
+            IActionResult result = await _sut.GetAllNotificationsDB(CancellationToken.None);
 
             var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
             okResult.Value.Should().BeSameAs(expected);
         }
 
         [Fact]
-        public async Task UpdateReadNotification_RetornaNoContent()
+        public async Task UpdateReadNotification_CuandoElUseCaseMarcaComoLeida_RetornaNoContent()
         {
+            _useCaseMock.Setup(u => u.ExecuteMarkAsReadAsync(It.IsAny<NotificationsRequest>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
             IActionResult result = await _sut.UpdateReadNotification("123", 1, CancellationToken.None);
 
             result.Should().BeOfType<NoContentResult>();
         }
 
         [Fact]
-        public async Task GenerateNotifications_EnviaLaNotificacionAlServicio()
+        public async Task UpdateReadNotification_CuandoElUseCaseNoEncuentraLaNotificacion_RetornaNotFound()
         {
-            IActionResult result = await _sut.GenerateNotifications("123", "Mensaje de prueba", CancellationToken.None);
+            _useCaseMock.Setup(u => u.ExecuteMarkAsReadAsync(It.IsAny<NotificationsRequest>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-            _notifierMock.Verify(n => n.SendNotificationToUserAsync("123", "Mensaje de prueba", It.IsAny<Object>()), Times.Once);
-            result.Should().BeOfType<OkObjectResult>();
+            IActionResult result = await _sut.UpdateReadNotification("123", 1, CancellationToken.None);
+
+            result.Should().BeOfType<NotFoundResult>();
         }
     }
 }

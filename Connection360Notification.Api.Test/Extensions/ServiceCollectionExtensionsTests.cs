@@ -1,4 +1,4 @@
-using Connection360Notification.Api.Extensions;
+﻿using Connection360Notification.Api.Extensions;
 using Connection360Notification.Application.Ports;
 using Connection360Notification.Application.Ports.Inbound;
 using FluentAssertions;
@@ -18,6 +18,7 @@ namespace Connection360Notification.Api.Tests.Extensions
             services.AddApplicationServices();
             services.Should().Contain(sd => sd.ServiceType == typeof(IGetNotificationsUseCase));
             services.Should().Contain(sd => sd.ServiceType == typeof(INotificationUseCase));
+            services.Should().Contain(sd => sd.ServiceType == typeof(IProcessIncomingNotificationUseCase));
         }
 
         [Fact]

@@ -1,4 +1,4 @@
-using Connection360Notification.Api.Extensions;
+﻿using Connection360Notification.Api.Extensions;
 using Connection360Notification.Api.Filters;
 using Connection360Notification.Api.Middleware;
 using Connection360Notification.Api.Models;
@@ -11,9 +11,10 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. Mapeo de Configuraciones
-builder.Services.Configure<MongoDbSettings>(
-    builder.Configuration.GetSection("MongoDbSettings"));
-
+// MongoDbSettings ya no se mapea aquí: lo hace el propio proveedor de persistencia
+// (MongoPersistenceServiceCollectionExtensions.AddMongoPersistence, invocado desde
+// AddInfrastructure) para que Program.cs no necesite saber qué motor de base de datos
+// está activo ni sus claves de configuración.
 builder.Services.Configure<KafkaSettings>(
     builder.Configuration.GetSection("KafkaSettings"));
 

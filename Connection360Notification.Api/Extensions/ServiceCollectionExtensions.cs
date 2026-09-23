@@ -16,6 +16,7 @@ namespace Connection360Notification.Api.Extensions
 
             //Notifications
             services.AddScoped<IGetNotificationsUseCase, GetNotificationsUseCase>();
+            services.AddScoped<IProcessIncomingNotificationUseCase, ProcessIncomingNotificationUseCase>();
             return services;
         }
 

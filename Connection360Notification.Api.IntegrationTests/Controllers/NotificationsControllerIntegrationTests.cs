@@ -1,4 +1,4 @@
-using Connection360Notification.Api.IntegrationTests.Infrastructure;
+﻿using Connection360Notification.Api.IntegrationTests.Infrastructure;
 using Connection360Notification.Application.DTOs;
 using FluentAssertions;
 using Moq;
@@ -31,24 +31,14 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
         public async Task GetAllNotifications_ConRolValido_Retorna200()
         {
             _factory.NotificationsUseCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>()))
-                .Returns(new List<NotificationsListResponse>());
+                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<NotificationsListResponse>());
 
             var request = AuthorizedRequest(HttpMethod.Get, "/api/v1/notifications/allnotifications?idClient=123", roles: "CLIENT");
 
             HttpResponseMessage response = await _client.SendAsync(request);
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-        }
-
-        [Fact]
-        public async Task GenerateNotifications_EsPublicoPorAllowAnonymousDelMetodo_EnviaLaNotificacionYRetorna200()
-        {
-            // El metodo conserva [AllowAnonymous], que prevalece sobre el [Authorize] de la clase.
-            HttpResponseMessage response = await _client.GetAsync("/api/v1/notifications/generatenotifications?idClient=123&Message=Hola");
-
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            _factory.NotifierServiceMock.Verify(n => n.SendNotificationToUserAsync("123", "Hola", It.IsAny<Object>()), Times.Once);
         }
 
         [Fact]
@@ -62,11 +52,29 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
         [Fact]
         public async Task UpdateReadNotification_ConRolValido_Retorna204()
         {
+            _factory.NotificationsUseCaseMock
+                .Setup(u => u.ExecuteMarkAsReadAsync(It.IsAny<NotificationsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
             var request = AuthorizedRequest(HttpMethod.Patch, "/api/v1/notifications/readnotification/123/1", roles: "CLIENT");
 
             HttpResponseMessage response = await _client.SendAsync(request);
 
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Fact]
+        public async Task UpdateReadNotification_CuandoNoExisteLaNotificacion_Retorna404()
+        {
+            _factory.NotificationsUseCaseMock
+                .Setup(u => u.ExecuteMarkAsReadAsync(It.IsAny<NotificationsRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            var request = AuthorizedRequest(HttpMethod.Patch, "/api/v1/notifications/readnotification/123/1", roles: "CLIENT");
+
+            HttpResponseMessage response = await _client.SendAsync(request);
+
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
         private static HttpRequestMessage AuthorizedRequest(HttpMethod method, String url, String roles)

@@ -1,8 +1,8 @@
-using Connection360Notification.Application.Ports.Output;
+﻿using Connection360Notification.Application.Ports.Output;
 using Connection360Notification.Domain.Ports.Outbound;
 using Connection360Notification.Infrastructure.DependencyInjection;
 using Connection360Notification.Infrastructure.Messaging;
-using Connection360Notification.Infrastructure.Persistence;
+using Connection360Notification.Infrastructure.Persistence.Mongo;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;

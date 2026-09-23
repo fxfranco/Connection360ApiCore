@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
+using Connection360Notification.Application.Ports.Inbound;
 using Connection360Notification.Domain;
-using Connection360Notification.Domain.Ports.Outbound;
 using Connection360Notification.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -47,9 +47,12 @@ namespace Connection360Notification.Infrastructure.Messaging
                         var notification = JsonSerializer.Deserialize<NotificationMessage>(result.Message.Value);
                         if (notification != null)
                         {
+                            // La orquestación real (guardar + notificar por SignalR) vive en
+                            // Application: este consumidor solo deserializa el mensaje de Kafka y
+                            // delega el procesamiento al caso de uso correspondiente.
                             using var scope = _scopeFactory.CreateScope();
-                            var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
-                            await repository.SaveAsync(notification, stoppingToken);
+                            var processNotificationUseCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+                            await processNotificationUseCase.ExecuteAsync(notification, stoppingToken);
                         }
                     }
                 }
