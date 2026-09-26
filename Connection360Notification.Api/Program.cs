@@ -7,6 +7,7 @@ using Connection360Notification.Infrastructure.Adapters.Input;
 using Connection360Notification.Infrastructure.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +56,26 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Connection 360 API Notifications", Version = "v1" });
+
+    // Usa el nombre completo (namespace + nombre) como id de esquema en vez del nombre corto.
+    // Necesario porque este módulo tiene dos pares de tipos con el mismo nombre simple en
+    // namespaces distintos (Connection360Notification.Domain.Enums.NotificationType/NotificationStatus
+    // y Connection360Notification.Application.Enum.NotificationType/NotificationStatus): al
+    // documentar tanto NotificationMessage (dominio) como NotificationsListResponse (aplicación)
+    // en el mismo Swagger, Swashbuckle necesita generar el esquema de ambos pares en el mismo
+    // documento, y con el nombre corto por defecto choca con "Conflicting schemaIds", lo que
+    // provocaba el error 500 al pedir /swagger/v1/swagger.json.
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+
+    // Incluye los comentarios /// (requiere GenerateDocumentationFile en el csproj) para que
+    // Swagger muestre summary/remarks/param/response de controladores, DTOs y modelos.
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",

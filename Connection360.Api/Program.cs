@@ -1,4 +1,4 @@
-using Connection360.Api.Extensions;
+﻿using Connection360.Api.Extensions;
 using Connection360.Api.Filters;
 using Connection360.Api.Middleware;
 using Connection360.Api.Models;
@@ -7,6 +7,7 @@ using Connection360Notification.Domain.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,6 +82,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Connection 360 API", Version = "v1" });
+
+    // Incluye los comentarios /// (requiere GenerateDocumentationFile en el csproj) para que
+    // Swagger muestre summary/remarks/param/response de controladores, DTOs y modelos.
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",

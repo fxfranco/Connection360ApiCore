@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Connection360Notification.Api.Controllers
 {
+    /// <summary>
+    /// Expone las operaciones de consulta y gestión de notificaciones para los clientes de Connection360.
+    /// </summary>
     [ApiController]
     [Route("api/v{version:apiVersion}/notifications")]
     [Authorize]
@@ -20,15 +23,27 @@ namespace Connection360Notification.Api.Controllers
         //Productor Kafka enviar notificaciones
         private readonly INotificationUseCase _notificationUseCase;
 
+        /// <summary>
+        /// Crea una nueva instancia del controlador de notificaciones.
+        /// </summary>
+        /// <param name="getNotificationsUseCase">Caso de uso para consultar y actualizar el estado de las notificaciones.</param>
+        /// <param name="notificationUseCase">Caso de uso para enviar notificaciones (producción de eventos en Kafka).</param>
         public NotificationsController(IGetNotificationsUseCase getNotificationsUseCase, INotificationUseCase notificationUseCase)
         {
             _getNotificationsUseCase = getNotificationsUseCase;
             _notificationUseCase = notificationUseCase;
         }
 
+        /// <summary>
+        /// Obtiene todas las notificaciones asociadas a un cliente.
+        /// </summary>
+        /// <param name="idClient">Identificador del cliente cuyas notificaciones se desean consultar.</param>
+        /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+        /// <returns>La lista de notificaciones del cliente indicado.</returns>
+        /// <response code="200">Lista de notificaciones del cliente (puede estar vacía).</response>
         [HttpGet("allnotifications")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(List<NotificationsListResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllNotifications([FromQuery] String idClient, CancellationToken cancellationToken)
         {
             ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
@@ -36,6 +51,15 @@ namespace Connection360Notification.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Marca una notificación puntual de un cliente como leída.
+        /// </summary>
+        /// <param name="idClient">Identificador del cliente propietario de la notificación.</param>
+        /// <param name="idNotification">Identificador secuencial de la notificación a marcar como leída.</param>
+        /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+        /// <returns>Sin contenido si la actualización fue exitosa.</returns>
+        /// <response code="204">La notificación fue marcada como leída correctamente.</response>
+        /// <response code="404">No existe una notificación con el identificador indicado para ese cliente.</response>
         [HttpPatch("readnotification/{idClient}/{idNotification}")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -53,6 +77,17 @@ namespace Connection360Notification.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Obtiene todas las notificaciones almacenadas, sin filtrar por cliente.
+        /// </summary>
+        /// <remarks>
+        /// Endpoint de prueba (nombre "allnotificationslistTest") habilitado con <c>[AllowAnonymous]</c>, es decir,
+        /// no requiere autenticación. Devuelve directamente las entidades de dominio <see cref="NotificationMessage"/>
+        /// tal como están almacenadas.
+        /// </remarks>
+        /// <param name="cancellationToken">Token de cancelación de la operación.</param>
+        /// <returns>La lista completa de notificaciones almacenadas.</returns>
+        /// <response code="200">Lista completa de notificaciones.</response>
         [HttpGet("allnotificationslistTest")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]

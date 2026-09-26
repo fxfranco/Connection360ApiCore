@@ -10,6 +10,9 @@
         /// </summary>
         public String Id { get; set; } = String.Empty;
 
+        /// <summary>
+        /// Identificador del cliente dueño del envío
+        /// </summary>
         public String ClientId { get; set; } = String.Empty;
 
         /// <summary>

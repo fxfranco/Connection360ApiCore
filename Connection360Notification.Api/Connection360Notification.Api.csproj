@@ -5,6 +5,13 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>Connection360Notification.Api</RootNamespace>
+		<!-- Habilita la generación del XML de documentación a partir de los comentarios ///,
+		     consumido por Swashbuckle (ver AddSwaggerGen -> IncludeXmlComments en Program.cs).
+		     Se suprime CS1591 (falta comentario XML) porque no todos los tipos/miembros públicos
+		     de este proyecto (filtros, middlewares, extensiones internas) están documentados; solo
+		     interesa la documentación de lo expuesto en Swagger (controladores, DTOs, modelos). -->
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>$(NoWarn);1591</NoWarn>
 		<Version>1.0.0-alphaBaseInit.1</Version>
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
 		<AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>

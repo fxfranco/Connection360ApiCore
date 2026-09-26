@@ -1,5 +1,8 @@
 ﻿namespace Connection360Notification.Application.Enum
 {
+    /// <summary>
+    /// Estado de lectura de una notificación.
+    /// </summary>
     public enum NotificationStatus
     {
         /// <summary>

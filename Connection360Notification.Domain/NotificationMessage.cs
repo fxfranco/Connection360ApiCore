@@ -19,15 +19,34 @@ namespace Connection360Notification.Domain
     /// </summary>
     public sealed class NotificationMessage
     {
+        /// <summary>Identificador técnico de la notificación (clave de almacenamiento y de partición en Kafka). No es un ObjectId de Mongo.</summary>
         public String Id { get; private set; }
+
+        /// <summary>Identificador secuencial de negocio, asignado por el repositorio al guardar (ver <see cref="AssignSequentialId"/>).</summary>
         public Int64 IdNotification { get; private set; }
+
+        /// <summary>Identificador del cliente destinatario de la notificación.</summary>
         public String ClientId { get; private set; }
+
+        /// <summary>Tipo de evento que originó la notificación.</summary>
         public NotificationType Type { get; private set; }
+
+        /// <summary>Número de documento (envío/pedido, etc.) asociado a la notificación, cuando aplica.</summary>
         public String DocumentNumber { get; private set; }
+
+        /// <summary>Título breve de la notificación.</summary>
         public String Title { get; private set; }
+
+        /// <summary>Contenido/mensaje detallado de la notificación.</summary>
         public String Message { get; private set; }
+
+        /// <summary>Fecha y hora del evento de negocio que originó la notificación.</summary>
         public DateTime MessageDate { get; private set; }
+
+        /// <summary>Estado de lectura de la notificación (ver <see cref="MarkAsRead"/>).</summary>
         public NotificationStatus Status { get; private set; }
+
+        /// <summary>Fecha y hora en que la notificación fue registrada/generada.</summary>
         public DateTime NotificationDate { get; private set; }
 
         // IMPORTANTE: messageDate y notificationDate son "DateTime" (no "DateTime?"), a
