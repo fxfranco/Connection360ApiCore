@@ -6,10 +6,11 @@ setlocal enabledelayedexpansion
 :: Agrega el nombre exacto del archivo .dll de cada API que deseas cerrar.
 :: ============================================================================
 
-set API_COUNT=2
+set API_COUNT=3
 
-set API[1]=Connection360.Api.dll
-set API[2]=Connection360.ApiGateway.dll
+set API[1]=Connection360Notification.Api.dll
+set API[2]=Connection360.Api.dll
+set API[3]=Connection360.ApiGateway.dll
 
 :: ============================================================================
 :: PROCESO DE CIERRE DE APIS
