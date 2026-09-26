@@ -9,6 +9,8 @@
     <File Path="docker-compose.yml" />
     <File Path="Documents/StartApis_Connection360.bat" />
     <File Path="Documents/StopApis_Connection360.bat" />
+    <File Path="Documents/swaggerConnection360ApiCore.json" />
+    <File Path="Documents/swaggerConnection360ApiNotifications.json" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Connection360.Api.IntegrationTests/Connection360.Api.IntegrationTests.csproj" />
