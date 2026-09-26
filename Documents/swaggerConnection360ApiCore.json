@@ -10,10 +10,13 @@
         "tags": [
           "Home"
         ],
+        "summary": "Obtiene los totales de envíos (importaciones, exportaciones, aéreos, marítimos, con\r\nnovedades) de un cliente para la pantalla de inicio.",
+        "description": "Ejemplo: https://localhost:44369/api/v1/home/totals?idClient=123&rol=cliente",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente sobre el que se consulta.",
             "schema": {
               "type": "string"
             }
@@ -21,6 +24,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -28,7 +32,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Totales de envíos calculados correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSummaryResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -38,10 +49,13 @@
         "tags": [
           "Home"
         ],
+        "summary": "Obtiene el listado de envíos recientes de un cliente, filtrado por un valor de búsqueda\r\nlibre, para la pantalla de inicio.",
+        "description": "Ejemplo: https://localhost:44369/api/v1/home/filters?idClient=123&rol=cliente&filterValue=HR12354",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente sobre el que se consulta.",
             "schema": {
               "type": "string"
             }
@@ -49,6 +63,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -56,6 +71,7 @@
           {
             "name": "filterValue",
             "in": "query",
+            "description": "Valor de texto libre usado para filtrar los envíos (por ejemplo, un número de documento).",
             "schema": {
               "type": "string"
             }
@@ -63,7 +79,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Listado filtrado obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenClienteResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -73,10 +96,12 @@
         "tags": [
           "MyShipments"
         ],
+        "summary": "Obtiene el listado paginado (sin filtros) de todos los envíos de un cliente.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente sobre el que se consulta.",
             "schema": {
               "type": "string"
             }
@@ -84,6 +109,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -91,6 +117,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "Número de página solicitada (base 0).",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -99,6 +126,7 @@
           {
             "name": "size",
             "in": "query",
+            "description": "Cantidad máxima de elementos por página.",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -107,7 +135,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Listado de envíos obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSummaryResponsePagedResult"
+                }
+              }
+            }
           }
         }
       }
@@ -117,10 +152,12 @@
         "tags": [
           "MyShipments"
         ],
+        "summary": "Obtiene el listado paginado de envíos de un cliente, aplicando filtros adicionales.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente sobre el que se consulta.",
             "schema": {
               "type": "string"
             }
@@ -128,6 +165,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -135,6 +173,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "Número de página solicitada (base 0).",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -143,6 +182,7 @@
           {
             "name": "size",
             "in": "query",
+            "description": "Cantidad máxima de elementos por página.",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -179,7 +219,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Listado de envíos filtrado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSummaryResponsePagedResult"
+                }
+              }
+            }
           }
         }
       }
@@ -189,10 +236,12 @@
         "tags": [
           "MyShipments"
         ],
+        "summary": "Obtiene el listado paginado (sin filtros) del historial de cambios de todos los envíos de un cliente.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente sobre el que se consulta.",
             "schema": {
               "type": "string"
             }
@@ -200,6 +249,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -207,6 +257,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "Número de página solicitada (base 0).",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -215,6 +266,7 @@
           {
             "name": "size",
             "in": "query",
+            "description": "Cantidad máxima de elementos por página.",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -223,7 +275,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Historial de envíos obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSummaryResponsePagedResult"
+                }
+              }
+            }
           }
         }
       }
@@ -233,10 +292,12 @@
         "tags": [
           "MyShipments"
         ],
+        "summary": "Obtiene el listado paginado del historial de cambios de los envíos de un cliente, aplicando filtros adicionales.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente sobre el que se consulta.",
             "schema": {
               "type": "string"
             }
@@ -244,6 +305,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -251,6 +313,7 @@
           {
             "name": "page",
             "in": "query",
+            "description": "Número de página solicitada (base 0).",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -259,6 +322,7 @@
           {
             "name": "size",
             "in": "query",
+            "description": "Cantidad máxima de elementos por página.",
             "schema": {
               "type": "integer",
               "format": "int64"
@@ -295,7 +359,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Historial de envíos filtrado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientSummaryResponsePagedResult"
+                }
+              }
+            }
           }
         }
       }
@@ -305,10 +376,12 @@
         "tags": [
           "MyShipments"
         ],
+        "summary": "Obtiene el detalle completo de un envío puntual (resumen, seguimiento, fechas logísticas, contenedores, información financiera e historial).",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente dueño del envío.",
             "schema": {
               "type": "string"
             }
@@ -316,6 +389,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -323,6 +397,7 @@
           {
             "name": "documentNumber",
             "in": "query",
+            "description": "Número de documento del envío a consultar.",
             "schema": {
               "type": "string"
             }
@@ -330,7 +405,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Detalle del envío obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetailsShipmentsResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -340,10 +422,12 @@
         "tags": [
           "Reports"
         ],
+        "summary": "Obtiene el resumen de reportes de envíos (totales por estado, rutas frecuentes y valores\r\nfinancieros) de un cliente.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente sobre el que se consulta.",
             "schema": {
               "type": "string"
             }
@@ -351,6 +435,7 @@
           {
             "name": "idQueryClient",
             "in": "query",
+            "description": "Identificador de un cliente específico a consultar; si se omite, se incluyen todos los\r\nclientes asociados al usuario autenticado.",
             "schema": {
               "type": "string"
             }
@@ -358,7 +443,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Resumen de reportes calculado correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportsSummaryResponse"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -368,10 +463,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Obtiene la configuración de notificaciones (canales y eventos) de un cliente.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente.",
             "schema": {
               "type": "string"
             }
@@ -379,7 +476,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Configuración de notificaciones obtenida correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerNotificationsSettingsResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -389,7 +493,9 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Crea la configuración de notificaciones (canales y eventos) de un cliente.",
         "requestBody": {
+          "description": "Configuración de canales y eventos de notificación a crear.",
           "content": {
             "application/json": {
               "schema": {
@@ -410,7 +516,14 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Configuración de notificaciones creada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerNotificationsSettingsResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -420,7 +533,9 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Actualiza la configuración de notificaciones (canales y eventos) de un cliente.",
         "requestBody": {
+          "description": "Configuración de canales y eventos de notificación a actualizar.",
           "content": {
             "application/json": {
               "schema": {
@@ -441,10 +556,10 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Reservado para compatibilidad; este endpoint siempre responde 204."
           },
           "204": {
-            "description": "No Content"
+            "description": "Configuración de notificaciones actualizada correctamente."
           }
         }
       }
@@ -454,9 +569,17 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Obtiene la configuración maestra (global) del sistema.",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Configuración maestra obtenida correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MasterSettingsResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -466,7 +589,9 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Crea la configuración maestra (global) del sistema.",
         "requestBody": {
+          "description": "Datos de la configuración maestra a crear.",
           "content": {
             "application/json": {
               "schema": {
@@ -487,10 +612,24 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Reservado para compatibilidad; este endpoint responde 201 al crear el recurso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MasterSettingsResponseDto"
+                }
+              }
+            }
           },
           "201": {
-            "description": "Created"
+            "description": "Configuración maestra creada correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MasterSettingsResponseDto"
+                }
+              }
+            }
           }
         }
       }
@@ -500,7 +639,9 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Actualiza la configuración maestra (global) del sistema.",
         "requestBody": {
+          "description": "Datos de la configuración maestra a actualizar.",
           "content": {
             "application/json": {
               "schema": {
@@ -521,10 +662,10 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Reservado para compatibilidad; este endpoint siempre responde 204."
           },
           "204": {
-            "description": "No Content"
+            "description": "Configuración maestra actualizada correctamente."
           }
         }
       }
@@ -534,10 +675,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Obtiene el listado paginado de usuarios administrables (Auth0).",
         "parameters": [
           {
             "name": "page",
             "in": "query",
+            "description": "Número de página solicitada (base 1; internamente se ajusta a base 0).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -546,6 +689,7 @@
           {
             "name": "size",
             "in": "query",
+            "description": "Cantidad máxima de usuarios por página.",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -554,10 +698,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Listado de usuarios obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Auth0UserDtoIListPagedResult"
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error inesperado al listar los usuarios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -567,10 +725,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Obtiene un usuario administrable (Auth0) por su identificador.",
         "parameters": [
           {
             "name": "userId",
             "in": "query",
+            "description": "Identificador del usuario en Auth0.",
             "schema": {
               "type": "string"
             }
@@ -578,10 +738,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Usuario obtenido correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Auth0UserDto"
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error inesperado al consultar el usuario (incluye el caso en que no se encuentra).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -591,10 +765,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Actualiza los datos de un usuario administrable (Auth0).",
         "parameters": [
           {
             "name": "userId",
             "in": "path",
+            "description": "Identificador del usuario en Auth0 a actualizar.",
             "required": true,
             "schema": {
               "type": "string"
@@ -602,6 +778,7 @@
           }
         ],
         "requestBody": {
+          "description": "Nuevos datos del usuario.",
           "content": {
             "application/json": {
               "schema": {
@@ -622,10 +799,17 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "Usuario actualizado correctamente."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error inesperado al actualizar el usuario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -635,10 +819,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Elimina un usuario administrable (Auth0).",
         "parameters": [
           {
             "name": "userId",
             "in": "path",
+            "description": "Identificador del usuario en Auth0 a eliminar.",
             "required": true,
             "schema": {
               "type": "string"
@@ -647,10 +833,17 @@
         ],
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "Usuario eliminado correctamente."
           },
           "500": {
-            "description": "Internal Server Error"
+            "description": "Error inesperado al eliminar el usuario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -660,10 +853,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Utilidad de aprovisionamiento: crea la base de datos/esquema de un nuevo cliente.\r\nEndpoint anónimo pensado para uso interno/administrativo, no para el flujo normal de la aplicación.",
         "parameters": [
           {
             "name": "clientId",
             "in": "query",
+            "description": "Identificador del cliente a aprovisionar.",
             "schema": {
               "type": "string"
             }
@@ -681,10 +876,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Utilidad de aprovisionamiento: crea la base de datos/esquema de un nuevo colaborador.\r\nEndpoint anónimo pensado para uso interno/administrativo, no para el flujo normal de la aplicación.",
         "parameters": [
           {
             "name": "clientId",
             "in": "query",
+            "description": "Identificador del colaborador a aprovisionar.",
             "schema": {
               "type": "string"
             }
@@ -702,10 +899,12 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Utilidad de aprovisionamiento: asocia un colaborador existente a un cliente existente.\r\nEndpoint anónimo pensado para uso interno/administrativo, no para el flujo normal de la aplicación.",
         "parameters": [
           {
             "name": "clientId",
             "in": "query",
+            "description": "Identificador del cliente.",
             "schema": {
               "type": "string"
             }
@@ -713,6 +912,7 @@
           {
             "name": "collaborator",
             "in": "query",
+            "description": "Identificador del colaborador a asociar.",
             "schema": {
               "type": "string"
             }
@@ -730,7 +930,9 @@
         "tags": [
           "Settings"
         ],
+        "summary": "Endpoint de prueba: encola un mensaje de notificación en el patrón Outbox para su\r\nposterior publicación. Endpoint anónimo pensado para pruebas, no para el flujo normal de\r\nla aplicación.",
         "requestBody": {
+          "description": "Datos del mensaje a encolar.",
           "content": {
             "application/json": {
               "schema": {
@@ -751,7 +953,7 @@
         },
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "Reservado para compatibilidad; en caso de éxito este endpoint responde 200 con el resultado."
           }
         }
       }
@@ -794,6 +996,172 @@
             "nullable": true
           },
           "nickname": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Auth0UserDtoIListPagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Auth0UserDto"
+              }
+            },
+            "description": "Elementos de la página actual.",
+            "nullable": true
+          },
+          "totalItems": {
+            "type": "integer",
+            "description": "Cantidad total de elementos disponibles (sin paginar).",
+            "format": "int64"
+          },
+          "currentPage": {
+            "type": "integer",
+            "description": "Número de la página actual.",
+            "format": "int64"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Cantidad máxima de elementos por página.",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Cantidad total de páginas, calculada a partir de Connection360.Api.Models.PagedResult`1.TotalItems y Connection360.Api.Models.PagedResult`1.Limit.",
+            "format": "int64",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resultado paginado producido internamente por los controladores antes de que\r\nConnection360.Api.Filters.ApiResponseFilter lo transforme en la respuesta final:\r\nel filtro mueve Connection360.Api.Models.PagedResult`1.Items a `ApiResponse<T>.DataResponse` y el resto de\r\npropiedades a `ApiResponse<T>.Meta`. No es, por lo tanto, la forma final del JSON\r\nque recibe el cliente de la API."
+      },
+      "ClientSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "totalClientRecords": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalImports": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalExports": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalAirShipments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalOceanShipments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalWithIssues": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "recentShipments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResumenClienteResponse"
+            },
+            "nullable": true
+          },
+          "myShipments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResumeMyShipmentsResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClientSummaryResponsePagedResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientSummaryResponse"
+            },
+            "description": "Elementos de la página actual.",
+            "nullable": true
+          },
+          "totalItems": {
+            "type": "integer",
+            "description": "Cantidad total de elementos disponibles (sin paginar).",
+            "format": "int64"
+          },
+          "currentPage": {
+            "type": "integer",
+            "description": "Número de la página actual.",
+            "format": "int64"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Cantidad máxima de elementos por página.",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Cantidad total de páginas, calculada a partir de Connection360.Api.Models.PagedResult`1.TotalItems y Connection360.Api.Models.PagedResult`1.Limit.",
+            "format": "int64",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Resultado paginado producido internamente por los controladores antes de que\r\nConnection360.Api.Filters.ApiResponseFilter lo transforme en la respuesta final:\r\nel filtro mueve Connection360.Api.Models.PagedResult`1.Items a `ApiResponse<T>.DataResponse` y el resto de\r\npropiedades a `ApiResponse<T>.Meta`. No es, por lo tanto, la forma final del JSON\r\nque recibe el cliente de la API."
+      },
+      "ContainerShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "containerType": {
+            "type": "string",
+            "nullable": true
+          },
+          "containerAmount": {
+            "type": "string",
+            "nullable": true
+          },
+          "containerNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "daysOff": {
+            "type": "string",
+            "nullable": true
+          },
+          "daysRemainingDelivery": {
+            "type": "string",
+            "nullable": true
+          },
+          "actualContainerReturnDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "containerDelayDays": {
+            "type": "string",
+            "nullable": true
+          },
+          "costDayOfDelay": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalCostContainerDelays": {
+            "type": "string",
+            "nullable": true
+          },
+          "containerDepot": {
             "type": "string",
             "nullable": true
           }
@@ -870,6 +1238,217 @@
           },
           "notificationEvents": {
             "$ref": "#/components/schemas/NotificationEventsResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DetailsHistoryShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "changeDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "changeUser": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "oldState": {
+            "type": "string",
+            "nullable": true
+          },
+          "newState": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DetailsShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "resumenShipments": {
+            "$ref": "#/components/schemas/SummaryShipmentsResponse"
+          },
+          "trackingShipments": {
+            "$ref": "#/components/schemas/TrackingShipmentsResponse"
+          },
+          "logisticsDatesShipments": {
+            "$ref": "#/components/schemas/LogisticsDatesShipmentsResponse"
+          },
+          "containerShipments": {
+            "$ref": "#/components/schemas/ContainerShipmentsResponse"
+          },
+          "financialInfoShipments": {
+            "$ref": "#/components/schemas/FinancialInfoShipmentsResponse"
+          },
+          "historyShipments": {
+            "$ref": "#/components/schemas/HistoryShipmentsResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FinancialInfoShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "advancePaymentRequestDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "advancePaymentDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "advancePaymentAmount": {
+            "type": "string",
+            "nullable": true
+          },
+          "supplierInvoice": {
+            "type": "string",
+            "nullable": true
+          },
+          "tccInvoice": {
+            "type": "string",
+            "nullable": true
+          },
+          "invoiceNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "invoiceDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "expenseDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "expenseAmountUSD": {
+            "type": "string",
+            "nullable": true
+          },
+          "invoiceSubtotalUSD": {
+            "type": "string",
+            "nullable": true
+          },
+          "ivaUSD": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalInvoiceUSD": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GeneralParametersResponse": {
+        "type": "object",
+        "properties": {
+          "automaticTrackingUpdate": {
+            "type": "boolean"
+          },
+          "requireDocumentUpload": {
+            "type": "boolean"
+          },
+          "publicMonitoring": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "HistoryShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "detailsHistoryShipments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetailsHistoryShipmentsResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocationResponse": {
+        "type": "object",
+        "properties": {
+          "currencyType": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LogisticsDatesShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "storeOriginDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "etdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "etaDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ataDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "storeDestinationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nationalizationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dispatchDestinationDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "formDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "containerDeliveryDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MasterSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "idMasterSettings": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "generalParameters": {
+            "$ref": "#/components/schemas/GeneralParametersResponse"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationResponse"
+          },
+          "system": {
+            "$ref": "#/components/schemas/SystemResponse"
           }
         },
         "additionalProperties": false
@@ -957,6 +1536,350 @@
           },
           "deliveryReminder": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "ReportsFrequentRoutesResponse": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "nullable": true
+          },
+          "destination": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalRoute": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReportsSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "clientNit": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientName": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalClientRecords": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalWithIssuesStatus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalDeliveredStatus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalDestinationCustomsStatus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalOriginCustomsStatus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalInTransitStatus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPendingStatus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalInvoiced": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalAdvancePayment": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalDelays": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalImports": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalExports": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalAirShipments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalOceanShipments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "frequentRoutes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportsFrequentRoutesResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResumeMyShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "clientNit": {
+            "type": "string",
+            "nullable": true
+          },
+          "shipmentMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationType": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientName": {
+            "type": "string",
+            "nullable": true
+          },
+          "origin": {
+            "type": "string",
+            "nullable": true
+          },
+          "destination": {
+            "type": "string",
+            "nullable": true
+          },
+          "etdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atdDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "etaDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ataDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResumenClienteResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "clientNit": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientName": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "origin": {
+            "type": "string",
+            "nullable": true
+          },
+          "destination": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationType": {
+            "type": "string",
+            "nullable": true
+          },
+          "shipmentMode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SummaryShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "clientName": {
+            "type": "string",
+            "nullable": true
+          },
+          "supplier": {
+            "type": "string",
+            "nullable": true
+          },
+          "carrier": {
+            "type": "string",
+            "nullable": true
+          },
+          "merchandiseDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "documentType": {
+            "type": "string",
+            "nullable": true
+          },
+          "origin": {
+            "type": "string",
+            "nullable": true
+          },
+          "destination": {
+            "type": "string",
+            "nullable": true
+          },
+          "loadType": {
+            "type": "string",
+            "nullable": true
+          },
+          "packagesNumbers": {
+            "type": "string",
+            "nullable": true
+          },
+          "weightKg": {
+            "type": "string",
+            "nullable": true
+          },
+          "volumeM3": {
+            "type": "string",
+            "nullable": true
+          },
+          "incoterm": {
+            "type": "string",
+            "nullable": true
+          },
+          "operationType": {
+            "type": "string",
+            "nullable": true
+          },
+          "shipmentMode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SystemResponse": {
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string",
+            "nullable": true
+          },
+          "dataRetentionDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TrackingShipmentsResponse": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "originNameCoordinates": {
+            "type": "string",
+            "nullable": true
+          },
+          "originLatitudCoordinates": {
+            "type": "string",
+            "nullable": true
+          },
+          "originLongitudCoordinates": {
+            "type": "string",
+            "nullable": true
+          },
+          "destinationNameCoordinates": {
+            "type": "string",
+            "nullable": true
+          },
+          "destinationLatitudCoordinates": {
+            "type": "string",
+            "nullable": true
+          },
+          "destinationLongitudCoordinates": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

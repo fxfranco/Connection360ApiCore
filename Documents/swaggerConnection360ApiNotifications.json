@@ -10,10 +10,12 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Obtiene todas las notificaciones asociadas a un cliente.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
+            "description": "Identificador del cliente cuyas notificaciones se desean consultar.",
             "schema": {
               "type": "string"
             }
@@ -21,7 +23,17 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Lista de notificaciones del cliente (puede estar vacía).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection360Notification.Application.DTOs.NotificationsListResponse"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -31,10 +43,12 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Marca una notificación puntual de un cliente como leída.",
         "parameters": [
           {
             "name": "idClient",
             "in": "path",
+            "description": "Identificador del cliente propietario de la notificación.",
             "required": true,
             "schema": {
               "type": "string"
@@ -43,6 +57,7 @@
           {
             "name": "idNotification",
             "in": "path",
+            "description": "Identificador secuencial de la notificación a marcar como leída.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -52,14 +67,14 @@
         ],
         "responses": {
           "204": {
-            "description": "No Content"
+            "description": "La notificación fue marcada como leída correctamente."
           },
           "404": {
-            "description": "Not Found",
+            "description": "No existe una notificación con el identificador indicado para ese cliente.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
                 }
               }
             }
@@ -72,15 +87,17 @@
         "tags": [
           "Notifications"
         ],
+        "summary": "Obtiene todas las notificaciones almacenadas, sin filtrar por cliente.",
+        "description": "Endpoint de prueba (nombre \"allnotificationslistTest\") habilitado con `[AllowAnonymous]`, es decir,\r\nno requiere autenticación. Devuelve directamente las entidades de dominio Connection360Notification.Domain.NotificationMessage\r\ntal como están almacenadas.",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Lista completa de notificaciones.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/NotificationMessage"
+                    "$ref": "#/components/schemas/Connection360Notification.Domain.NotificationMessage"
                   }
                 }
               }
@@ -92,7 +109,83 @@
   },
   "components": {
     "schemas": {
-      "NotificationMessage": {
+      "Connection360Notification.Application.DTOs.NotificationsListResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "idNotification": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "clientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "notificationType": {
+            "$ref": "#/components/schemas/Connection360Notification.Application.Enum.NotificationType"
+          },
+          "documentNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "messageDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notificationStatus": {
+            "$ref": "#/components/schemas/Connection360Notification.Application.Enum.NotificationStatus"
+          },
+          "notificationDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Connection360Notification.Application.Enum.NotificationStatus": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "Connection360Notification.Application.Enum.NotificationType": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "Connection360Notification.Domain.Enums.NotificationStatus": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "Connection360Notification.Domain.Enums.NotificationType": {
+        "enum": [
+          0,
+          1
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "Connection360Notification.Domain.NotificationMessage": {
         "type": "object",
         "properties": {
           "id": {
@@ -108,7 +201,7 @@
             "nullable": true
           },
           "type": {
-            "$ref": "#/components/schemas/NotificationType"
+            "$ref": "#/components/schemas/Connection360Notification.Domain.Enums.NotificationType"
           },
           "documentNumber": {
             "type": "string",
@@ -127,7 +220,7 @@
             "format": "date-time"
           },
           "status": {
-            "$ref": "#/components/schemas/NotificationStatus"
+            "$ref": "#/components/schemas/Connection360Notification.Domain.Enums.NotificationStatus"
           },
           "notificationDate": {
             "type": "string",
@@ -136,23 +229,7 @@
         },
         "additionalProperties": false
       },
-      "NotificationStatus": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
-      "NotificationType": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
-      "ProblemDetails": {
+      "Microsoft.AspNetCore.Mvc.ProblemDetails": {
         "type": "object",
         "properties": {
           "type": {
