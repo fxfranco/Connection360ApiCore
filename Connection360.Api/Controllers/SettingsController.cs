@@ -6,6 +6,7 @@ using Connection360.Application.Ports;
 using Connection360.Application.Ports.Persistence;
 using Connection360.Domain.Dtos;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Connection360.Api.Controllers
@@ -22,16 +23,18 @@ namespace Connection360.Api.Controllers
         private readonly ICustomerNotificationsSettingsUseCase _customerNotificationsSettingsUseCase;
         private readonly IMasterSettingsUseCase _masterSettingsUseCase;
         private readonly ICollaboratorUseCase _collaboratorUseCase;
+        private readonly IOutboxMessagesUseCase _outboxMessagesUseCase;
 
         public SettingsController(IGetUserManagementUseCase getUserManagementUseCase, ICustomerUseCase customerUseCase, 
             ICustomerNotificationsSettingsUseCase customerNotificationsSettingsUseCase,
-            IMasterSettingsUseCase masterSettingsUseCase, ICollaboratorUseCase collaboratorUseCase)
+            IMasterSettingsUseCase masterSettingsUseCase, ICollaboratorUseCase collaboratorUseCase, IOutboxMessagesUseCase outboxMessagesUseCase)
         {
             _getUserManagementUseCase = getUserManagementUseCase;
             _customerUseCase = customerUseCase;
             _customerNotificationsSettingsUseCase = customerNotificationsSettingsUseCase;
             _masterSettingsUseCase = masterSettingsUseCase;
             _collaboratorUseCase = collaboratorUseCase;
+            _outboxMessagesUseCase = outboxMessagesUseCase;
         }
 
         [HttpGet("viewnotifications")]
@@ -222,6 +225,18 @@ namespace Connection360.Api.Controllers
         {
             var resultado = await _collaboratorUseCase.CreateCustomerCollaboratorAsync(clientId, collaborator, cancellationToken);
             return CreatedAtRoute(nameof(CreateCustomerCollaboratorDataBase), new { id = resultado }, resultado);
+        }
+
+        [HttpPost("generatenotificationOutboxTest")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<ActionResult> GeneratenotificationOutbox(CreateOutboxMessagesDto outboxMessages, CancellationToken cancellationToken)
+        {
+            Boolean result = await _outboxMessagesUseCase.CreateAsync(outboxMessages, cancellationToken);
+
+            return result ? Ok(result) : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                   statusCode: StatusCodes.Status500InternalServerError,
+                   title: "Error al generar notificacion outbox en el api core");
         }
     }
 }

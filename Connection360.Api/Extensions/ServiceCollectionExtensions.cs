@@ -48,6 +48,7 @@ namespace Connection360.Api.Extensions
             services.AddScoped<ICustomerUseCase, CustomerUseCase>();
             services.AddScoped<IMasterSettingsUseCase, MasterSettingsUseCase>();
             services.AddScoped<ICollaboratorUseCase, CollaboratorUseCase>();
+            services.AddScoped<IOutboxMessagesUseCase, OutboxMessagesUseCase>();
 
             return services;
         }

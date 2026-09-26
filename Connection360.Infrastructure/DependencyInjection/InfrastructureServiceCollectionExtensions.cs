@@ -3,6 +3,7 @@ using Connection360.Domain.Interfaces;
 using Connection360.Domain.Ports.Persistence;
 using Connection360.Infrastructure.Adapters.Output;
 using Connection360.Infrastructure.ExternalApi;
+using Connection360.Infrastructure.Messaging;
 using Connection360.Infrastructure.Persistence;
 using Connection360.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.Configuration;
@@ -62,9 +63,13 @@ namespace Connection360.Infrastructure.DependencyInjection
             services.AddScoped<IMasterSettingsRepository, MasterSettingsRepository>();
             services.AddScoped<ICollaboratorRepository, CollaboratorRepository>();
             services.AddScoped<ICustomersOfCollaboratorsRepository, CustomersOfCollaboratorsRepository>();
+            services.AddScoped<IOutboxMessagesRepository, OutboxMessagesRepository>();
 
             // 3. Registrar UnitOfWork como SCOPED (Garantiza 1 conexión/transacción por petición HTTP) (Persistencia)
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            // 3. Worker Background Service para Consumo de Kafka
+            services.AddHostedService<OutboxPublisherWorker>();
 
             return services;
         }

@@ -1,11 +1,8 @@
 ﻿using Asp.Versioning;
 using Connection360Notification.Application.DTOs;
-using Connection360Notification.Application.Enum;
 using Connection360Notification.Application.Ports;
 using Connection360Notification.Application.Ports.Inbound;
-using Connection360Notification.Application.Ports.Output;
 using Connection360Notification.Domain;
-using Connection360Notification.Domain.Ports.Outbound;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,7 +26,7 @@ namespace Connection360Notification.Api.Controllers
             _notificationUseCase = notificationUseCase;
         }
 
-        [HttpGet("getclientnotificatios")]
+        [HttpGet("allnotifications")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllNotifications([FromQuery] String idClient, CancellationToken cancellationToken)
@@ -37,17 +34,6 @@ namespace Connection360Notification.Api.Controllers
             ClientSummaryRequest request = new ClientSummaryRequest { IdClient = idClient, RoleName = String.Empty };
             List<NotificationsListResponse> result = await _getNotificationsUseCase.ExecuteGetNotificationsByClientAsync(request, cancellationToken);
             return Ok(result);
-        }
-
-        [HttpGet("allnotifications")]
-        [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(IEnumerable<NotificationMessage>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllNotificationsDB(CancellationToken cancellationToken)
-        {
-            //var notifications = await _notificationRepository.GetAllAsync(cancellationToken);
-            var notifications = await _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(cancellationToken);
-            return Ok(notifications);
         }
 
         [HttpPatch("readnotification/{idClient}/{idNotification}")]
@@ -67,24 +53,34 @@ namespace Connection360Notification.Api.Controllers
             return NoContent();
         }
 
+        [HttpGet("allnotificationslistTest")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IEnumerable<NotificationMessage>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllNotificationsDB(CancellationToken cancellationToken)
+        {
+            var notifications = await _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(cancellationToken);
+            return Ok(notifications);
+        }
+
         /// <summary>
         /// Envía una notificación produciendo un evento en Kafka.
         /// </summary>
-        [HttpPost("simulatenotifications")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> SendNotification([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
-        {
-            if (request == null || string.IsNullOrWhiteSpace(request.Recipient))
-            {
-                return BadRequest("Solicitud inválida.");
-            }
+        //[HttpPost("simulatenotifications")]
+        //[AllowAnonymous]
+        ////[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
+        //[ProducesResponseType(StatusCodes.Status202Accepted)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //public async Task<IActionResult> SendNotification([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
+        //{
+        //    if (request == null || string.IsNullOrWhiteSpace(request.Recipient))
+        //    {
+        //        return BadRequest("Solicitud inválida.");
+        //    }
 
-            await _notificationUseCase.ExecuteSendAsync(request, cancellationToken);
+        //    await _notificationUseCase.ExecuteSendAsync(request, cancellationToken);
 
-            return Accepted(new { Message = "Notificación enviada a cola de procesamiento." });
-        }
+        //    return Accepted(new { Message = "Notificación enviada a cola de procesamiento." });
+        //}
     }
 }

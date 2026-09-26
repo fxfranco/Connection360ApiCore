@@ -3,6 +3,7 @@ using Connection360.Api.Filters;
 using Connection360.Api.Middleware;
 using Connection360.Api.Models;
 using Connection360.Infrastructure.DependencyInjection;
+using Connection360Notification.Domain.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Npgsql;
@@ -19,6 +20,9 @@ var connectionString = builder.Configuration.GetConnectionString("PostgresConnec
 builder.Services.AddSingleton(sp => NpgsqlDataSource.Create(connectionString));
 
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+builder.Services.Configure<KafkaSettings>(
+    builder.Configuration.GetSection("KafkaSettings"));
 
 builder.Services.AddApplicationServices();               // Application (casos de uso)
 builder.Services.AddJwtAuthentication(builder.Configuration);
