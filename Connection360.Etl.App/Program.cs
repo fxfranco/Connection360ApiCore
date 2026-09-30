@@ -13,8 +13,15 @@ using Npgsql;
 // Application/Infrastructure registradas mediante sus propias extensiones de IServiceCollection.
 var builder = Host.CreateApplicationBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("PostgresConnection")
-    ?? throw new InvalidOperationException("La conexión 'PostgresConnection' no está configurada en appsettings.json.");
+// String.IsNullOrWhiteSpace (no solo "?? throw" sobre null): un appsettings.json de producción
+// con "PostgresConnection": "" (placeholder en blanco a propósito, para no versionar credenciales
+// reales) es una cadena VACÍA, no null, así que "??" nunca disparaba este throw -el proceso seguía
+// de largo y terminaba crasheando más adelante, sin manejar, dentro de NpgsqlDataSource.Create(""),
+// con un mensaje críptico y un código de salida de excepción no controlada en vez de este mensaje
+// claro.
+var connectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+if (String.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("La conexión 'PostgresConnection' no está configurada en appsettings.json.");
 
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 

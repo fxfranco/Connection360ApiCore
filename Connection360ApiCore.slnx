@@ -4,6 +4,7 @@
     <Project Path="Connection360.Etl.Application/Connection360.Etl.Application.csproj" Id="591090b2-8108-4f3e-9dbf-1c7dd64ba223" />
     <Project Path="Connection360.Etl.Domain/Connection360.Etl.Domain.csproj" Id="928fe18e-5e50-496c-a1a5-b6bbb3828349" />
     <Project Path="Connection360.Etl.Infrastructure/Connection360.Etl.Infrastructure.csproj" Id="9a7ae85b-a551-46f3-ad20-ebccd81a22f9" />
+    <Project Path="Connection360.Etl.Orchestrator/Connection360.Etl.Orchestrator.csproj" Id="17413b14-5040-4c4d-a305-42fb838588ab" />
   </Folder>
   <Folder Name="/Notifications/">
     <Project Path="Connection360Notification.Api/Connection360Notification.Api.csproj" Id="de037868-2d58-4b6d-a20b-dc856c699028" />
