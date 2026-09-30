@@ -45,32 +45,7 @@ Console.CancelKeyPress += (_, eventArgs) =>
 // ya que UnitOfWork solo implementa IAsyncDisposable (ver la corrección aplicada en
 // Connection360.Infrastructure.Messaging.OutboxPublisherWorker por el mismo motivo).
 
-// ---------- 1. Proceso ETL principal: bodega de datos de envíos (connection360write.application_data_sheet) ----------
-Boolean mainEtlSuccess;
-await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
-{
-    var runEtlProcessUseCase = scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>();
-
-    var result = await runEtlProcessUseCase.ExecuteAsync(cancellationTokenSource.Token);
-
-    foreach (var (apiName, count) in result.ExtractedRecordsByApi)
-    {
-        logger.LogInformation("Extract [{Api}]: {Count} registros", apiName, count);
-    }
-
-    logger.LogInformation(
-        "Corrida ETL (bodega de datos) finalizada. Éxito={Success}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
-        result.Success, result.TransformedRecords, result.LoadedRecords, result.Duration);
-
-    if (!result.Success)
-    {
-        logger.LogError("Detalle del error: {ErrorMessage}", result.ErrorMessage);
-    }
-
-    mainEtlSuccess = result.Success;
-}
-
-// ---------- 2. Proceso ETL de logs: independiente del anterior (DATALOGS -> connection360write.log_status_tracking) ----------
+// ---------- 1. Proceso ETL de logs: independiente del anterior (DATALOGS -> connection360write.log_status_tracking) ----------
 // Corre después del proceso principal (scope propio, transacción propia): su éxito o fracaso no
 // depende del resultado del paso 1 ni lo afecta, ya que son flujos completamente independientes.
 Boolean logsEtlSuccess;
@@ -95,6 +70,31 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
     }
 
     logsEtlSuccess = result.Success;
+}
+
+// ---------- 2. Proceso ETL principal: bodega de datos de envíos (connection360write.application_data_sheet) ----------
+Boolean mainEtlSuccess;
+await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
+{
+    var runEtlProcessUseCase = scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>();
+
+    var result = await runEtlProcessUseCase.ExecuteAsync(cancellationTokenSource.Token);
+
+    foreach (var (apiName, count) in result.ExtractedRecordsByApi)
+    {
+        logger.LogInformation("Extract [{Api}]: {Count} registros", apiName, count);
+    }
+
+    logger.LogInformation(
+        "Corrida ETL (bodega de datos) finalizada. Éxito={Success}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
+        result.Success, result.TransformedRecords, result.LoadedRecords, result.Duration);
+
+    if (!result.Success)
+    {
+        logger.LogError("Detalle del error: {ErrorMessage}", result.ErrorMessage);
+    }
+
+    mainEtlSuccess = result.Success;
 }
 
 // ---------- 3. Depuración de connection360write.etl_job_control (proceso independiente) ----------

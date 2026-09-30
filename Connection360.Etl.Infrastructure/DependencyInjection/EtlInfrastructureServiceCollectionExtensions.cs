@@ -24,6 +24,7 @@ namespace Connection360.Etl.Infrastructure.DependencyInjection
         {
             services.Configure<ExternalApiSettings>(configuration.GetSection(ExternalApiSettings.SectionName));
             services.Configure<EtlJobControlSettings>(configuration.GetSection(EtlJobControlSettings.SectionName));
+            services.Configure<EtlChangeTrackingSettings>(configuration.GetSection(EtlChangeTrackingSettings.SectionName));
 
             // Cargar la sección directamente para poder registrar un HttpClient con nombre por cada API
             var externalApiSettings = configuration.GetSection(ExternalApiSettings.SectionName).Get<ExternalApiSettings>();
@@ -54,10 +55,16 @@ namespace Connection360.Etl.Infrastructure.DependencyInjection
             // Transform del proceso ETL de logs (independiente del anterior).
             services.AddScoped<ILogStatusMappingService, LogStatusMappingService>();
 
+            // Detección de cambios de ESTADO/COMENTARIO (dominio, sin I/O) y catálogo de mensajes de
+            // notificación asociados - ver RunEtlProcessUseCase / EtlChangeNotifier.
+            services.AddScoped<IApplicationDataSheetChangeDetector, ApplicationDataSheetChangeDetector>();
+            services.AddScoped<IEtlChangeMessageCatalog, EtlChangeMessageCatalog>();
+
             // Persistencia (Load) - misma composición Session/UnitOfWork/Repositorio que Connection360.Infrastructure
             services.AddScoped<DbSession>();
             services.AddScoped<IApplicationDataSheetRepository, ApplicationDataSheetRepository>();
             services.AddScoped<ILogStatusTrackingRepository, LogStatusTrackingRepository>();
+            services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
             services.AddScoped<IEtlJobControlRepository, EtlJobControlRepository>();
             services.AddScoped<IUnitOfWork, Connection360.Etl.Infrastructure.Persistence.UnitOfWork>();
 

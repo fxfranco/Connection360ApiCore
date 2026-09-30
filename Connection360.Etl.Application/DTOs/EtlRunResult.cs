@@ -25,6 +25,27 @@ namespace Connection360.Etl.Application.DTOs
         /// <summary>Cantidad de filas insertadas/actualizadas en la bodega de datos (paso Load).</summary>
         public Int32 LoadedRecords { get; set; }
 
+        /// <summary>
+        /// true cuando esta corrida fue la migración/carga inicial de application_data_sheet (no
+        /// existía todavía un registro COMPLETED del job "application_data_sheet_migration" en
+        /// etl_job_control): en ese caso no se detectan cambios en absoluto, así que
+        /// <see cref="StateChangesDetected"/> y <see cref="CommentChangesDetected"/> quedan en 0.
+        /// </summary>
+        public Boolean IsInitialMigrationRun { get; set; }
+
+        /// <summary>
+        /// Cantidad de documentos en los que se detectó un cambio de ESTADO frente a lo que ya había
+        /// en application_data_sheet (cada uno generó una fila en log_status_tracking y un mensaje en
+        /// outbox_messages con event_type "ChangeState").
+        /// </summary>
+        public Int32 StateChangesDetected { get; set; }
+
+        /// <summary>
+        /// Cantidad de documentos en los que se detectó un cambio de COMENTARIO y/o FECHA COMENTARIO
+        /// (cada uno generó un mensaje en outbox_messages con event_type "Comment").
+        /// </summary>
+        public Int32 CommentChangesDetected { get; set; }
+
         /// <summary>Indica si la ejecución terminó sin errores.</summary>
         public Boolean Success { get; set; }
 

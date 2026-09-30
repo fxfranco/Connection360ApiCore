@@ -21,18 +21,21 @@ namespace Connection360.Etl.App.Extensions
         public static IServiceCollection AddEtlApplicationServices(this IServiceCollection services)
         {
             // RunEtlProcessUseCase/RunLogsEtlProcessUseCase (Application) no pueden depender de
-            // ExternalApiSettings (Infrastructure), así que es esta fábrica -al igual que la de
-            // IPurgeEtlJobControlUseCase más abajo- quien resuelve el PageSize global configurado y lo
-            // pasa como un Int32? plano. El mismo valor se usa para las 5 APIs operativas (vía
-            // ExternalDataApiGateway) y para el que se registra en etl_job_control, garantizando que
-            // ambos siempre coincidan.
+            // ExternalApiSettings/EtlChangeTrackingSettings (Infrastructure), así que es esta fábrica
+            // -al igual que la de IPurgeEtlJobControlUseCase más abajo- quien resuelve esos valores de
+            // configuración y los pasa como tipos planos (Int32?/String). El mismo PageSize se usa
+            // para las 5 APIs operativas (vía ExternalDataApiGateway) y para el que se registra en
+            // etl_job_control, garantizando que ambos siempre coincidan.
             services.AddScoped<IRunEtlProcessUseCase>(sp =>
             {
                 var externalApiSettings = sp.GetRequiredService<IOptions<ExternalApiSettings>>().Value;
+                var changeTrackingSettings = sp.GetRequiredService<IOptions<EtlChangeTrackingSettings>>().Value;
                 var externalDataGateway = sp.GetRequiredService<IExternalDataGateway>();
                 var merger = sp.GetRequiredService<IDynamicDataSetMerger>();
                 var mappingService = sp.GetRequiredService<IShipmentsDataSheetMappingService>();
                 var unitOfWork = sp.GetRequiredService<IUnitOfWork>();
+                var changeDetector = sp.GetRequiredService<IApplicationDataSheetChangeDetector>();
+                var messageCatalog = sp.GetRequiredService<IEtlChangeMessageCatalog>();
                 var logger = sp.GetRequiredService<ILogger<RunEtlProcessUseCase>>();
                 return new RunEtlProcessUseCase(
                     externalDataGateway,
@@ -40,6 +43,9 @@ namespace Connection360.Etl.App.Extensions
                     mappingService,
                     unitOfWork,
                     ResolveGlobalPageSize(externalApiSettings),
+                    changeDetector,
+                    messageCatalog,
+                    changeTrackingSettings.SystemUser,
                     logger);
             });
 

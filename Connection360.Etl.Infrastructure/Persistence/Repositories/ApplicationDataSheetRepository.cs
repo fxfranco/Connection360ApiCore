@@ -122,5 +122,86 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
             // la suma de filas afectadas.
             return await _session.Connection.ExecuteAsync(command);
         }
+
+        public async Task<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>> GetChangeSnapshotsAsync(
+            IEnumerable<String> documentNumbers, CancellationToken cancellationToken = default)
+        {
+            var documentsList = documentNumbers?.Where(d => !String.IsNullOrWhiteSpace(d)).Distinct().ToList()
+                ?? new List<String>();
+
+            if (documentsList.Count == 0)
+                return new Dictionary<String, ApplicationDataSheetChangeSnapshot>(StringComparer.Ordinal);
+
+            await _session.EnsureConnectionOpenAsync(cancellationToken);
+
+            // Solo se seleccionan las columnas necesarias para detectar cambios (no la fila
+            // completa de ~50 columnas), acotado a los documentos de la ronda actual (= ANY), en un
+            // único round-trip: minimiza el impacto en rendimiento/transferencia de datos de este
+            // paso adicional. AS con el nombre exacto de la propiedad porque Connection360.Etl.App no
+            // habilita Dapper.DefaultTypeMap.MatchNamesWithUnderscores (eso solo se configura en el
+            // proceso de la API principal, Connection360.Api/Program.cs).
+            // fecha_comentario es DATE en Postgres: Npgsql 10 lo devuelve por defecto como
+            // System.DateOnly, que Dapper no puede convertir automáticamente a una propiedad
+            // DateTime (ApplicationDataSheetChangeSnapshot.FechaComentario). El cast ::timestamp
+            // fuerza a Postgres a devolver un timestamp, que Npgsql sí mapea a DateTime.
+            const string query = @"
+                SELECT id AS ""Id"",
+                       documento_transporte_hbl AS ""DocumentoTransporteHbl"",
+                       estado AS ""Estado"",
+                       comentario AS ""Comentario"",
+                       fecha_comentario::timestamp AS ""FechaComentario""
+                FROM connection360write.application_data_sheet
+                WHERE documento_transporte_hbl = ANY(@Documents);";
+
+            var command = new CommandDefinition(
+                query,
+                new { Documents = documentsList },
+                transaction: _session.Transaction,
+                cancellationToken: cancellationToken);
+
+            var rows = await _session.Connection.QueryAsync<ApplicationDataSheetChangeSnapshot>(command);
+
+            return rows.ToDictionary(r => r.DocumentoTransporteHbl, StringComparer.Ordinal);
+        }
+
+        public async Task<IReadOnlyDictionary<String, Int64>> GetIdsByDocumentAsync(
+            IEnumerable<String> documentNumbers, CancellationToken cancellationToken = default)
+        {
+            var documentsList = documentNumbers?.Where(d => !String.IsNullOrWhiteSpace(d)).Distinct().ToList()
+                ?? new List<String>();
+
+            if (documentsList.Count == 0)
+                return new Dictionary<String, Int64>(StringComparer.Ordinal);
+
+            await _session.EnsureConnectionOpenAsync(cancellationToken);
+
+            // Solo Id + documento_transporte_hbl (ni siquiera las 4 columnas de
+            // GetChangeSnapshotsAsync): esta consulta solo se usa para resolver el Id recién
+            // generado de los documentos NUEVOS de la ronda, después del upsert.
+            const string query = @"
+                SELECT id AS ""Id"",
+                       documento_transporte_hbl AS ""DocumentoTransporteHbl""
+                FROM connection360write.application_data_sheet
+                WHERE documento_transporte_hbl = ANY(@Documents);";
+
+            var command = new CommandDefinition(
+                query,
+                new { Documents = documentsList },
+                transaction: _session.Transaction,
+                cancellationToken: cancellationToken);
+
+            var rows = await _session.Connection.QueryAsync<DocumentIdProjection>(command);
+
+            return rows.ToDictionary(r => r.DocumentoTransporteHbl, r => r.Id, StringComparer.Ordinal);
+        }
+
+        // Proyección interna únicamente para el mapeo de Dapper de GetIdsByDocumentAsync: no cruza
+        // el puerto de dominio (que expone un simple IReadOnlyDictionary<String, Int64>), así que no
+        // hace falta declararla en Connection360.Etl.Domain.
+        private sealed class DocumentIdProjection
+        {
+            public Int64 Id { get; set; }
+            public String DocumentoTransporteHbl { get; set; } = String.Empty;
+        }
     }
 }

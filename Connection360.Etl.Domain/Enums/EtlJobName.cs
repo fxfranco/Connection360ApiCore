@@ -12,7 +12,16 @@ namespace Connection360.Etl.Domain.Enums
         ApplicationDataSheet,
 
         /// <summary>Proceso ETL de logs: histórico de cambios de estado (RunLogsEtlProcessUseCase).</summary>
-        LogStatusTracking
+        LogStatusTracking,
+
+        /// <summary>
+        /// Marcador de control (no es un proceso propio): mientras no exista un registro COMPLETED
+        /// de este job, RunEtlProcessUseCase trata la corrida como la migración/carga inicial de
+        /// connection360write.application_data_sheet y omite la detección de cambios (estado/
+        /// comentario). Una vez completa sin error, queda marcado COMPLETED para siempre: las
+        /// corridas siguientes ya hacen la validación completa de cambios.
+        /// </summary>
+        ApplicationDataSheetMigration
     }
 
     /// <summary>Conversión explícita entre <see cref="EtlJobName"/> y el valor persistido en la columna job_name (VARCHAR).</summary>
@@ -27,6 +36,7 @@ namespace Connection360.Etl.Domain.Enums
         {
             EtlJobName.ApplicationDataSheet => "application_data_sheet",
             EtlJobName.LogStatusTracking => "log_status_tracking",
+            EtlJobName.ApplicationDataSheetMigration => "application_data_sheet_migration",
             _ => throw new ArgumentOutOfRangeException(nameof(jobName), jobName, "EtlJobName sin valor de base de datos asignado.")
         };
 
@@ -34,6 +44,7 @@ namespace Connection360.Etl.Domain.Enums
         {
             "application_data_sheet" => EtlJobName.ApplicationDataSheet,
             "log_status_tracking" => EtlJobName.LogStatusTracking,
+            "application_data_sheet_migration" => EtlJobName.ApplicationDataSheetMigration,
             _ => throw new ArgumentOutOfRangeException(nameof(dbValue), dbValue, "job_name desconocido en etl_job_control.")
         };
     }
