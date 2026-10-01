@@ -15,14 +15,14 @@ namespace Connection360.Infrastructure.Messaging
         private readonly ILogger<OutboxPublisherWorker> _logger;
         private readonly IProducer<String, String> _producer;
         private readonly KafkaSettings _kafkaSettings;
+        private readonly IOptionsMonitor<OutboxPublisherSettings> _outboxPublisherSettings;
 
-        private const Int16 timeExecute = 10;
-
-        public OutboxPublisherWorker(IServiceScopeFactory scopeFactory, ILogger<OutboxPublisherWorker> logger, IOptions<KafkaSettings> kafkaSettings)
+        public OutboxPublisherWorker(IServiceScopeFactory scopeFactory, ILogger<OutboxPublisherWorker> logger, IOptions<KafkaSettings> kafkaSettings, IOptionsMonitor<OutboxPublisherSettings> outboxPublisherSettings)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
             _kafkaSettings = kafkaSettings.Value;
+            _outboxPublisherSettings = outboxPublisherSettings;
 
             var config = new ProducerConfig
             {
@@ -34,9 +34,22 @@ namespace Connection360.Infrastructure.Messaging
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(timeExecute));
+            // El intervalo se obtiene de IOptionsMonitor (no IOptions) justamente para poder
+            // cambiarlo en caliente: ASP.NET Core recarga el appsettings automáticamente
+            // (reloadOnChange) e IOptionsMonitor.CurrentValue siempre refleja el último valor leído
+            // del archivo, sin necesidad de recompilar ni reiniciar la aplicación.
+            using var timer = new PeriodicTimer(GetPollingInterval());
             while (!cancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync(cancellationToken))
             {
+                // Si el valor configurado cambió desde el ciclo anterior, se reasigna el Period del
+                // propio PeriodicTimer para que el nuevo intervalo tenga efecto a partir del
+                // siguiente tick, sin reiniciar el worker.
+                TimeSpan currentInterval = GetPollingInterval();
+                if (timer.Period != currentInterval)
+                {
+                    timer.Period = currentInterval;
+                }
+
                 // 2. Creación del Scope manual para este ciclo de ejecución
                 DateTime date = DateTime.Now;
                 _logger.LogInformation("Iniciando OutboxPublisherWorker {Date}", date);
@@ -85,6 +98,23 @@ namespace Connection360.Infrastructure.Messaging
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Obtiene el intervalo de sondeo configurado actualmente (sección "OutboxPublisher" del
+        /// appsettings de Connection360.Api), devolviendo
+        /// <see cref="OutboxPublisherSettings.DefaultPollingIntervalSeconds"/> si el valor
+        /// configurado es inválido (menor o igual a cero).
+        /// </summary>
+        private TimeSpan GetPollingInterval()
+        {
+            Int16 seconds = _outboxPublisherSettings.CurrentValue.PollingIntervalSeconds;
+            if (seconds <= 0)
+            {
+                seconds = OutboxPublisherSettings.DefaultPollingIntervalSeconds;
+            }
+
+            return TimeSpan.FromSeconds(seconds);
         }
     }
 }

@@ -26,6 +26,11 @@ namespace Connection360.Infrastructure.DependencyInjection
         {
             services.Configure<ExternalApiSettings>(configuration.GetSection(ExternalApiSettings.SectionName));
 
+            // Intervalo de sondeo del OutboxPublisherWorker: se registra con IOptionsMonitor (vía
+            // Configure<T>) para que el valor configurado en el appsettings de Connection360.Api
+            // pueda cambiarse en caliente, sin recompilar ni reiniciar la aplicación.
+            services.Configure<OutboxPublisherSettings>(configuration.GetSection(OutboxPublisherSettings.SectionName));
+
             // Cargar la sección directamente
             var externalApiSettings = configuration.GetSection(ExternalApiSettings.SectionName).Get<ExternalApiSettings>();
 
