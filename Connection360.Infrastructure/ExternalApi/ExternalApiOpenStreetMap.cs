@@ -9,10 +9,10 @@ namespace Connection360.Infrastructure.ExternalApi
     public class ExternalApiOpenStreetMap : IExternalApiOpenStreetMap
     {
         private readonly ExternalApiSettings _settings;
-        private readonly ILogger<ExternalDataApiGateway> _logger;
+        private readonly ILogger<ExternalApiOpenStreetMap> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        public ExternalApiOpenStreetMap(IHttpClientFactory httpClientFactory, Microsoft.Extensions.Options.IOptions<ExternalApiSettings> settings, ILogger<ExternalDataApiGateway> logger)
+        public ExternalApiOpenStreetMap(IHttpClientFactory httpClientFactory, Microsoft.Extensions.Options.IOptions<ExternalApiSettings> settings, ILogger<ExternalApiOpenStreetMap> logger)
         {
             _httpClientFactory = httpClientFactory;
             _settings = settings.Value;

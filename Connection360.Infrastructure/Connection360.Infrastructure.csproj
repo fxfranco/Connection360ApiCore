@@ -31,6 +31,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Adapters\Input\" />
+	  <Folder Include="Mappers\" />
 	</ItemGroup>
 
 </Project>

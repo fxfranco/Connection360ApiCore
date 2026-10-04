@@ -27,7 +27,7 @@ namespace Connection360.Infrastructure.Tests.ExternalApi
         {
             var settings = BuildSettings();
             var factory = new FakeHttpClientFactory(FakeHttpMessageHandler.ReturningJson("[]"));
-            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<Connection360.Infrastructure.ExternalApi.ExternalDataApiGateway>.Instance);
+            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<ExternalApiOpenStreetMap>.Instance);
 
             Func<Task> act = () => service.GetCoordinates("NO_EXISTE", "Bogota", CancellationToken.None);
 
@@ -44,7 +44,7 @@ namespace Connection360.Infrastructure.Tests.ExternalApi
             ]
             """;
             var factory = new FakeHttpClientFactory(FakeHttpMessageHandler.ReturningJson(json));
-            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<Connection360.Infrastructure.ExternalApi.ExternalDataApiGateway>.Instance);
+            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<ExternalApiOpenStreetMap>.Instance);
 
             OpenStreetMapDto result = await service.GetCoordinates("OPENSTREETMAP", "Bogota", CancellationToken.None);
 
@@ -58,7 +58,7 @@ namespace Connection360.Infrastructure.Tests.ExternalApi
         {
             var settings = BuildSettings();
             var factory = new FakeHttpClientFactory(FakeHttpMessageHandler.ReturningJson("[]"));
-            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<Connection360.Infrastructure.ExternalApi.ExternalDataApiGateway>.Instance);
+            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<ExternalApiOpenStreetMap>.Instance);
 
             Func<Task> act = () => service.GetCoordinates("OPENSTREETMAP", "LugarInexistente", CancellationToken.None);
 
@@ -70,7 +70,7 @@ namespace Connection360.Infrastructure.Tests.ExternalApi
         {
             var settings = BuildSettings();
             var factory = new FakeHttpClientFactory(FakeHttpMessageHandler.ReturningStatus(HttpStatusCode.BadGateway));
-            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<Connection360.Infrastructure.ExternalApi.ExternalDataApiGateway>.Instance);
+            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<ExternalApiOpenStreetMap>.Instance);
 
             Func<Task> act = () => service.GetCoordinates("OPENSTREETMAP", "Bogota", CancellationToken.None);
 
@@ -84,7 +84,7 @@ namespace Connection360.Infrastructure.Tests.ExternalApi
             const String json = """[ { "display_name": "X", "lat": "1", "lon": "2" } ]""";
             var handler = FakeHttpMessageHandler.ReturningJson(json);
             var factory = new FakeHttpClientFactory(handler);
-            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<Connection360.Infrastructure.ExternalApi.ExternalDataApiGateway>.Instance);
+            var service = new ExternalApiOpenStreetMap(factory, Options.Create(settings), NullLogger<ExternalApiOpenStreetMap>.Instance);
 
             await service.GetCoordinates("OPENSTREETMAP", "San Jose & Cia", CancellationToken.None);
 

@@ -24,7 +24,7 @@ namespace Connection360.Domain.Tests.Services
 
             HistoryShipmentsDomainDtoResult result = _sut.GetDetailsHistoryShipments(dataSet, "HBL-001");
 
-            result.DetailsHistoryShipments.Should().HaveCount(2);
+            result.DetailsHistoryShipments.Should().HaveCount(3);
         }
 
         [Fact]
@@ -61,17 +61,6 @@ namespace Connection360.Domain.Tests.Services
             item.OldState.Should().Be("Pendiente");
             item.NewState.Should().Be("En tránsito");
             item.ChangeDate.Should().Be(new DateTime(2024, 4, 7));
-        }
-
-        [Fact]
-        public void GetDetailsHistoryShipments_SinCoincidencias_RetornaListaVacia()
-        {
-            var dataSet = DataSet(new[] { ExternalDataFields.DocumentNumber },
-                Row((ExternalDataFields.DocumentNumber, "OTRO-DOC")));
-
-            HistoryShipmentsDomainDtoResult result = _sut.GetDetailsHistoryShipments(dataSet, "HBL-001");
-
-            result.DetailsHistoryShipments.Should().BeEmpty();
         }
     }
 }

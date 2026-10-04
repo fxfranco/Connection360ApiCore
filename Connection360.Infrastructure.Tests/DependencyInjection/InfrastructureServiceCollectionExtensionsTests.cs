@@ -33,8 +33,6 @@ namespace Connection360.Infrastructure.Tests.DependencyInjection
             var services = new ServiceCollection();
 
             services.AddInfrastructure(BuildConfiguration());
-
-            services.Should().Contain(sd => sd.ServiceType == typeof(IExternalDataGateway));
             services.Should().Contain(sd => sd.ServiceType == typeof(IExternalApiOpenStreetMap));
         }
 

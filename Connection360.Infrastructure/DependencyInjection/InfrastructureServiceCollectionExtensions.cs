@@ -51,7 +51,6 @@ namespace Connection360.Infrastructure.DependencyInjection
                     });
                 }
             }
-            services.AddScoped<IExternalDataGateway, ExternalDataApiGateway>();
             services.AddScoped<IExternalApiOpenStreetMap, ExternalApiOpenStreetMap>();
 
             // Auth0 UserManagements
