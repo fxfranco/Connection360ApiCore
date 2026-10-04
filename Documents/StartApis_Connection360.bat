@@ -26,38 +26,42 @@ echo.
 :: 3. Puerto o Endpoint de prueba
 :: ============================================================================
 
-:: --- API 1: ApiCore ---
+:: ============================================================================
+:: EJECUCIÓN DE CADA API EN VENTANA INDEPENDIENTE
+:: ============================================================================
+
+:: --- API 1: Connection360Notification ---
 set "SUB_DIR=Apis\Connection360Notification.Api"
 set "DLL_NAME=Connection360Notification.Api.dll"
 set "URL_TEST1=https://localhost:44370/health"
 
 echo [1/3] Lanzando API Connection360Notification...
 if exist "%RAIZ%%SUB_DIR%\%DLL_NAME%" (
-    start /b "" cmd /c "cd /d "%RAIZ%%SUB_DIR%" && dotnet "%DLL_NAME%"" > nul 2>&1
+    start "API - Connection360Notification" cmd /k "cd /d "%RAIZ%%SUB_DIR%" && dotnet "%DLL_NAME%""
 ) else (
     echo   [ERROR] No se encontro el archivo: %RAIZ%%SUB_DIR%\%DLL_NAME%
 )
 
-:: --- API 2: ApiCore ---
+:: --- API 2: Connection360.Api ---
 set "SUB_DIR=Apis\Connection360.Api"
 set "DLL_NAME=Connection360.Api.dll"
 set "URL_TEST2=https://localhost:44369/health"
 
 echo [2/3] Lanzando API Connection360...
 if exist "%RAIZ%%SUB_DIR%\%DLL_NAME%" (
-    start /b "" cmd /c "cd /d "%RAIZ%%SUB_DIR%" && dotnet "%DLL_NAME%"" > nul 2>&1
+    start "API - Connection360" cmd /k "cd /d "%RAIZ%%SUB_DIR%" && dotnet "%DLL_NAME%""
 ) else (
     echo   [ERROR] No se encontro el archivo: %RAIZ%%SUB_DIR%\%DLL_NAME%
 )
 
-:: --- API 3: ApiGateway ---
+:: --- API 3: Connection360.ApiGateway ---
 set "SUB_DIR=Apis\Connection360.ApiGateway"
 set "DLL_NAME=Connection360.ApiGateway.dll"
 set "URL_TEST3=https://localhost:44368/health"
 
 echo [3/3] Lanzando API Connection360 ApiGateway...
 if exist "%RAIZ%%SUB_DIR%\%DLL_NAME%" (
-    start /b "" cmd /c "cd /d "%RAIZ%%SUB_DIR%" && dotnet "%DLL_NAME%"" > nul 2>&1
+    start "API - ApiGateway" cmd /k "cd /d "%RAIZ%%SUB_DIR%" && dotnet "%DLL_NAME%""
 ) else (
     echo   [ERROR] No se encontro el archivo: %RAIZ%%SUB_DIR%\%DLL_NAME%
 )

@@ -13,10 +13,10 @@ set API[2]=Connection360.Api.dll
 set API[3]=Connection360.ApiGateway.dll
 
 :: ============================================================================
-:: PROCESO DE CIERRE DE APIS
+:: PROCESO DE CIERRE DE APIS Y SUS VENTANAS
 :: ============================================================================
 echo ===================================================
-echo   Deteniendo Servicios de .NET Core 10
+echo   Deteniendo Servicios y Ventanas de .NET Core 10
 echo ===================================================
 echo.
 
@@ -28,17 +28,17 @@ for /l %%i in (1,1,%API_COUNT%) do (
 
 echo.
 echo ===================================================
-echo Proceso finalizado. Todas las APIs configuradas han sido detenidas.
+echo Proceso finalizado. Todas las APIs y sus ventanas han sido cerradas.
 echo ===================================================
 pause
 goto :eof
 
 :: ============================================================================
-:: FUNCIÓN AUXILIAR PARA CERRAR PROCESO ESPECÍFICO
+:: FUNCIÓN AUXILIAR PARA CERRAR EL PROCESO Y SU VENTANA CONTENEDORA
 :: ============================================================================
 :DetenerProceso
 set TARGET_DLL=%~1
 
-powershell -Command "$procs = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'dotnet.exe' -and $_.CommandLine -like '*%TARGET_DLL%*' }; if ($procs) { foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force; Write-Host '  [ OK ] Se detuvo el proceso PID:' $p.ProcessId } } else { Write-Host '  [INFO] No se encontro ninguna API ejecutando %TARGET_DLL%' }"
+powershell -Command "$procs = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'dotnet.exe' -and $_.CommandLine -like '*%TARGET_DLL%*' }; if ($procs) { foreach ($p in $procs) { $parentId = $p.ParentProcessId; Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue; if ($parentId) { Stop-Process -Id $parentId -Force -ErrorAction SilentlyContinue }; Write-Host '  [ OK ] Se detuvo la API (PID:' $p.ProcessId ') y su ventana de comandos (PID:' $parentId ')' } } else { Write-Host '  [INFO] No se encontro ninguna API ejecutando %TARGET_DLL%' }"
 
 goto :eof
