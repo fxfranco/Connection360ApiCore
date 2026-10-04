@@ -38,9 +38,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El listado paginado de envíos, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Listado de envíos obtenido correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("allshipments")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(PagedResult<ClientSummaryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetAllShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
         {
             MyShipmentsRequest request = new MyShipmentsRequest 
@@ -53,6 +55,10 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetAllShipmentsAsync(request, cancellationToken);
 
@@ -79,9 +85,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El listado paginado y filtrado de envíos, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Listado de envíos filtrado correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("filterShipments")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(PagedResult<ClientSummaryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> FilterShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size,
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
         {
@@ -97,6 +105,10 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterShipmentsAsync(request, cancellationToken);
 
@@ -122,9 +134,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El historial paginado de envíos, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Historial de envíos obtenido correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("allhistory")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(PagedResult<ClientSummaryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetHistoryAllShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size, CancellationToken cancellationToken)
         {
             MyShipmentsRequest request = new MyShipmentsRequest
@@ -137,6 +151,10 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetHistoryAllShipmentsAsync(request, cancellationToken);
 
@@ -163,9 +181,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El historial paginado y filtrado de envíos, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Historial de envíos filtrado correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("filterhistory")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(PagedResult<ClientSummaryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> FilterHistoryShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] Int64 page, [FromQuery] Int64 size, 
             [FromQuery] MyShipmentsFiltersRequest filters, CancellationToken cancellationToken)
         {
@@ -180,6 +200,10 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterHistoryShipmentsAsync(request, cancellationToken);
 
@@ -204,9 +228,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El detalle del envío, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Detalle del envío obtenido correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("detailsshipments")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(DetailsShipmentsResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetDetailsShipments([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] String documentNumber, CancellationToken cancellationToken)
         {
             MyShipmentsRequest request = new MyShipmentsRequest
@@ -218,6 +244,10 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             request.RoleName = role.ToString();
             DetailsShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteDetailsShipmentsAsync(request, cancellationToken);
             return Ok(result);

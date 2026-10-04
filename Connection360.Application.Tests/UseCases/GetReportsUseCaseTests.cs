@@ -13,7 +13,7 @@ namespace Connection360.Application.Tests.UseCases
 {
     public class GetReportsUseCaseTests
     {
-        private readonly Mock<IExternalDataGateway> _externalDataGatewayMock = new();
+        private readonly Mock<IApplicationDataSheetDataGateway> _applicationDataSheetDataGateway = new();
         private readonly Mock<IReportsDomainService> _reportsDomainServiceMock = new();
         private readonly Mock<IClientAccessResolver> _clientAccessResolverMock = new();
         private readonly List<CustomersOfCollaboratorDtoResult> _customersOfCollaborator = new()
@@ -24,14 +24,14 @@ namespace Connection360.Application.Tests.UseCases
 
         public GetReportsUseCaseTests()
         {
-            _sut = new GetReportsUseCase(_externalDataGatewayMock.Object, _reportsDomainServiceMock.Object, _clientAccessResolverMock.Object);
+            _sut = new GetReportsUseCase(_applicationDataSheetDataGateway.Object, _reportsDomainServiceMock.Object, _clientAccessResolverMock.Object);
 
             _clientAccessResolverMock
                 .Setup(r => r.ResolveAsync(It.IsAny<ResolveClientAccessRequest>()))
                 .ReturnsAsync(_customersOfCollaborator);
 
-            _externalDataGatewayMock
-                .Setup(g => g.FetchDataAsync(It.IsAny<String>(), It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
+            _applicationDataSheetDataGateway
+                .Setup(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Empty());
         }
 
@@ -46,7 +46,7 @@ namespace Connection360.Application.Tests.UseCases
             Func<Task> act = () => _sut.ExecuteGetReportsTotalsAsync(request, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync(It.IsAny<String>(), It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace Connection360.Application.Tests.UseCases
 
             await _sut.ExecuteGetReportsTotalsAsync(request, CancellationToken.None);
 
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("OPENCOMEX", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

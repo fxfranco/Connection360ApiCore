@@ -14,7 +14,7 @@ namespace Connection360.Application.Tests.UseCases
 {
     public class GetClientSummaryUseCaseTests
     {
-        private readonly Mock<IExternalDataGateway> _externalDataGatewayMock = new();
+        private readonly Mock<IApplicationDataSheetDataGateway> _applicationDataSheetDataGateway = new();
         private readonly Mock<IClientSummaryDomainService> _domainServiceMock = new();
         private readonly Mock<IClientAccessResolver> _clientAccessResolverMock = new();
         private readonly List<CustomersOfCollaboratorDtoResult> _customersOfCollaborator = new()
@@ -25,14 +25,14 @@ namespace Connection360.Application.Tests.UseCases
 
         public GetClientSummaryUseCaseTests()
         {
-            _sut = new GetClientSummaryUseCase(_externalDataGatewayMock.Object, _domainServiceMock.Object, _clientAccessResolverMock.Object);
+            _sut = new GetClientSummaryUseCase(_applicationDataSheetDataGateway.Object, _domainServiceMock.Object, _clientAccessResolverMock.Object);
 
             _clientAccessResolverMock
                 .Setup(r => r.ResolveAsync(It.IsAny<ResolveClientAccessRequest>()))
                 .ReturnsAsync(_customersOfCollaborator);
 
-            _externalDataGatewayMock
-                .Setup(g => g.FetchDataAsync(It.IsAny<String>(), It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
+            _applicationDataSheetDataGateway
+                .Setup(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Empty());
         }
 
@@ -47,7 +47,7 @@ namespace Connection360.Application.Tests.UseCases
             Func<Task> act = () => _sut.ExecuteTotalsAsync(request, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync(It.IsAny<String>(), It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -82,7 +82,7 @@ namespace Connection360.Application.Tests.UseCases
 
             await _sut.ExecuteTotalsAsync(request, CancellationToken.None);
 
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("BPMS", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -177,7 +177,7 @@ namespace Connection360.Application.Tests.UseCases
             Func<Task> act = () => _sut.ExecuteFilterAsync(request, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync(It.IsAny<String>(), It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -223,7 +223,7 @@ namespace Connection360.Application.Tests.UseCases
             ResumenClienteResponse result = await _sut.ExecuteFilterAsync(request, CancellationToken.None);
 
             result.Id.Should().Be(8);
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("BPMS", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

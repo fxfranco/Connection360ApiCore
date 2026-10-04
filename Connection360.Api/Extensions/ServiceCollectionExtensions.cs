@@ -21,6 +21,8 @@ namespace Connection360.Api.Extensions
             services.AddScoped<IGetClientSummaryUseCase, GetClientSummaryUseCase>();
             services.AddScoped<IClientSummaryDomainService, ClientSummaryDomainService>();
             services.AddScoped<IClientAccessResolver, ClientAccessResolver>();
+            services.AddScoped<IApplicationDataSheetDataGateway, ApplicationDataSheetDataGateway>();
+            services.AddScoped<ILogStatusTrackingDataGateway, LogStatusTrackingDataGateway>();
             services.AddScoped<IClientRecordsFilterService, ClientRecordsFilterService>();
             
 

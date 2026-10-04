@@ -49,6 +49,11 @@
         /// Tipo de documento (prefijo del la guia)
         /// </summary>
         public const String DocumentType = "TIPO DOCUMENTO";
+
+        /// <summary>
+        /// Nombre descriptivo del tipo de documento (connection360write.application_data_sheet.nombre_documento)
+        /// </summary>
+        public const String DocumentName = "NOMBRE DOCUMENTO";
         
         /// <summary>
         /// Origen
@@ -259,6 +264,16 @@
         /// Total Factura (USD)
         /// </summary>
         public const String TotalInvoiceUSD = "TOTAL FACTURA (USD)";
+
+        /// <summary>
+        /// Fecha de comentario
+        /// </summary>
+        public const String CommentDate = "FECHA COMENTARIO";
+
+        /// <summary>
+        /// Comentario
+        /// </summary>
+        public const String Comment = "COMENTARIO";
 
         /// <summary>
         /// ID Log de la base de datos de logs de cambios de estado

@@ -11,13 +11,13 @@ namespace Connection360.Application.UseCases
     public class GetReportsUseCase : IGetReportsUseCase
     {
         private const Int16 FrequentRoutesCount = 5;
-        private readonly IExternalDataGateway _externalDataGateway;
+        private readonly IApplicationDataSheetDataGateway _applicationDataSheetDataGateway;
         private readonly IReportsDomainService _reportsDomainService;
         private readonly IClientAccessResolver _clientAccessResolver;
 
-        public GetReportsUseCase(IExternalDataGateway externalDataGateway, IReportsDomainService reportsDomainService, IClientAccessResolver clientAccessResolver)
+        public GetReportsUseCase(IApplicationDataSheetDataGateway applicationDataSheetDataGateway, IReportsDomainService reportsDomainService, IClientAccessResolver clientAccessResolver)
         {
-            _externalDataGateway = externalDataGateway;
+            _applicationDataSheetDataGateway = applicationDataSheetDataGateway;
             _reportsDomainService = reportsDomainService;
             _clientAccessResolver = clientAccessResolver;
         }
@@ -36,9 +36,9 @@ namespace Connection360.Application.UseCases
             request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
-            DynamicDataSet dataSetOPENCOMEX = await _externalDataGateway.FetchDataAsync("OPENCOMEX", filters, cancellationToken);
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(filters, cancellationToken);
 
-            var summary = _reportsDomainService.Summarize(dataSetOPENCOMEX, clientId: request.IdClient, frequentRoutesCount: FrequentRoutesCount, customersOfCollaborator: customersByCollaborators);
+            var summary = _reportsDomainService.Summarize(dataSet, clientId: request.IdClient, frequentRoutesCount: FrequentRoutesCount, customersOfCollaborator: customersByCollaborators);
 
             return summary.Select(reports => new ReportsSummaryResponse
             {

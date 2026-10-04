@@ -5,8 +5,8 @@ using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.Ports;
 using Connection360.Application.Ports.Persistence;
 using Connection360.Domain.Dtos;
+using Connection360.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Connection360.Api.Controllers
@@ -47,11 +47,18 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>La configuración de notificaciones del cliente, envuelta en la respuesta estándar de la API.</returns>
         /// <response code="200">Configuración de notificaciones obtenida correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("viewnotifications")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(CustomerNotificationsSettingsResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetNotificationsSettings([FromQuery] String idClient, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.GetCustomerNotificationSettings(idClient, cancellationToken);
             return Ok(result);
         }
@@ -61,11 +68,18 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>La configuración de notificaciones creada, envuelta en la respuesta estándar de la API.</returns>
         /// <response code="200">Configuración de notificaciones creada correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpPost("createnotifications")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(CustomerNotificationsSettingsResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateNotificationsSettings([FromBody] CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.CreateCustomerNotificationSettings(customerNotificationsSettings, cancellationToken);
             return CreatedAtRoute(nameof(GetNotificationsSettings), new { idChannel = result.NotificationChannels.NotificationChannelId, idEvent = result.NotificationEvents.NotificationEventId}, result);
         }
@@ -76,12 +90,19 @@ namespace Connection360.Api.Controllers
         /// <returns>Sin contenido.</returns>
         /// <response code="200">Reservado para compatibilidad; este endpoint siempre responde 204.</response>
         /// <response code="204">Configuración de notificaciones actualizada correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpPatch("updatenotifications")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateNotificationsSettings([FromBody] CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             Boolean result = await _customerNotificationsSettingsUseCase.UpdateCustomerNotificationSettings(customerNotificationsSettings, cancellationToken);
             return NoContent();
         }
@@ -90,11 +111,18 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>La configuración maestra del sistema, envuelta en la respuesta estándar de la API.</returns>
         /// <response code="200">Configuración maestra obtenida correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("viewmaster")]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(MasterSettingsResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetMasterSettings(CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             MasterSettingsResponse MasterSettingsResponse = await _masterSettingsUseCase.GetAsync(cancellationToken);
             return Ok(MasterSettingsResponse);
         }
@@ -105,12 +133,19 @@ namespace Connection360.Api.Controllers
         /// <returns>La configuración maestra creada, envuelta en la respuesta estándar de la API.</returns>
         /// <response code="200">Reservado para compatibilidad; este endpoint responde 201 al crear el recurso.</response>
         /// <response code="201">Configuración maestra creada correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpPost("createmaster")]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(MasterSettingsResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(MasterSettingsResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateMasterSettings([FromBody] CreateMasterSettingsDto createMasterSettingsDto, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             MasterSettingsResponseDto masterSettingsResponseDto = await _masterSettingsUseCase.CreateAsync(createMasterSettingsDto, cancellationToken);
             return CreatedAtRoute(nameof(GetMasterSettings), new { id = masterSettingsResponseDto.IdMasterSettings }, masterSettingsResponseDto);
         }
@@ -121,12 +156,19 @@ namespace Connection360.Api.Controllers
         /// <returns>Sin contenido.</returns>
         /// <response code="200">Reservado para compatibilidad; este endpoint siempre responde 204.</response>
         /// <response code="204">Configuración maestra actualizada correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpPatch("updatemaster")]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateMasterSettings([FromBody] MasterSettingsResponseDto masterSettingsUpdate, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             MasterSettingsResponseDto masterSettingsResponseDto = await _masterSettingsUseCase.UpdateAsync(masterSettingsUpdate, cancellationToken);
             return NoContent();
         }
@@ -138,13 +180,20 @@ namespace Connection360.Api.Controllers
         /// <returns>El listado paginado de usuarios, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Listado de usuarios obtenido correctamente.</response>
         /// <response code="500">Error inesperado al listar los usuarios.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("listusers")]
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(PagedResult<IList<Auth0UserDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetUsersListSettings([FromQuery] Int32 page, [FromQuery] Int32 size, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             try
             {
                 if (page > 0)
@@ -185,13 +234,20 @@ namespace Connection360.Api.Controllers
         /// <returns>El usuario solicitado, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Usuario obtenido correctamente.</response>
         /// <response code="500">Error inesperado al consultar el usuario (incluye el caso en que no se encuentra).</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("getuser")]
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(Auth0UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetUsersByIdSettings([FromQuery] String userId, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             try
             {
                 Auth0UserDto result = await _getUserManagementUseCase.GetUsersByIdAsync(userId);
@@ -216,13 +272,20 @@ namespace Connection360.Api.Controllers
         /// <returns>Sin contenido.</returns>
         /// <response code="204">Usuario actualizado correctamente.</response>
         /// <response code="500">Error inesperado al actualizar el usuario.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpPatch("updateuser/{userId}")]
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateUsersByIdSettings([FromRoute] String userId, [FromBody] Auth0UserDto UsersUpdate, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             try
             {
                 Boolean result = await _getUserManagementUseCase.UpdateUserAsync(userId, UsersUpdate);
@@ -244,13 +307,20 @@ namespace Connection360.Api.Controllers
         /// <returns>Sin contenido.</returns>
         /// <response code="204">Usuario eliminado correctamente.</response>
         /// <response code="500">Error inesperado al eliminar el usuario.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpDelete("deleteuser/{userId}")]
         //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> DeleteUsersByIdSettings([FromRoute] String userId, CancellationToken cancellationToken)
         {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             try
             {
                 Boolean result = await _getUserManagementUseCase.DeleteUserAsync(userId);

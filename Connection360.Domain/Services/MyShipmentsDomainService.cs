@@ -16,12 +16,12 @@ namespace Connection360.Domain.Services
 
         public MyShipmentsDomainResult GetAllShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size)
         {
-            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
+            List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
 
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = clientRecordsTotal
-                .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
-                .ToList();
+            //List<DynamicRecord> clientRecords = clientRecordsTotal
+            //    .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
+            //    .ToList();
 
             Int64 totalClientRecords = clientRecords.Count();
             Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
@@ -72,11 +72,11 @@ namespace Connection360.Domain.Services
         public MyShipmentsDomainResult GetFiltersShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size, MyShipmentsFiltersDto filters)
         {
 
-            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
+            List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = clientRecordsTotal
-                .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
-                .ToList();
+            //List<DynamicRecord> clientRecords = clientRecordsTotal
+            //    .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
+            //    .ToList();
 
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
             IEnumerable<DynamicRecord> queryFilters = clientRecords;
@@ -158,11 +158,11 @@ namespace Connection360.Domain.Services
 
         public MyShipmentsDomainResult GetHistoryAllShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size)
         {
-            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
+            List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = clientRecordsTotal
-                .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
-                .ToList();
+            //List<DynamicRecord> clientRecords = clientRecordsTotal
+            //    .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
+            //    .ToList();
 
             Int64 totalClientRecords = clientRecords.Count();
             Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
@@ -212,11 +212,11 @@ namespace Connection360.Domain.Services
 
         public MyShipmentsDomainResult GetFiltersHistoryShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size, MyShipmentsFiltersDto filters)
         {
-            List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
+            List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            List<DynamicRecord> clientRecords = clientRecordsTotal
-                .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
-                .ToList();
+            //List<DynamicRecord> clientRecords = clientRecordsTotal
+            //    .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
+            //    .ToList();
 
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
             IEnumerable<DynamicRecord> queryFilters = clientRecords;
@@ -294,10 +294,15 @@ namespace Connection360.Domain.Services
         {
             List<DynamicRecord> clientRecordsTotal = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
             // Crea una nueva List<DynamicRecord> con solo los registros activos
-            DynamicRecord clientRecords = clientRecordsTotal
-                .First(r => r[ExternalDataFields.DocumentNumber] == DocumentNumber);
+            DynamicRecord? clientRecords = clientRecordsTotal?
+                .FirstOrDefault(r => r[ExternalDataFields.DocumentNumber] == DocumentNumber);
 
-            clientRecords = clientRecords ?? new DynamicRecord(new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase));
+            //clientRecords = clientRecords ?? new DynamicRecord(new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase));
+
+            if (clientRecords == null)
+            {
+                throw new ArgumentException($"No hay información para la solicitud.");
+            }
 
             return new DetailsShipmentsDomainDtoResult
             {

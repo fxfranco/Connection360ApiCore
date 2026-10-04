@@ -7,6 +7,9 @@
     /// </summary>
     public enum UserRoleApplication
     {
+        /// <summary>No asignado: No puede acceder ya que no tiene ningún rol asignado.</summary>
+        UNASSIGNED,
+
         /// <summary>Administrador: acceso total a la configuración y a los datos de todos los clientes.</summary>
         ADMIN,
 

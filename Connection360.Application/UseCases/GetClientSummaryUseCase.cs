@@ -12,13 +12,13 @@ namespace Connection360.Application.UseCases
     {
         private const Int16 UltimosRegistrosCount = 10;
 
-        private readonly IExternalDataGateway _externalDataGateway;
+        private readonly IApplicationDataSheetDataGateway _applicationDataSheetDataGateway;
         private readonly IClientSummaryDomainService _summaryyDomainService;
         private readonly IClientAccessResolver _clientAccessResolver;
 
-        public GetClientSummaryUseCase(IExternalDataGateway externalDataGateway, IClientSummaryDomainService summaryService, IClientAccessResolver clientAccessResolver)
+        public GetClientSummaryUseCase(IApplicationDataSheetDataGateway applicationDataSheetDataGateway, IClientSummaryDomainService summaryService, IClientAccessResolver clientAccessResolver)
         {
-            _externalDataGateway = externalDataGateway;
+            _applicationDataSheetDataGateway = applicationDataSheetDataGateway;
             _summaryyDomainService = summaryService;
             _clientAccessResolver = clientAccessResolver;
         }
@@ -42,8 +42,8 @@ namespace Connection360.Application.UseCases
             //};
 
             var filters = new Dictionary<String, String>();
-            // 2. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
+            // 2. Consultar los datos consolidados (vistas application_data_sheet: Entregados + NoEntregados) filtrando solo por cliente
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
             var summary = _summaryyDomainService.Summarize(dataSet, clientId: request.IdClient, customersByCollaborators, lastRecordsCount: UltimosRegistrosCount);
@@ -91,8 +91,8 @@ namespace Connection360.Application.UseCases
             //};
 
             var filters = new Dictionary<String, String>();
-            // 2. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSet = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
+            // 2. Consultar los datos consolidados (vistas application_data_sheet: Entregados + NoEntregados) filtrando solo por cliente
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(filters, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
             var summary = _summaryyDomainService.Filter(dataSet, clientId: request.IdClient, customersByCollaborators, filterDocument: request.FilterValue);

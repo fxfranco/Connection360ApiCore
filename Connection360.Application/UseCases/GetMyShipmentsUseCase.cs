@@ -11,7 +11,8 @@ namespace Connection360.Application.UseCases
 {
     public class GetMyShipmentsUseCase : IGetMyShipmentsUseCase
     {
-        private readonly IExternalDataGateway _externalDataGateway;        
+        private readonly IApplicationDataSheetDataGateway _applicationDataSheetDataGateway;
+        private readonly ILogStatusTrackingDataGateway _logStatusTrackingDataGateway;
         private readonly IMyShipmentsDomainService _myShipmentsDomainService;
         private readonly IDynamicDataSetMerger _merger;
         private readonly IExternalApiOpenStreetMap _externalApiOpenStreetMap;
@@ -19,10 +20,11 @@ namespace Connection360.Application.UseCases
 
         private readonly IClientAccessResolver _clientAccessResolver;
 
-        public GetMyShipmentsUseCase(IExternalDataGateway externalDataGateway, IMyShipmentsDomainService myShipmentsDomainService, IDynamicDataSetMerger merger, 
+        public GetMyShipmentsUseCase(IApplicationDataSheetDataGateway applicationDataSheetDataGateway, ILogStatusTrackingDataGateway logStatusTrackingDataGateway, IMyShipmentsDomainService myShipmentsDomainService, IDynamicDataSetMerger merger, 
             IExternalApiOpenStreetMap externalApiOpenStreetMap, IDetailsHistoryShipmentsDomainService detailsHistoryShipmentsDomainService, IClientAccessResolver clientAccessResolver)
         {
-            _externalDataGateway = externalDataGateway;
+            _applicationDataSheetDataGateway = applicationDataSheetDataGateway;
+            _logStatusTrackingDataGateway = logStatusTrackingDataGateway;
             _myShipmentsDomainService = myShipmentsDomainService;
             _merger = merger;
             _externalApiOpenStreetMap = externalApiOpenStreetMap;
@@ -43,11 +45,18 @@ namespace Connection360.Application.UseCases
             request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
+
+            ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
+            {
+                Scope = ApplicationDataSheetViewScope.NoEntregados,
+                NitCliente = null
+            };
+
             // 1. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSetSIM = await _externalDataGateway.FetchDataAsync("SIM", filters, cancellationToken);
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(applicationDataSheetDataRequest, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetAllShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators,
+            var myShipments = _myShipmentsDomainService.GetAllShipments(dataSet, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators,
                 page: request.Page, size: request.Size);
 
 
@@ -96,8 +105,13 @@ namespace Connection360.Application.UseCases
             request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
+            ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
+            {
+                Scope = ApplicationDataSheetViewScope.NoEntregados,
+                NitCliente = null
+            };
             // 1. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSetSIM = await _externalDataGateway.FetchDataAsync("SIM", filters, cancellationToken);
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(applicationDataSheetDataRequest, cancellationToken);
 
             MyShipmentsFiltersDto myShipmentsFiltersDto = new MyShipmentsFiltersDto
             {
@@ -108,7 +122,7 @@ namespace Connection360.Application.UseCases
             };
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetFiltersShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
+            var myShipments = _myShipmentsDomainService.GetFiltersShipments(dataSet, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
 
             // 3. Mapear a respuesta de aplicación
             return new MyShipmentsResponse
@@ -155,12 +169,16 @@ namespace Connection360.Application.UseCases
             request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
+            ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
+            {
+                Scope = ApplicationDataSheetViewScope.Entregados,
+                NitCliente = null
+            };
             // 1. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSetSIM = await _externalDataGateway.FetchDataAsync("SIM", filters, cancellationToken);
-            //DynamicDataSet dataSetBPMS = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(applicationDataSheetDataRequest, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetHistoryAllShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size);
+            var myShipments = _myShipmentsDomainService.GetHistoryAllShipments(dataSet, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size);
 
 
             // 3. Mapear a respuesta de aplicación
@@ -208,8 +226,13 @@ namespace Connection360.Application.UseCases
             request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
             var filters = new Dictionary<String, String>();
+            ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
+            {
+                Scope = ApplicationDataSheetViewScope.Entregados,
+                NitCliente = null
+            };
             // 1. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSetSIM = await _externalDataGateway.FetchDataAsync("SIM", filters, cancellationToken);
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(applicationDataSheetDataRequest, cancellationToken);
 
             MyShipmentsFiltersDto myShipmentsFiltersDto = new MyShipmentsFiltersDto
             {
@@ -220,7 +243,7 @@ namespace Connection360.Application.UseCases
             };
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipments = _myShipmentsDomainService.GetFiltersHistoryShipments(dataSetSIM, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
+            var myShipments = _myShipmentsDomainService.GetFiltersHistoryShipments(dataSet, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, page: request.Page, size: request.Size, filters: myShipmentsFiltersDto);
 
             // 3. Mapear a respuesta de aplicación
             return new MyShipmentsResponse
@@ -269,19 +292,26 @@ namespace Connection360.Application.UseCases
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
             request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
 
-            var filters = new Dictionary<String, String>();
-            // 1. Consultar el API externo filtrando solo por cliente
-            DynamicDataSet dataSetBPMS = await _externalDataGateway.FetchDataAsync("BPMS", filters, cancellationToken);
-            DynamicDataSet dataSetSIM = await _externalDataGateway.FetchDataAsync("SIM", filters, cancellationToken);            
-            DynamicDataSet dataSetOPENCOMEX = await _externalDataGateway.FetchDataAsync("OPENCOMEX", filters, cancellationToken);
-            DynamicDataSet dataSetASISCOMEX = await _externalDataGateway.FetchDataAsync("ASISCOMEX", filters, cancellationToken);
-            DynamicDataSet dataSetSYSTEMCARRIER = await _externalDataGateway.FetchDataAsync("SYSTEMCARRIER", filters, cancellationToken);
-            DynamicDataSet dataSetDATALOGS = await _externalDataGateway.FetchDataAsync("DATALOGS", filters, cancellationToken);
+            // El historial (log_status_tracking) se consulta solo para el documento pedido: el servicio de
+            // dominio igualmente filtra por ExternalDataFields.DocumentNumber, asi que el resultado es el mismo
+            // pero sin traer toda la tabla.
+            var filters = new Dictionary<String, String>
+            {
+                [ExternalDataFields.DocumentNumber] = request.DocumentNumber
+            };
 
-            DynamicDataSet datasetUnificado = _merger.Merge(new[] { dataSetBPMS, dataSetSIM, dataSetOPENCOMEX, dataSetASISCOMEX, dataSetSYSTEMCARRIER },joinField: ExternalDataFields.DocumentNumber, joinType: DataSetJoinType.FullOuter);
+            ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
+            {
+                Scope = ApplicationDataSheetViewScope.Todos,
+                NitCliente = null
+            };
+
+            // 1. Consultar el API externo filtrando solo por cliente            
+            DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(applicationDataSheetDataRequest, cancellationToken);
 
             // 2. Pasar los datos al Servicio de Dominio para aplicar las consultas LINQ
-            var myShipmentsDetails = _myShipmentsDomainService.GetDetailsShipments(datasetUnificado, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, DocumentNumber: request.DocumentNumber);
+            var myShipmentsDetails = _myShipmentsDomainService.GetDetailsShipments(dataSet, clientId: request.IdClient, customersOfCollaborator: customersByCollaborators, DocumentNumber: request.DocumentNumber);
+            DynamicDataSet dataSetDATALOGS = await _logStatusTrackingDataGateway.FetchDataAsync(filters, cancellationToken);
             var detailsHistory = _detailsHistoryShipmentsDomainService.GetDetailsHistoryShipments(dataSetDATALOGS, DocumentNumber: request.DocumentNumber);
 
             String originName = myShipmentsDetails.ResumenShipments.Origin;

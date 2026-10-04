@@ -38,9 +38,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>Los totales de envíos del cliente, envueltos en la respuesta estándar de la API.</returns>
         /// <response code="200">Totales de envíos calculados correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("totals")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(ClientSummaryResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetHomeTotals([FromQuery] String idClient, [FromQuery] String? idQueryClient, CancellationToken cancellationToken)
         {
             ClientSummaryRequest clientSummaryRequest = new ClientSummaryRequest 
@@ -51,8 +53,11 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             clientSummaryRequest.RoleName = role.ToString();
-
             ClientSummaryRequest request = clientSummaryRequest;
             ClientSummaryResponse result = await _getClientSummaryUseCase.ExecuteTotalsAsync(request, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
@@ -72,9 +77,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El listado de envíos recientes que coinciden con el filtro, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Listado filtrado obtenido correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("filters")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(ResumenClienteResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetHomeFilters([FromQuery] String idClient, [FromQuery] String? idQueryClient, [FromQuery] String filterValue, CancellationToken cancellationToken)
         {
             ClientSummaryRequest clientSummaryRequest = new ClientSummaryRequest
@@ -86,6 +93,10 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             clientSummaryRequest.RoleName = role.ToString();
             ResumenClienteResponse result = await _getClientSummaryUseCase.ExecuteFilterAsync(clientSummaryRequest, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente

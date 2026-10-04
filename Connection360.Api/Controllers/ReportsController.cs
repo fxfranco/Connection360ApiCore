@@ -36,9 +36,11 @@ namespace Connection360.Api.Controllers
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El listado de resúmenes de reportes, envuelto en la respuesta estándar de la API.</returns>
         /// <response code="200">Resumen de reportes calculado correctamente.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("home")]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(List<ReportsSummaryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetReportTotals([FromQuery] String idClient, [FromQuery] String? idQueryClient, CancellationToken cancellationToken)
         {
             ClientSummaryRequest request = new ClientSummaryRequest
@@ -49,6 +51,10 @@ namespace Connection360.Api.Controllers
             };
 
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role == UserRoleApplication.UNASSIGNED)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
             request.RoleName = role.ToString();
 
             List<ReportsSummaryResponse> result = await _getReportsUseCase.ExecuteGetReportsTotalsAsync(request, cancellationToken);

@@ -15,7 +15,8 @@ namespace Connection360.Application.Tests.UseCases
 {
     public class GetMyShipmentsUseCaseTests
     {
-        private readonly Mock<IExternalDataGateway> _externalDataGatewayMock = new();
+        private readonly Mock<IApplicationDataSheetDataGateway> _applicationDataSheetDataGateway = new();
+        private readonly Mock<ILogStatusTrackingDataGateway> _logStatusTrackingDataGateway = new();
         private readonly Mock<IMyShipmentsDomainService> _myShipmentsDomainServiceMock = new();
         private readonly Mock<IDynamicDataSetMerger> _mergerMock = new();
         private readonly Mock<IExternalApiOpenStreetMap> _openStreetMapMock = new();
@@ -30,7 +31,8 @@ namespace Connection360.Application.Tests.UseCases
         public GetMyShipmentsUseCaseTests()
         {
             _sut = new GetMyShipmentsUseCase(
-                _externalDataGatewayMock.Object,
+                _applicationDataSheetDataGateway.Object,
+                _logStatusTrackingDataGateway.Object,
                 _myShipmentsDomainServiceMock.Object,
                 _mergerMock.Object,
                 _openStreetMapMock.Object,
@@ -41,8 +43,12 @@ namespace Connection360.Application.Tests.UseCases
                 .Setup(r => r.ResolveAsync(It.IsAny<ResolveClientAccessRequest>()))
                 .ReturnsAsync(_customersOfCollaborator);
 
-            _externalDataGatewayMock
-                .Setup(g => g.FetchDataAsync(It.IsAny<String>(), It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
+            _applicationDataSheetDataGateway
+                .Setup(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Empty());
+
+            _logStatusTrackingDataGateway
+                .Setup(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Empty());
         }
 
@@ -70,7 +76,7 @@ namespace Connection360.Application.Tests.UseCases
             Func<Task> act = () => _sut.ExecuteGetAllShipmentsAsync(request, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync(It.IsAny<String>(), It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -117,7 +123,7 @@ namespace Connection360.Application.Tests.UseCases
 
             await _sut.ExecuteGetAllShipmentsAsync(request, CancellationToken.None);
 
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("SIM", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -223,12 +229,12 @@ namespace Connection360.Application.Tests.UseCases
 
             await _sut.ExecuteDetailsShipmentsAsync(request, CancellationToken.None);
 
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("BPMS", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("SIM", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("OPENCOMEX", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("ASISCOMEX", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("SYSTEMCARRIER", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _externalDataGatewayMock.Verify(g => g.FetchDataAsync("DATALOGS", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _logStatusTrackingDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
             _mergerMock.Verify(m => m.Merge(It.Is<IEnumerable<DynamicDataSet>>(sets => sets.Count() == 5), "DOCUMENTO DE TRANSPORTE (HBL)", DataSetJoinType.FullOuter), Times.Once);
         }
 
