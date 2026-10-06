@@ -35,6 +35,9 @@
         /// <summary>Tipo de documento (prefijo del la guia)</summary>
         public const String DocumentType = "TIPO DOCUMENTO";
 
+        /// <summary>Nombre de documento</summary>
+        public const String DocumentName = "NOMBRE DOCUMENTO";
+
         /// <summary>Origen</summary>
         public const String Origin = "ORIGEN";
 

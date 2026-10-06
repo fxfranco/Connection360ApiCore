@@ -60,7 +60,7 @@ namespace Connection360.Etl.Domain.Services
 
                     Transportista = record[ExternalDataFields.Carrier],
                     TipoDocumento = record[ExternalDataFields.DocumentType],
-                    NombreDocumento = record[ExternalDataFields.DocumentType],
+                    NombreDocumento = record[ExternalDataFields.DocumentName],
                     DocumentoTransporteHbl = documentNumber,
 
                     FechaBodegaOrigen = record[ExternalDataFields.StoreOriginDate].ToDateTimeOrMin(),

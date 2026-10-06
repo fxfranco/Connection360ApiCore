@@ -4,6 +4,7 @@ using Connection360Notification.Domain;
 using Connection360Notification.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -15,11 +16,13 @@ namespace Connection360Notification.Infrastructure.Messaging
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly KafkaSettings _kafkaSettings;
 
-        public KafkaConsumerHostedService(IOptions<KafkaSettings> kafkaSettings, IServiceScopeFactory scopeFactory)
+        private readonly ILogger<KafkaConsumerHostedService> _logger;
+
+        public KafkaConsumerHostedService(IOptions<KafkaSettings> kafkaSettings, IServiceScopeFactory scopeFactory, ILogger<KafkaConsumerHostedService> logger)
         {
             _scopeFactory = scopeFactory;
             _kafkaSettings = kafkaSettings.Value;
-
+            _logger = logger;
             var config = new ConsumerConfig
             {
                 BootstrapServers = _kafkaSettings.BootstrapServers,
@@ -59,7 +62,7 @@ namespace Connection360Notification.Infrastructure.Messaging
                 catch (OperationCanceledException) { break; }
                 catch (Exception ex)
                 {
-                    // Manejo de excepciones / logger
+                    _logger.LogError(ex, "Error no controlado KafkaConsumerHostedService {Ex}", ex);
                 }
             }
             _consumer.Close();
