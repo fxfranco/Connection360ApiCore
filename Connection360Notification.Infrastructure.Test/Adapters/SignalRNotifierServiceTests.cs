@@ -62,5 +62,61 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
 
             await act.Should().NotThrowAsync();
         }
+
+        private async Task<Object> CapturarPayload(String mensaje, Object? data)
+        {
+            Object[]? capturedArgs = null;
+            _clientProxyMock
+                .Setup(p => p.SendCoreAsync("ReceiveNotification", It.IsAny<Object[]>(), It.IsAny<CancellationToken>()))
+                .Callback<String, Object[], CancellationToken>((_, args, _) => capturedArgs = args)
+                .Returns(Task.CompletedTask);
+
+            await _sut.SendNotificationToUserAsync("CLIENTE-123", mensaje, data);
+
+            capturedArgs.Should().ContainSingle();
+            return capturedArgs![0];
+        }
+
+        [Fact]
+        public async Task SendNotificationToUserAsync_ElPayloadExponeMessageDataYTimestamp()
+        {
+            var datos = new { Extra = "dato" };
+            var antes = DateTime.UtcNow;
+
+            var payload = await CapturarPayload("hola", datos);
+
+            var tipo = payload.GetType();
+            tipo.GetProperty("Message")!.GetValue(payload).Should().Be("hola");
+            tipo.GetProperty("Data")!.GetValue(payload).Should().BeSameAs(datos);
+            ((DateTime)tipo.GetProperty("Timestamp")!.GetValue(payload)!).Should().BeOnOrAfter(antes).And.BeOnOrBefore(DateTime.UtcNow);
+        }
+
+        [Fact]
+        public async Task SendNotificationToUserAsync_SinData_ElPayloadTraeDataNulo()
+        {
+            var payload = await CapturarPayload("hola", null);
+
+            payload.GetType().GetProperty("Data")!.GetValue(payload).Should().BeNull();
+        }
+
+        [Fact]
+        public async Task SendNotificationToUserAsync_PasaElTokenPorDefectoAlProxy()
+        {
+            await _sut.SendNotificationToUserAsync("CLIENTE-123", "hola");
+
+            _clientProxyMock.Verify(p => p.SendCoreAsync("ReceiveNotification", It.IsAny<Object[]>(), default), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendNotificationToUserAsync_SiElHubFalla_PropagaLaExcepcion()
+        {
+            _clientProxyMock
+                .Setup(p => p.SendCoreAsync(It.IsAny<String>(), It.IsAny<Object[]>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("hub caido"));
+
+            Func<Task> act = () => _sut.SendNotificationToUserAsync("CLIENTE-123", "hola");
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("hub caido");
+        }
     }
 }

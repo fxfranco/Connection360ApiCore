@@ -4,6 +4,7 @@ using Connection360.Application.UseCases;
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Entities;
 using Connection360.Domain.Enum;
+using Connection360.Domain.Enums;
 using Connection360.Domain.Interfaces;
 using Connection360.Domain.Services;
 using FluentAssertions;
@@ -47,6 +48,10 @@ namespace Connection360.Application.Tests.UseCases
                 .Setup(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Empty());
 
+            _applicationDataSheetDataGateway
+                .Setup(g => g.FetchDataAsync(It.IsAny<ApplicationDataSheetDataRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Empty());
+
             _logStatusTrackingDataGateway
                 .Setup(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Empty());
@@ -76,6 +81,7 @@ namespace Connection360.Application.Tests.UseCases
             Func<Task> act = () => _sut.ExecuteGetAllShipmentsAsync(request, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<ApplicationDataSheetDataRequest>(), It.IsAny<CancellationToken>()), Times.Never);
             _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
@@ -116,14 +122,17 @@ namespace Connection360.Application.Tests.UseCases
         }
 
         [Fact]
-        public async Task ExecuteGetAllShipmentsAsync_ConsultaLaApiSIM()
+        public async Task ExecuteGetAllShipmentsAsync_ConsultaLaVistaDeNoEntregadosDeApplicationDataSheet()
         {
             var request = new MyShipmentsRequest { IdClient = "123", Page = 1, Size = 10 };
             _myShipmentsDomainServiceMock.Setup(s => s.GetAllShipments(It.IsAny<DynamicDataSet>(), "123", _customersOfCollaborator, 1, 10)).Returns(SampleDomainResult());
 
             await _sut.ExecuteGetAllShipmentsAsync(request, CancellationToken.None);
 
-            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(
+                It.Is<ApplicationDataSheetDataRequest>(r => r.Scope == ApplicationDataSheetViewScope.NoEntregados && r.NitCliente == null && r.FieldsSelection == null),
+                It.IsAny<CancellationToken>()), Times.Once);
+            _logStatusTrackingDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -222,20 +231,25 @@ namespace Connection360.Application.Tests.UseCases
         }
 
         [Fact]
-        public async Task ExecuteDetailsShipmentsAsync_ConsultaLasSeisApisYFusionaCincoDeEllas()
+        public async Task ExecuteDetailsShipmentsAsync_ConsultaApplicationDataSheetYElHistorialDeCambiosDelDocumento()
         {
             var request = new MyShipmentsRequest { IdClient = "123", DocumentNumber = "HBL-001" };
             SetupDetailsHappyPath();
+            IDictionary<String, String>? capturedLogFilters = null;
+            _logStatusTrackingDataGateway
+                .Setup(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
+                .Callback<IDictionary<String, String>, CancellationToken>((filters, _) => capturedLogFilters = filters)
+                .ReturnsAsync(Empty());
 
             await _sut.ExecuteDetailsShipmentsAsync(request, CancellationToken.None);
 
-            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(
+                It.Is<ApplicationDataSheetDataRequest>(r => r.Scope == ApplicationDataSheetViewScope.Todos && r.NitCliente == null),
+                It.IsAny<CancellationToken>()), Times.Once);
             _logStatusTrackingDataGateway.Verify(g => g.FetchDataAsync(It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()), Times.Once);
-            _mergerMock.Verify(m => m.Merge(It.Is<IEnumerable<DynamicDataSet>>(sets => sets.Count() == 5), "DOCUMENTO DE TRANSPORTE (HBL)", DataSetJoinType.FullOuter), Times.Once);
+            capturedLogFilters.Should().NotBeNull();
+            capturedLogFilters!.Should().ContainKey("DOCUMENTO DE TRANSPORTE (HBL)").WhoseValue.Should().Be("HBL-001");
+            _mergerMock.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -382,6 +396,51 @@ namespace Connection360.Application.Tests.UseCases
             shipment.ATDDate.Should().Be(fecha.AddDays(1));
             shipment.ETADate.Should().Be(fecha.AddDays(2));
             shipment.ATADate.Should().Be(fecha.AddDays(3));
+        }
+
+        [Fact]
+        public async Task ExecuteFilterShipmentsAsync_ConsultaLaVistaDeNoEntregados()
+        {
+            var request = new MyShipmentsRequest { IdClient = "123", Page = 1, Size = 10, Filters = new MyShipmentsFiltersRequest() };
+            _myShipmentsDomainServiceMock
+                .Setup(s => s.GetFiltersShipments(It.IsAny<DynamicDataSet>(), "123", _customersOfCollaborator, 1, 10, It.IsAny<MyShipmentsFiltersDto>()))
+                .Returns(SampleDomainResult());
+
+            await _sut.ExecuteFilterShipmentsAsync(request, CancellationToken.None);
+
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(
+                It.Is<ApplicationDataSheetDataRequest>(r => r.Scope == ApplicationDataSheetViewScope.NoEntregados && r.NitCliente == null),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteGetHistoryAllShipmentsAsync_ConsultaLaVistaDeEntregados()
+        {
+            var request = new MyShipmentsRequest { IdClient = "123", Page = 1, Size = 10 };
+            _myShipmentsDomainServiceMock
+                .Setup(s => s.GetHistoryAllShipments(It.IsAny<DynamicDataSet>(), "123", _customersOfCollaborator, 1, 10))
+                .Returns(SampleDomainResult());
+
+            await _sut.ExecuteGetHistoryAllShipmentsAsync(request, CancellationToken.None);
+
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(
+                It.Is<ApplicationDataSheetDataRequest>(r => r.Scope == ApplicationDataSheetViewScope.Entregados && r.NitCliente == null),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteFilterHistoryShipmentsAsync_ConsultaLaVistaDeEntregados()
+        {
+            var request = new MyShipmentsRequest { IdClient = "123", Page = 1, Size = 10, Filters = new MyShipmentsFiltersRequest() };
+            _myShipmentsDomainServiceMock
+                .Setup(s => s.GetFiltersHistoryShipments(It.IsAny<DynamicDataSet>(), "123", _customersOfCollaborator, 1, 10, It.IsAny<MyShipmentsFiltersDto>()))
+                .Returns(SampleDomainResult());
+
+            await _sut.ExecuteFilterHistoryShipmentsAsync(request, CancellationToken.None);
+
+            _applicationDataSheetDataGateway.Verify(g => g.FetchDataAsync(
+                It.Is<ApplicationDataSheetDataRequest>(r => r.Scope == ApplicationDataSheetViewScope.Entregados && r.NitCliente == null),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         private void SetupDetailsHappyPath(String origin = "Bogota", String destination = "Miami")

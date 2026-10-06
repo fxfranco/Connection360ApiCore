@@ -26,6 +26,13 @@
     <Project Path="Connection360.ApiGateway.Tests/Connection360.ApiGateway.Tests.csproj" />
     <Project Path="Connection360.Application.Tests/Connection360.Application.Tests.csproj" />
     <Project Path="Connection360.Domain.Tests/Connection360.Domain.Tests.csproj" />
+    <Project Path="Connection360.Etl.App.IntegrationTests/Connection360.Etl.App.IntegrationTests.csproj" Id="6e055fde-9af0-434d-a4f0-21e8b5b41c43" />
+    <Project Path="Connection360.Etl.App.Test/Connection360.Etl.App.Test.csproj" Id="8916786e-c29f-47dc-94c9-2ea26ed0a4b5" />
+    <Project Path="Connection360.Etl.Application.Test/Connection360.Etl.Application.Test.csproj" Id="33c7bea0-6c3d-46a2-bebf-74004f811f3d" />
+    <Project Path="Connection360.Etl.Domain.Test/Connection360.Etl.Domain.Test.csproj" Id="4434c937-54e5-4a62-8246-68513d11b9d4" />
+    <Project Path="Connection360.Etl.Infrastructure.Test/Connection360.Etl.Infrastructure.Test.csproj" Id="13f56b6d-17e9-455f-b51c-fe10279ea505" />
+    <Project Path="Connection360.Etl.Orchestrator.IntegrationTests/Connection360.Etl.Orchestrator.IntegrationTests.csproj" Id="7d6e06c2-41aa-4f40-9fa8-f38977de9b0d" />
+    <Project Path="Connection360.Etl.Orchestrator.Test/Connection360.Etl.Orchestrator.Test.csproj" Id="6362a25e-dda9-4e29-944b-4d1b9f874727" />
     <Project Path="Connection360.Infrastructure.Tests/Connection360.Infrastructure.Tests.csproj" />
     <Project Path="Connection360Notification.Api.IntegrationTests/Connection360Notification.Api.IntegrationTests.csproj" Id="83fe249c-b18f-4679-9a7d-85171ff4da7e" />
     <Project Path="Connection360Notification.Api.Test/Connection360Notification.Api.Test.csproj" Id="bf52942f-405f-485f-b51a-01e8e7e95f04" />

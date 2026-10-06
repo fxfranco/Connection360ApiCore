@@ -153,8 +153,10 @@ namespace Connection360.Domain.Tests.Services
         }
 
         [Fact]
-        public void GetFiltersShipments_SinFiltros_RetornaTodosLosNoEntregados()
+        public void GetFiltersShipments_SinFiltros_RetornaTodosLosRegistrosDelCliente()
         {
+            // El servicio ya no descarta los "Entregado": la particion entregados/no entregados la resuelve
+            // la fuente de datos (vistas vw_application_data_sheet_*), no el servicio de dominio.
             var dataSet = DataSet(new[] { ExternalDataFields.ClientNit },
                 ShipmentRow("1", ExternalDataValues.PendingState),
                 ShipmentRow("2", ExternalDataValues.InTransitState),
@@ -164,7 +166,8 @@ namespace Connection360.Domain.Tests.Services
 
             MyShipmentsDomainResult result = _sut.GetFiltersShipments(dataSet, ClientId, null, page: 1, size: 10, filters);
 
-            result.MyShipments.Should().HaveCount(2);
+            result.MyShipments.Should().HaveCount(3);
+            result.ClientSummaryResponse.TotalClientRecords.Should().Be(3);
         }
 
         [Fact]
@@ -208,15 +211,14 @@ namespace Connection360.Domain.Tests.Services
         }
 
         [Fact]
-        public void GetDetailsShipments_SinCoincidencias_LanzaInvalidOperationException()
+        public void GetDetailsShipments_SinCoincidencias_LanzaArgumentException()
         {
             var dataSet = DataSet(new[] { ExternalDataFields.ClientNit },
                 Row((ExternalDataFields.ClientNit, "OTRO-CLIENTE"), (ExternalDataFields.DocumentNumber, "HBL-999")));
 
             Action act = () => _sut.GetDetailsShipments(dataSet, ClientId, null, "HBL-001");
 
-            // First() sin resultados lanza InvalidOperationException (comportamiento actual del servicio)
-            act.Should().Throw<InvalidOperationException>();
+            act.Should().Throw<ArgumentException>().WithMessage("No hay información para la solicitud.*");
         }
 
         [Fact]

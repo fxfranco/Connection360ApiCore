@@ -1,5 +1,6 @@
 using Connection360.Api.Controllers;
 using Connection360.Api.Models;
+using Connection360.Api.Tests.TestSupport;
 using Connection360.Application.DTOs;
 using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.Ports;
@@ -24,7 +25,11 @@ namespace Connection360.Api.Tests.Controllers
 
         public SettingsControllerTests()
         {
-            _sut = new SettingsController(_userManagementMock.Object, _customerUseCaseMock.Object, _notificationsSettingsMock.Object, _masterSettingsMock.Object, _collaboratorUseCaseMock.Object, _outboxMessagesUseCase.Object);
+            _sut = new SettingsController(_userManagementMock.Object, _customerUseCaseMock.Object, _notificationsSettingsMock.Object, _masterSettingsMock.Object, _collaboratorUseCaseMock.Object, _outboxMessagesUseCase.Object)
+            {
+                // El controlador consulta User.IsInRole(...): sin un HttpContext con rol lanzaria NullReferenceException.
+                ControllerContext = ControllerContextFactory.Create("ADMIN")
+            };
         }
 
         [Fact]

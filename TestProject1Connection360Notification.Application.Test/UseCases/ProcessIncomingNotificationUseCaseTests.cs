@@ -73,5 +73,53 @@ namespace Connection360Notification.Application.Tests.UseCases
 
             await act.Should().ThrowAsync<ArgumentNullException>();
         }
+
+        [Fact]
+        public async Task ExecuteAsync_SiPersistirFalla_PropagaLaExcepcionYNoNotifica()
+        {
+            var notification = CrearNotificacion();
+            _notificationRepositoryMock
+                .Setup(r => r.SaveAsync(notification, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("bd caida"));
+
+            Func<Task> act = () => _sut.ExecuteAsync(notification, CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("bd caida");
+            _notifierServiceMock.Verify(n => n.SendNotificationToUserAsync(It.IsAny<String>(), It.IsAny<String>(), It.IsAny<Object>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_SiNotificarFalla_PropagaLaExcepcionDespuesDePersistir()
+        {
+            var notification = CrearNotificacion();
+            _notifierServiceMock
+                .Setup(n => n.SendNotificationToUserAsync(It.IsAny<String>(), It.IsAny<String>(), It.IsAny<Object>()))
+                .ThrowsAsync(new InvalidOperationException("signalr"));
+
+            Func<Task> act = () => _sut.ExecuteAsync(notification, CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("signalr");
+            _notificationRepositoryMock.Verify(r => r.SaveAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConNotificacionNula_NoPersisteNiNotifica()
+        {
+            try { await _sut.ExecuteAsync(null!, CancellationToken.None); } catch (ArgumentNullException) { }
+
+            _notificationRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+            _notifierServiceMock.Verify(n => n.SendNotificationToUserAsync(It.IsAny<String>(), It.IsAny<String>(), It.IsAny<Object>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_PropagaElTokenDeCancelacionAlRepositorio()
+        {
+            using var cts = new CancellationTokenSource();
+            var notification = CrearNotificacion();
+
+            await _sut.ExecuteAsync(notification, cts.Token);
+
+            _notificationRepositoryMock.Verify(r => r.SaveAsync(notification, cts.Token), Times.Once);
+        }
     }
 }
