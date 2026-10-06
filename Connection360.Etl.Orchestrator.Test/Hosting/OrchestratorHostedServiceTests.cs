@@ -116,6 +116,19 @@ namespace Connection360.Etl.Orchestrator.Test.Hosting
         }
 
         [Fact]
+        public async Task StartAsync_ExpresionCronImposible_FallaAlArrancarConElNombreDelTrabajo()
+        {
+            // "0 0 31 2 *" es sintácticamente válida pero nunca se cumple: debe fallar al arrancar, no dentro del bucle.
+            var service = CreateService(JobFactory.Valid("imposible", cron: "0 0 31 2 *"));
+
+            Func<Task> act = () => StartAndAwaitExecutionAsync(service);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*'imposible'*nunca se cumple*");
+            _logs.Entries.Should().NotContain(e => e.Message.Contains("Programado con expresión cron"));
+            _runner.Calls.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task StartAsync_ZonaHorariaInexistente_LanzaTimeZoneNotFoundException()
         {
             var job = JobFactory.Valid();

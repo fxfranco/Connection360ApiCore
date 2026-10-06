@@ -67,5 +67,12 @@ namespace Connection360Notification.Infrastructure.Messaging
             }
             _consumer.Close();
         }
+
+        public override void Dispose()
+        {
+            // Primero se cancela el token (base.Dispose) para que el bucle deje de usar el cliente.
+            base.Dispose();
+            _consumer.Dispose();
+        }
     }
 }

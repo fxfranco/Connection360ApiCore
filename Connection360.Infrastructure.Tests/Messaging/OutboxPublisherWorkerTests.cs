@@ -57,6 +57,20 @@ namespace Connection360.Infrastructure.Tests.Messaging
         }
 
         [Fact]
+        public void Dispose_DesechaElProductorDeKafka()
+        {
+            OutboxPublisherWorker worker = BuildWorker();
+            var producer = new Mock<Confluent.Kafka.IProducer<String, String>>();
+            var field = typeof(OutboxPublisherWorker).GetField("_producer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+            (field.GetValue(worker) as IDisposable)?.Dispose();
+            field.SetValue(worker, producer.Object);
+
+            worker.Dispose();
+
+            producer.Verify(p => p.Dispose(), Times.Once);
+        }
+
+        [Fact]
         public async Task ExecuteAsync_SinMensajesPendientes_AbreTransaccionYHaceCommit()
         {
             var committed = new TaskCompletionSource();

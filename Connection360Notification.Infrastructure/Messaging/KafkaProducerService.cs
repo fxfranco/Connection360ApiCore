@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace Connection360Notification.Infrastructure.Messaging
 {
-    public class KafkaProducerService : IKafkaProducerService
+    public class KafkaProducerService : IKafkaProducerService, IDisposable
     {
         private readonly IProducer<String, String> _producer;
         private readonly KafkaSettings _kafkaSettings;
@@ -33,6 +33,16 @@ namespace Connection360Notification.Infrastructure.Messaging
             };
 
             await _producer.ProduceAsync(_kafkaSettings.Topic, message, cancellationToken);
+        }
+
+        /// <summary>
+        /// Libera el productor nativo de Kafka: primero espera (máx. 5 s) a que se envíen los mensajes
+        /// pendientes y luego lo desecha, para no dejar el cliente (y sus hilos) vivo tras el apagado.
+        /// </summary>
+        public void Dispose()
+        {
+            _producer.Flush(TimeSpan.FromSeconds(5));
+            _producer.Dispose();
         }
     }
 }

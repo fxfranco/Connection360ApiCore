@@ -8,6 +8,7 @@ using Connection360Notification.Domain.Settings;
 using Connection360Notification.Infrastructure.Messaging;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
@@ -32,7 +33,8 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
 
             _sut = new KafkaConsumerHostedService(
                 Options.Create(new KafkaSettings { BootstrapServers = "localhost:9092", GroupId = "grupo-prueba", Topic = "topic-prueba" }),
-                _provider.GetRequiredService<IServiceScopeFactory>());
+                _provider.GetRequiredService<IServiceScopeFactory>(),
+                NullLogger<KafkaConsumerHostedService>.Instance);
 
             // El constructor crea un consumidor real (no se conecta hasta consumir); se reemplaza por un mock.
             var campo = typeof(KafkaConsumerHostedService).GetField("_consumer", BindingFlags.NonPublic | BindingFlags.Instance)!;

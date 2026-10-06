@@ -143,9 +143,9 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
             JsonElement body = await ReadJson(response);
             body.GetProperty("status").GetInt32().Should().Be(404);
-            // Nota: con [ApiController], NotFound() se convierte en ProblemDetails antes del ApiResponseFilter,
-            // por lo que "error" contiene ProblemDetails.ToString() (comportamiento actual, no un texto amigable).
-            body.GetProperty("error").GetString().Should().NotBeNullOrWhiteSpace();
+            // Con [ApiController], NotFound() se convierte en ProblemDetails antes del ApiResponseFilter;
+            // el filtro usa su título/detalle como mensaje de error (no el nombre del tipo).
+            body.GetProperty("error").GetString().Should().Be("Not Found");
             body.GetProperty("message").GetString().Should().Be("Recurso no encontrado");
         }
 

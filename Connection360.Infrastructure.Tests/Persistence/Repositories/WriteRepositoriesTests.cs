@@ -50,14 +50,14 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         }
 
         [Fact]
-        public async Task CustomerRepository_GetCustomerByIdAsync_SinFilas_RetornaCeroPorElTipoDeLaConsulta()
+        public async Task CustomerRepository_GetCustomerByIdAsync_SinFilas_RetornaNull()
         {
-            // Comportamiento actual: QueryFirstOrDefaultAsync<Int64> devuelve 0 (no null) cuando no hay fila.
+            // QueryFirstOrDefaultAsync<Int64?> devuelve null (no 0) cuando no hay fila.
             _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_customer" });
 
             Int64? id = await new CustomerRepository(_session).GetCustomerByIdAsync("NO-EXISTE");
 
-            id.Should().Be(0);
+            id.Should().BeNull();
         }
 
         // ---------- CollaboratorRepository ----------
@@ -87,13 +87,13 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         }
 
         [Fact]
-        public async Task CollaboratorRepository_GetCollaboratorByIdAsync_SinFilas_RetornaCero()
+        public async Task CollaboratorRepository_GetCollaboratorByIdAsync_SinFilas_RetornaNull()
         {
             _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_collaborator" });
 
             Int64? id = await new CollaboratorRepository(_session).GetCollaboratorByIdAsync("X");
 
-            id.Should().Be(0);
+            id.Should().BeNull();
         }
 
         // ---------- CustomersOfCollaboratorsRepository ----------

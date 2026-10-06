@@ -69,7 +69,7 @@ namespace Connection360.Api.Controllers
         /// <returns>La configuración de notificaciones creada, envuelta en la respuesta estándar de la API.</returns>
         /// <response code="200">Configuración de notificaciones creada correctamente.</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
-        [HttpPost("createnotifications")]
+        [HttpPost("createnotifications", Name = nameof(CreateNotificationsSettings))]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(CustomerNotificationsSettingsResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -81,7 +81,7 @@ namespace Connection360.Api.Controllers
                 return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
             }
             CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.CreateCustomerNotificationSettings(customerNotificationsSettings, cancellationToken);
-            return CreatedAtRoute(nameof(GetNotificationsSettings), new { idChannel = result.NotificationChannels.NotificationChannelId, idEvent = result.NotificationEvents.NotificationEventId}, result);
+            return CreatedAtRoute(nameof(CreateNotificationsSettings), new { idClient = result.NotificationChannels.ClientId ?? result.NotificationEvents.ClientId, idChannel = result.NotificationChannels.NotificationChannelId, idEvent = result.NotificationEvents.NotificationEventId}, result);
         }
 
         /// <summary>Actualiza la configuración de notificaciones (canales y eventos) de un cliente.</summary>
@@ -134,7 +134,7 @@ namespace Connection360.Api.Controllers
         /// <response code="200">Reservado para compatibilidad; este endpoint responde 201 al crear el recurso.</response>
         /// <response code="201">Configuración maestra creada correctamente.</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
-        [HttpPost("createmaster")]
+        [HttpPost("createmaster", Name = nameof(CreateMasterSettings))]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(MasterSettingsResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(MasterSettingsResponseDto), StatusCodes.Status201Created)]
@@ -147,7 +147,7 @@ namespace Connection360.Api.Controllers
                 return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
             }
             MasterSettingsResponseDto masterSettingsResponseDto = await _masterSettingsUseCase.CreateAsync(createMasterSettingsDto, cancellationToken);
-            return CreatedAtRoute(nameof(GetMasterSettings), new { id = masterSettingsResponseDto.IdMasterSettings }, masterSettingsResponseDto);
+            return CreatedAtRoute(nameof(CreateMasterSettings), new { id = masterSettingsResponseDto.IdMasterSettings }, masterSettingsResponseDto);
         }
 
         /// <summary>Actualiza la configuración maestra (global) del sistema.</summary>
@@ -343,7 +343,7 @@ namespace Connection360.Api.Controllers
         /// <param name="clientId">Identificador del cliente a aprovisionar.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El identificador del recurso creado.</returns>
-        [HttpGet("createcustomerdb")]
+        [HttpGet("createcustomerdb", Name = nameof(CreateCustomerDataBase))]
         [AllowAnonymous]
         public async Task<ActionResult> CreateCustomerDataBase(String clientId, CancellationToken cancellationToken)
         {
@@ -358,7 +358,7 @@ namespace Connection360.Api.Controllers
         /// <param name="clientId">Identificador del colaborador a aprovisionar.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El identificador del recurso creado.</returns>
-        [HttpGet("createcollaboratordb")]
+        [HttpGet("createcollaboratordb", Name = nameof(CreateCollaboratorDataBase))]
         [AllowAnonymous]
         public async Task<ActionResult> CreateCollaboratorDataBase(String clientId, CancellationToken cancellationToken)
         {
@@ -374,7 +374,7 @@ namespace Connection360.Api.Controllers
         /// <param name="collaborator">Identificador del colaborador a asociar.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El identificador del recurso creado.</returns>
-        [HttpGet("createcustomercollaboratordb")]
+        [HttpGet("createcustomercollaboratordb", Name = nameof(CreateCustomerCollaboratorDataBase))]
         [AllowAnonymous]
         public async Task<ActionResult> CreateCustomerCollaboratorDataBase(String clientId, String collaborator, CancellationToken cancellationToken)
         {

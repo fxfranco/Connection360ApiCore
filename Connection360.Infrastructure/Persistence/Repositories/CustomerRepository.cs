@@ -42,7 +42,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
                 cancellationToken: cancellationToken
             );
 
-            return await _session.Connection.QueryFirstOrDefaultAsync<Int64>(command);
+            return await _session.Connection.QueryFirstOrDefaultAsync<Int64?>(command);
         }
     }
 }

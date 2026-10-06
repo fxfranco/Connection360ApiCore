@@ -116,5 +116,12 @@ namespace Connection360.Infrastructure.Messaging
 
             return TimeSpan.FromSeconds(seconds);
         }
+
+        public override void Dispose()
+        {
+            // Primero se cancela el token (base.Dispose) para que el bucle deje de usar el cliente.
+            base.Dispose();
+            _producer.Dispose();
+        }
     }
 }

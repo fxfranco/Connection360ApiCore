@@ -71,7 +71,21 @@ namespace Connection360.Etl.Orchestrator.Hosting
                 ? TimeZoneInfo.Local
                 : TimeZoneInfo.FindSystemTimeZoneById(job.TimeZoneId);
 
-            return new CronJobSchedule(expression, timeZone);
+            var schedule = new CronJobSchedule(expression, timeZone);
+
+            // Falla rápido (al arrancar, con el nombre del trabajo) si la expresión es sintácticamente
+            // válida pero imposible de cumplir (por ejemplo "0 0 31 2 *"), en vez de caerse más tarde
+            // dentro del bucle de ejecución al calcular la próxima ocurrencia.
+            try
+            {
+                schedule.GetNextOccurrenceUtc(DateTimeOffset.UtcNow);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new InvalidOperationException($"El trabajo '{job.Name}' tiene una expresión cron que nunca se cumple: {ex.Message}", ex);
+            }
+
+            return schedule;
         }
 
         /// <exception cref="InvalidOperationException">Al trabajo le falta un campo obligatorio en el appsettings.</exception>

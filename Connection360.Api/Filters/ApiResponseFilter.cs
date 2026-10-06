@@ -41,7 +41,11 @@ namespace Connection360.Api.Filters
                     }
                     else if (status >= 400)
                     {
-                        error = objectResult.Value?.ToString();
+                        // Con [ApiController], NotFound()/BadRequest() llegan como ProblemDetails: ToString() solo
+                        // devolvería el nombre del tipo, así que se usa su detalle (o su título) como mensaje.
+                        error = objectResult.Value is ProblemDetails problem
+                            ? (problem.Detail ?? problem.Title)
+                            : objectResult.Value?.ToString();
                         data = null;
                     }
 

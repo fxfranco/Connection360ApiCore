@@ -26,6 +26,24 @@ namespace Connection360.Etl.Orchestrator.Execution
             _logger = logger;
         }
 
+        /// <summary>
+        /// Máxima espera que se le pasa de una sola vez a <see cref="Task.Delay(TimeSpan, CancellationToken)"/>:
+        /// ese método no admite más de ~49.7 días (<c>UInt32.MaxValue - 1</c> ms) y lanzaría
+        /// <see cref="ArgumentOutOfRangeException"/>, lo que pasaría con expresiones como "0 0 1 1 *"
+        /// (una vez al año). Las esperas más largas se parten en tramos de este tamaño.
+        /// </summary>
+        public static readonly TimeSpan MaxDelayChunk = TimeSpan.FromDays(30);
+
+        public static async Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+        {
+            while (delay > TimeSpan.Zero)
+            {
+                TimeSpan chunk = delay > MaxDelayChunk ? MaxDelayChunk : delay;
+                await Task.Delay(chunk, cancellationToken);
+                delay -= chunk;
+            }
+        }
+
         public async Task RunAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation(
@@ -44,7 +62,7 @@ namespace Connection360.Etl.Orchestrator.Execution
 
                 try
                 {
-                    await Task.Delay(delay, cancellationToken);
+                    await DelayAsync(delay, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {

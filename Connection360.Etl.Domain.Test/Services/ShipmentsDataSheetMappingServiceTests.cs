@@ -36,6 +36,7 @@ namespace Connection360.Etl.Domain.Test.Services
             (F.VolumeM3, "78.9"),
             (F.Carrier, "Maersk"),
             (F.DocumentType, "HBL"),
+            (F.DocumentName, "Documento de transporte HBL"),
             (F.DocumentNumber, "HBL-001"),
             (F.StoreOriginDate, "02/02/2024"),
             (F.ETDDate, "03/02/2024"),
@@ -118,7 +119,7 @@ namespace Connection360.Etl.Domain.Test.Services
 
             s.Transportista.Should().Be("Maersk");
             s.TipoDocumento.Should().Be("HBL");
-            s.NombreDocumento.Should().Be("HBL");
+            s.NombreDocumento.Should().Be("Documento de transporte HBL");
             s.DocumentoTransporteHbl.Should().Be("HBL-001");
 
             s.FechaBodegaOrigen.Should().Be(new DateTime(2024, 2, 2));
