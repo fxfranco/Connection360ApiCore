@@ -17,8 +17,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Connection360.Etl.App.Test" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Connection360.Etl.Application\Connection360.Etl.Application.csproj" />
     <ProjectReference Include="..\Connection360.Etl.Infrastructure\Connection360.Etl.Infrastructure.csproj" />
+    <ProjectReference Include="..\Connection360.Observability.Application\Connection360.Observability.Application.csproj" />
+    <ProjectReference Include="..\Connection360.Observability.Infrastructure.Mongo\Connection360.Observability.Infrastructure.Mongo.csproj" />
+    <ProjectReference Include="..\Connection360.Observability.Domain\Connection360.Observability.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -27,6 +27,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Connection360Notification.Application\Connection360Notification.Application.csproj" />
 		<ProjectReference Include="..\Connection360Notification.Domain\Connection360Notification.Domain.csproj" />
+		<ProjectReference Include="..\Connection360.Observability.Domain\Connection360.Observability.Domain.csproj" />
 	</ItemGroup>
 
 </Project>

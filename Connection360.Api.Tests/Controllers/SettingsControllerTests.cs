@@ -57,7 +57,7 @@ namespace Connection360.Api.Tests.Controllers
             IActionResult result = await _sut.CreateNotificationsSettings(new CustomerNotificationsSettingsResponse(), CancellationToken.None);
 
             var created = result.Should().BeOfType<CreatedAtRouteResult>().Subject;
-            created.RouteName.Should().Be(nameof(SettingsController.GetNotificationsSettings));
+            created.RouteName.Should().Be(nameof(SettingsController.CreateNotificationsSettings));
             created.Value.Should().BeSameAs(expected);
         }
 
@@ -93,7 +93,7 @@ namespace Connection360.Api.Tests.Controllers
             IActionResult result = await _sut.CreateMasterSettings(dto, CancellationToken.None);
 
             var created = result.Should().BeOfType<CreatedAtRouteResult>().Subject;
-            created.RouteName.Should().Be(nameof(SettingsController.GetMasterSettings));
+            created.RouteName.Should().Be(nameof(SettingsController.CreateMasterSettings));
         }
 
         [Fact]

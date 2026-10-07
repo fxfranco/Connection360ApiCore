@@ -3,6 +3,10 @@ using Connection360.Api.Filters;
 using Connection360.Api.Middleware;
 using Connection360.Api.Models;
 using Connection360.Infrastructure.DependencyInjection;
+using Connection360.Observability.Application.DependencyInjection;
+using Connection360.Observability.AspNetCore.Middleware;
+using Connection360.Observability.Domain.Models;
+using Connection360.Observability.Infrastructure.Mongo.DependencyInjection;
 using Connection360Notification.Domain.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
@@ -48,6 +52,12 @@ builder.Services.AddApiVersioningSetup();
 
 // Infrastructure
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Observabilidad (logs, métricas y trazas): captura con las librerías nativas de .NET, escritura
+// asíncrona por lotes y persistencia en MongoDB (sección "Observability" del appsettings).
+builder.Services
+    .AddConnection360Observability(builder.Configuration, ObservedServices.ApiCore)
+    .AddMongoObservabilityStores();
 
 // Add services to the container.
 
@@ -136,6 +146,8 @@ else
     app.UseExceptionHandler("/error");
 }
 // El middleware de excepciones va PRIMERO en el pipeline
+// Completa el span de cada petición (método, ruta, estado) con las convenciones de OpenTelemetry.
+app.UseConnection360RequestTelemetry();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 //app.UseCors("AllowAll");	
 app.UseHttpsRedirection(); // Fuerza TLS

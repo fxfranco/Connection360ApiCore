@@ -26,8 +26,8 @@ namespace Connection360.Api.Tests.Controllers
         }
 
         [Theory]
-        [InlineData(nameof(SettingsController.GetNotificationsSettings))]
-        [InlineData(nameof(SettingsController.GetMasterSettings))]
+        [InlineData(nameof(SettingsController.CreateNotificationsSettings))]
+        [InlineData(nameof(SettingsController.CreateMasterSettings))]
         [InlineData(nameof(SettingsController.CreateCustomerDataBase))]
         [InlineData(nameof(SettingsController.CreateCollaboratorDataBase))]
         [InlineData(nameof(SettingsController.CreateCustomerCollaboratorDataBase))]
@@ -49,7 +49,7 @@ namespace Connection360.Api.Tests.Controllers
         }
 
         [Fact]
-        public async Task CreateNotificationsSettings_IncluyeElClienteEnLosValoresDeRutaParaPoderConsultarlo()
+        public async Task CreateNotificationsSettings_IncluyeElClienteEnLosValoresDeRuta()
         {
             var useCase = new Mock<ICustomerNotificationsSettingsUseCase>();
             var created = new CustomerNotificationsSettingsResponse
@@ -68,7 +68,7 @@ namespace Connection360.Api.Tests.Controllers
             IActionResult result = await sut.CreateNotificationsSettings(new CustomerNotificationsSettingsResponse(), CancellationToken.None);
 
             var route = result.Should().BeOfType<CreatedAtRouteResult>().Subject;
-            route.RouteName.Should().Be(nameof(SettingsController.GetNotificationsSettings));
+            route.RouteName.Should().Be(nameof(SettingsController.CreateNotificationsSettings));
             route.RouteValues!["idClient"].Should().Be("CLI-1");
             route.RouteValues["idChannel"].Should().Be(7L);
             route.RouteValues["idEvent"].Should().Be(9L);

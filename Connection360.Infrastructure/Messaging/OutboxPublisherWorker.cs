@@ -1,11 +1,14 @@
 ﻿using Confluent.Kafka;
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Ports.Persistence;
+using Connection360.Observability.Domain.Telemetry;
 using Connection360Notification.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 namespace Connection360.Infrastructure.Messaging
 {
@@ -16,6 +19,13 @@ namespace Connection360.Infrastructure.Messaging
         private readonly IProducer<String, String> _producer;
         private readonly KafkaSettings _kafkaSettings;
         private readonly IOptionsMonitor<OutboxPublisherSettings> _outboxPublisherSettings;
+
+        // Métricas propias del publicador (librería nativa System.Diagnostics.Metrics).
+        private static readonly Counter<long> PublishedMessages = Connection360Telemetry.Meter.CreateCounter<long>(
+            "outbox.messages.published", unit: "{message}", description: "Mensajes del outbox publicados en Kafka.");
+
+        private static readonly Counter<long> PublishCycles = Connection360Telemetry.Meter.CreateCounter<long>(
+            "outbox.publish.cycles", unit: "{cycle}", description: "Ciclos del publicador del outbox, por resultado.");
 
         public OutboxPublisherWorker(IServiceScopeFactory scopeFactory, ILogger<OutboxPublisherWorker> logger, IOptions<KafkaSettings> kafkaSettings, IOptionsMonitor<OutboxPublisherSettings> outboxPublisherSettings)
         {
@@ -60,6 +70,8 @@ namespace Connection360.Infrastructure.Messaging
                 // "InvalidOperationException: ... type only implements IAsyncDisposable. Use
                 // DisposeAsync to dispose the container." AsyncServiceScope sabe llamar
                 // DisposeAsync() correctamente en cada servicio que lo soporte.
+                // Un span por ciclo; si nadie escucha trazas (observabilidad desactivada) es null.
+                using Activity? span = Connection360Telemetry.Source.StartActivity("outbox.publish", ActivityKind.Producer);
                 await using (var scope = _scopeFactory.CreateAsyncScope())
                 {
                     // 3. Resolvemos IUnitOfWork de manera aislada dentro del Scope
@@ -87,13 +99,19 @@ namespace Connection360.Infrastructure.Messaging
 
                                 // 3. Marcar como procesado en la BD
                                 await outboxMessagesRepository.UpdateprocessedAsync(messages.Id, cancellationToken);
+                                PublishedMessages.Add(1);
                             }
                         }
                         await _unitOfWork.CommitAsync(cancellationToken);
+                        span?.SetTag("outbox.messages", outboxMessages.Count);
+                        PublishCycles.Add(1, new KeyValuePair<String, Object?>("success", true));
                     }
                     catch (Exception ex)
                     {
                         await _unitOfWork.RollbackAsync(cancellationToken);
+                        span?.AddException(ex);
+                        span?.SetStatus(ActivityStatusCode.Error, ex.Message);
+                        PublishCycles.Add(1, new KeyValuePair<String, Object?>("success", false));
                         _logger.LogError(ex, "Error no controlado OutboxPublisherWorker {Ex}", ex);
                     }
                 }

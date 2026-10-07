@@ -30,6 +30,10 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Connection360Notification.Application\Connection360Notification.Application.csproj" />
 		<ProjectReference Include="..\Connection360Notification.Infrastructure\Connection360Notification.Infrastructure.csproj" />
+		<ProjectReference Include="..\Connection360.Observability.Application\Connection360.Observability.Application.csproj" />
+		<ProjectReference Include="..\Connection360.Observability.AspNetCore\Connection360.Observability.AspNetCore.csproj" />
+		<ProjectReference Include="..\Connection360.Observability.Infrastructure.Mongo\Connection360.Observability.Infrastructure.Mongo.csproj" />
+		<ProjectReference Include="..\Connection360.Observability.Domain\Connection360.Observability.Domain.csproj" />
 	</ItemGroup>
 
 </Project>

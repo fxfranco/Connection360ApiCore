@@ -12,6 +12,12 @@
     <Project Path="Connection360Notification.Domain/Connection360Notification.Domain.csproj" Id="4673e52c-3638-43b1-8b44-a7e95c4d061a" />
     <Project Path="Connection360Notification.Infrastructure/Connection360Notification.Infrastructure.csproj" Id="86f79de8-b219-4378-9f7f-7cd683e4923f" />
   </Folder>
+  <Folder Name="/Observability/">
+    <Project Path="Connection360.Observability.Application/Connection360.Observability.Application.csproj" />
+    <Project Path="Connection360.Observability.AspNetCore/Connection360.Observability.AspNetCore.csproj" />
+    <Project Path="Connection360.Observability.Domain/Connection360.Observability.Domain.csproj" />
+    <Project Path="Connection360.Observability.Infrastructure.Mongo/Connection360.Observability.Infrastructure.Mongo.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="docker-compose.yml" />
     <File Path="Documents/StartApis_Connection360.bat" />
@@ -20,6 +26,10 @@
     <File Path="Documents/swaggerConnection360ApiNotifications.json" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="Connection360.Observability.Application.Test/Connection360.Observability.Application.Test.csproj" />
+    <Project Path="Connection360.Observability.AspNetCore.Test/Connection360.Observability.AspNetCore.Test.csproj" />
+    <Project Path="Connection360.Observability.Domain.Test/Connection360.Observability.Domain.Test.csproj" />
+    <Project Path="Connection360.Observability.Infrastructure.Mongo.Test/Connection360.Observability.Infrastructure.Mongo.Test.csproj" />
     <Project Path="Connection360.Api.IntegrationTests/Connection360.Api.IntegrationTests.csproj" />
     <Project Path="Connection360.Api.Tests/Connection360.Api.Tests.csproj" />
     <Project Path="Connection360.ApiGateway.IntegrationTests/Connection360.ApiGateway.IntegrationTests.csproj" />

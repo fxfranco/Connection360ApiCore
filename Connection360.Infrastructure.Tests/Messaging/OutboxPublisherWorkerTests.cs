@@ -101,22 +101,24 @@ namespace Connection360.Infrastructure.Tests.Messaging
         [Fact]
         public async Task ExecuteAsync_SiPublicarEnKafkaFalla_HaceRollbackYNoMarcaComoProcesado()
         {
-            // Con un broker inalcanzable ProduceAsync nunca completa: se cancela el worker en cuanto se piden los mensajes.
+            // El productor se reemplaza por un simulado que falla al publicar, de modo que la prueba no depende de si
+            // hay (o no) un broker de Kafka disponible en localhost:9092 ni de temporizaciones.
             var rolledBack = new TaskCompletionSource();
+            var producer = new Mock<Confluent.Kafka.IProducer<String, String>>();
+            producer
+                .Setup(p => p.ProduceAsync(It.IsAny<String>(), It.IsAny<Confluent.Kafka.Message<String, String>>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Confluent.Kafka.KafkaException(new Confluent.Kafka.Error(Confluent.Kafka.ErrorCode.Local_Transport)));
             using OutboxPublisherWorker worker = BuildWorker();
+            var field = typeof(OutboxPublisherWorker).GetField("_producer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+            (field.GetValue(worker) as IDisposable)?.Dispose();
+            field.SetValue(worker, producer.Object);
             _repository.Setup(r => r.GetListAsync(It.IsAny<CancellationToken>()))
-                .Returns(async () =>
-                {
-                    _ = Task.Run(async () => { await Task.Delay(300); await worker.StopAsync(CancellationToken.None); });
-                    return await Task.FromResult(new List<OutboxMessagesResultDto> { new() { Id = Guid.NewGuid(), EventType = "E", Payload = "{}" } });
-                });
+                .ReturnsAsync(new List<OutboxMessagesResultDto> { new() { Id = Guid.NewGuid(), EventType = "E", Payload = "{}" } });
             _unitOfWork.Setup(u => u.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask).Callback(() => rolledBack.TrySetResult());
 
-            await worker.StartAsync(CancellationToken.None);
-            Task completed = await Task.WhenAny(rolledBack.Task, Task.Delay(Guard));
-            await worker.StopAsync(CancellationToken.None);
+            await RunUntil(worker, rolledBack.Task);
 
-            completed.Should().BeSameAs(rolledBack.Task);
+            producer.Verify(p => p.ProduceAsync(It.IsAny<String>(), It.IsAny<Confluent.Kafka.Message<String, String>>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
             _repository.Verify(r => r.UpdateprocessedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
             _unitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         }

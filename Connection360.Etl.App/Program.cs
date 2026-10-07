@@ -1,11 +1,17 @@
 ﻿using Connection360.Etl.App.Extensions;
+using Connection360.Etl.App.Observability;
 using Connection360.Etl.Application.Ports;
 using Connection360.Etl.Infrastructure.DependencyInjection;
+using Connection360.Observability.Application.DependencyInjection;
+using Connection360.Observability.Domain.Models;
+using Connection360.Observability.Domain.Telemetry;
+using Connection360.Observability.Infrastructure.Mongo.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using System.Diagnostics;
 
 // ---------- Composition root del proceso ETL (Extract, Transform, Load) ----------
 // Sigue el mismo patrón de arranque que Connection360.Api/Program.cs: un NpgsqlDataSource
@@ -28,9 +34,24 @@ builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 builder.Services.AddEtlApplicationServices();          // Application (caso de uso orquestador)
 builder.Services.AddEtlInfrastructure(builder.Configuration); // Infrastructure (APIs externas + PostgreSQL)
 
+// Observabilidad (logs, métricas y trazas): captura con las librerías nativas de .NET, escritura
+// asíncrona por lotes y persistencia en MongoDB (sección "Observability" del appsettings).
+builder.Services
+    .AddConnection360Observability(builder.Configuration, ObservedServices.Etl)
+    .AddMongoObservabilityStores();
+
 using IHost host = builder.Build();
 
+// El ETL es un proceso de corta vida y su Host nunca se "arranca" (no se llama a Run/Start), así que
+// los servicios de observabilidad se inician a mano. Al terminar el programa (incluso con una
+// excepción) se detienen vaciando las colas, para que no se pierda la telemetría del final.
+await using var observability = await host.Services.StartObservabilityAsync();
+
 var logger = host.Services.GetRequiredService<ILogger<Program>>();
+
+// Span raíz de toda la corrida: los spans de cada tarea, las llamadas HTTP a las APIs externas y las
+// consultas a PostgreSQL quedan como sus hijos dentro de una misma traza.
+using Activity? processSpan = Connection360Telemetry.Source.StartActivity("etl.process", ActivityKind.Internal);
 
 // Ctrl+C -> cancelación cooperativa del proceso ETL en curso.
 using var cancellationTokenSource = new CancellationTokenSource();
@@ -53,7 +74,9 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
 {
     var runLogsEtlProcessUseCase = scope.ServiceProvider.GetRequiredService<IRunLogsEtlProcessUseCase>();
 
+    using Activity? jobSpan = EtlTelemetry.StartJob(EtlTelemetry.LogsJob);
     var result = await runLogsEtlProcessUseCase.ExecuteAsync(cancellationTokenSource.Token);
+    EtlTelemetry.RecordResult(jobSpan, EtlTelemetry.LogsJob, result);
 
     foreach (var (apiName, count) in result.ExtractedRecordsByApi)
     {
@@ -78,7 +101,9 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
 {
     var runEtlProcessUseCase = scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>();
 
+    using Activity? jobSpan = EtlTelemetry.StartJob(EtlTelemetry.MainJob);
     var result = await runEtlProcessUseCase.ExecuteAsync(cancellationTokenSource.Token);
+    EtlTelemetry.RecordResult(jobSpan, EtlTelemetry.MainJob, result);
 
     foreach (var (apiName, count) in result.ExtractedRecordsByApi)
     {
@@ -113,3 +138,5 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
 // Código de salida estándar para que un scheduler (Windows Task Scheduler, cron, etc.) pueda
 // detectar si alguna de las dos corridas ETL falló.
 Environment.ExitCode = (mainEtlSuccess && logsEtlSuccess) ? 0 : 1;
+processSpan?.SetTag("etl.success", Environment.ExitCode == 0);
+processSpan?.SetStatus(Environment.ExitCode == 0 ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
