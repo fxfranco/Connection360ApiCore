@@ -57,6 +57,7 @@ namespace Connection360.Infrastructure.Tests.DependencyInjection
             services.Should().Contain(sd => sd.ServiceType == typeof(ICustomerNotificationChannelsRepository) && sd.Lifetime == ServiceLifetime.Scoped);
             services.Should().Contain(sd => sd.ServiceType == typeof(ICustomerNotificationEventRepository) && sd.Lifetime == ServiceLifetime.Scoped);
             services.Should().Contain(sd => sd.ServiceType == typeof(ICollaboratorRepository) && sd.Lifetime == ServiceLifetime.Scoped);
+            services.Should().Contain(sd => sd.ServiceType == typeof(ICollaboratorNotificationChannelsRepository) && sd.ImplementationType == typeof(CollaboratorNotificationChannelsRepository) && sd.Lifetime == ServiceLifetime.Scoped);
             services.Should().Contain(sd => sd.ServiceType == typeof(ICustomersOfCollaboratorsRepository) && sd.Lifetime == ServiceLifetime.Scoped);
             services.Should().Contain(sd => sd.ServiceType == typeof(IUnitOfWork) && sd.ImplementationType == typeof(UnitOfWork) && sd.Lifetime == ServiceLifetime.Scoped);
         }

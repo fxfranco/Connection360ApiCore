@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using Connection360.Domain.Enums;
+using System.Reflection;
 using Connection360.Api.Controllers;
 using Connection360.Api.Tests.TestSupport;
 using Connection360.Application.DTOs;
@@ -57,7 +58,7 @@ namespace Connection360.Api.Tests.Controllers
                 NotificationChannels = new NotificationChannelsResponse { ClientId = "CLI-1", NotificationChannelId = 7 },
                 NotificationEvents = new NotificationEventsResponse { ClientId = "CLI-1", NotificationEventId = 9 }
             };
-            useCase.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<CancellationToken>()))
+            useCase.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(created);
             var sut = new SettingsController(Mock.Of<IGetUserManagementUseCase>(), Mock.Of<ICustomerUseCase>(), useCase.Object,
                 Mock.Of<IMasterSettingsUseCase>(), Mock.Of<ICollaboratorUseCase>(), Mock.Of<IOutboxMessagesUseCase>())
@@ -78,7 +79,7 @@ namespace Connection360.Api.Tests.Controllers
         public async Task CreateNotificationsSettings_SiElClienteSoloVieneEnEventos_LoTomaDeEventos()
         {
             var useCase = new Mock<ICustomerNotificationsSettingsUseCase>();
-            useCase.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<CancellationToken>()))
+            useCase.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CustomerNotificationsSettingsResponse
                 {
                     NotificationChannels = new NotificationChannelsResponse { ClientId = null!, NotificationChannelId = 1 },

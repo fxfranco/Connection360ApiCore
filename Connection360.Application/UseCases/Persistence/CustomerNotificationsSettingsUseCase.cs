@@ -2,6 +2,7 @@
 using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.Ports.Persistence;
 using Connection360.Domain.Entities.Persistence;
+using Connection360.Domain.Enums;
 using Connection360.Domain.Ports.Persistence;
 
 namespace Connection360.Application.UseCases.Persistence
@@ -15,8 +16,14 @@ namespace Connection360.Application.UseCases.Persistence
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<CustomerNotificationsSettingsResponse> GetCustomerNotificationSettings(String clientId, CancellationToken cancellationToken = default)
+        public async Task<CustomerNotificationsSettingsResponse> GetCustomerNotificationSettings(String clientId, UserRoleApplication role, CancellationToken cancellationToken = default)
         {
+            if (IsCollaboratorRole(role))
+            {
+                return await this.GetCollaboratorNotificationSettings(clientId, cancellationToken);
+            }
+            EnsureSupportedRole(role);
+
             //ToDo: Pendiente crear exceptiones personalizadas tipo NotFoundException : Exception
             Int64 customerId = await this.GetCustomerId(clientId, cancellationToken);
             if (customerId == 0)
@@ -94,8 +101,14 @@ namespace Connection360.Application.UseCases.Persistence
                 customerNotificationChannels.Application, customerNotificationChannels.Email, customerNotificationChannels.TextMessages);
         }
 
-        public async Task<CustomerNotificationsSettingsResponse> CreateCustomerNotificationSettings(CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken = default)
+        public async Task<CustomerNotificationsSettingsResponse> CreateCustomerNotificationSettings(CustomerNotificationsSettingsResponse customerNotificationsSettings, UserRoleApplication role, CancellationToken cancellationToken = default)
         {
+            if (IsCollaboratorRole(role))
+            {
+                return await this.CreateCollaboratorNotificationSettings(customerNotificationsSettings, cancellationToken);
+            }
+            EnsureSupportedRole(role);
+
             try
             {
                 String clientId = !String.IsNullOrEmpty(customerNotificationsSettings.NotificationChannels?.ClientId) ? customerNotificationsSettings.NotificationChannels.ClientId : customerNotificationsSettings.NotificationEvents?.ClientId;
@@ -156,8 +169,14 @@ namespace Connection360.Application.UseCases.Persistence
             return await customerNotificationChannelsRepository.CrearAsync(customerNotificationEvents, cancellationToken);
         }
 
-        public async Task<Boolean> UpdateCustomerNotificationSettings(CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken = default)
+        public async Task<Boolean> UpdateCustomerNotificationSettings(CustomerNotificationsSettingsResponse customerNotificationsSettings, UserRoleApplication role, CancellationToken cancellationToken = default)
         {
+            if (IsCollaboratorRole(role))
+            {
+                return await this.UpdateCollaboratorNotificationSettings(customerNotificationsSettings, cancellationToken);
+            }
+            EnsureSupportedRole(role);
+
             try
             {
                 String clientId = !String.IsNullOrEmpty(customerNotificationsSettings.NotificationChannels?.ClientId) ? customerNotificationsSettings.NotificationChannels.ClientId : customerNotificationsSettings.NotificationEvents?.ClientId;
@@ -214,5 +233,125 @@ namespace Connection360.Application.UseCases.Persistence
             return await customerNotificationChannelsRepository.UpdateAsync(customerNotificationChannels, cancellationToken);
         }
 
+        // ───────────────────────── Roles de colaborador (ADMIN, ANALISTAOPE, ANALISTASAC) ─────────────────────────
+
+        private static Boolean IsCollaboratorRole(UserRoleApplication role)
+            => role is UserRoleApplication.ADMIN or UserRoleApplication.ANALISTAOPE or UserRoleApplication.ANALISTASAC;
+
+        private static void EnsureSupportedRole(UserRoleApplication role)
+        {
+            if (role != UserRoleApplication.CLIENT)
+            {
+                throw new ArgumentException("El rol suministrado no tiene configuración de notificaciones.", nameof(role));
+            }
+        }
+
+        private async Task<CustomerNotificationsSettingsResponse> GetCollaboratorNotificationSettings(String collaboratorIdentification, CancellationToken cancellationToken = default)
+        {
+            Int64 collaboratorId = await this.GetCollaboratorId(collaboratorIdentification, cancellationToken);
+            if (collaboratorId == 0)
+            {
+                throw new ArgumentException("No existe un colaborador identificado.", nameof(collaboratorIdentification));
+            }
+
+            ICollaboratorNotificationChannelsRepository channelsRepository = _unitOfWork.GetRepository<ICollaboratorNotificationChannelsRepository>();
+            CollaboratorNotificationChannels? channels = await channelsRepository.GetByCollaboratorIdAsync(collaboratorId, cancellationToken);
+
+            // Solo se manejan canales; no hay eventos para los colaboradores.
+            return new CustomerNotificationsSettingsResponse
+            {
+                NotificationChannels = new NotificationChannelsResponse
+                {
+                    ClientId = collaboratorIdentification,
+                    NotificationChannelId = channels?.IdNotificationChannel ?? 0,
+                    Application = channels?.Application ?? false,
+                    Email = channels?.Email ?? false,
+                    TextMessages = channels?.TextMessages ?? false
+                }
+            };
+        }
+
+        private async Task<CustomerNotificationsSettingsResponse> CreateCollaboratorNotificationSettings(CustomerNotificationsSettingsResponse settings, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                String? collaboratorIdentification = settings.NotificationChannels?.ClientId;
+                if (String.IsNullOrEmpty(collaboratorIdentification))
+                {
+                    throw new ArgumentException("Debe suministrar la identificacion del colaborador", nameof(collaboratorIdentification));
+                }
+
+                Int64 collaboratorId = await this.GetCollaboratorId(collaboratorIdentification, cancellationToken);
+                if (collaboratorId == 0)
+                {
+                    throw new ArgumentException("No existe un colaborador identificado.", nameof(collaboratorIdentification));
+                }
+
+                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+                ICollaboratorNotificationChannelsRepository channelsRepository = _unitOfWork.GetRepository<ICollaboratorNotificationChannelsRepository>();
+                NotificationChannelsResponse dto = settings.NotificationChannels!;
+                Int64 created = await channelsRepository.CrearAsync(new CollaboratorNotificationChannels(0, collaboratorId, dto.Application, dto.Email, dto.TextMessages), cancellationToken);
+                if (created <= 0)
+                {
+                    throw new ArgumentException("Error creando notificaciones de canales");
+                }
+                dto.NotificationChannelId = created;
+
+                await _unitOfWork.CommitAsync(cancellationToken);
+            }
+            catch (Exception)
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken);
+                throw;
+            }
+
+            return settings;
+        }
+
+        private async Task<Boolean> UpdateCollaboratorNotificationSettings(CustomerNotificationsSettingsResponse settings, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                String? collaboratorIdentification = settings.NotificationChannels?.ClientId;
+                if (String.IsNullOrEmpty(collaboratorIdentification))
+                {
+                    throw new ArgumentException("Debe suministrar la identificacion del colaborador", nameof(collaboratorIdentification));
+                }
+
+                Int64 collaboratorId = await this.GetCollaboratorId(collaboratorIdentification, cancellationToken);
+                if (collaboratorId == 0)
+                {
+                    throw new ArgumentException("No existe un colaborador identificado.", nameof(collaboratorIdentification));
+                }
+
+                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+                ICollaboratorNotificationChannelsRepository channelsRepository = _unitOfWork.GetRepository<ICollaboratorNotificationChannelsRepository>();
+                NotificationChannelsResponse dto = settings.NotificationChannels!;
+                Boolean updated = await channelsRepository.UpdateAsync(new CollaboratorNotificationChannels(dto.NotificationChannelId, collaboratorId, dto.Application, dto.Email, dto.TextMessages), cancellationToken);
+                if (!updated)
+                {
+                    throw new ArgumentException("Error modificando notificaciones de canales");
+                }
+
+                await _unitOfWork.CommitAsync(cancellationToken);
+                return true;
+            }
+            catch (Exception)
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
+
+        private async Task<Int64> GetCollaboratorId(String collaboratorIdentification, CancellationToken cancellationToken = default)
+        {
+            ICollaboratorRepository collaboratorRepository = _unitOfWork.GetRepository<ICollaboratorRepository>();
+
+            Int64? idResult = await collaboratorRepository.GetCollaboratorByIdAsync(collaboratorIdentification, cancellationToken);
+
+            return idResult ?? 0;
+        }
     }
 }

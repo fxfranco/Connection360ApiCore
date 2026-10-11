@@ -1,3 +1,4 @@
+using Connection360.Domain.Enums;
 using Connection360.Api.Controllers;
 using Connection360.Api.Models;
 using Connection360.Api.Tests.TestSupport;
@@ -36,7 +37,7 @@ namespace Connection360.Api.Tests.Controllers
         public async Task GetNotificationsSettings_RetornaOkConElResultado()
         {
             var expected = new CustomerNotificationsSettingsResponse();
-            _notificationsSettingsMock.Setup(u => u.GetCustomerNotificationSettings("123", It.IsAny<CancellationToken>())).ReturnsAsync(expected);
+            _notificationsSettingsMock.Setup(u => u.GetCustomerNotificationSettings("123", It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>())).ReturnsAsync(expected);
 
             IActionResult result = await _sut.GetNotificationsSettings("123", CancellationToken.None);
 
@@ -51,7 +52,7 @@ namespace Connection360.Api.Tests.Controllers
                 NotificationChannels = new NotificationChannelsResponse { NotificationChannelId = 1 },
                 NotificationEvents = new NotificationEventsResponse { NotificationEventId = 2 }
             };
-            _notificationsSettingsMock.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<CancellationToken>()))
+            _notificationsSettingsMock.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expected);
 
             IActionResult result = await _sut.CreateNotificationsSettings(new CustomerNotificationsSettingsResponse(), CancellationToken.None);
@@ -64,7 +65,7 @@ namespace Connection360.Api.Tests.Controllers
         [Fact]
         public async Task UpdateNotificationsSettings_RetornaNoContent()
         {
-            _notificationsSettingsMock.Setup(u => u.UpdateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<CancellationToken>()))
+            _notificationsSettingsMock.Setup(u => u.UpdateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
             IActionResult result = await _sut.UpdateNotificationsSettings(new CustomerNotificationsSettingsResponse(), CancellationToken.None);

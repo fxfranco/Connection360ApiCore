@@ -2,6 +2,7 @@ using Connection360.Application.DTOs;
 using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.UseCases.Persistence;
 using Connection360.Domain.Entities.Persistence;
+using Connection360.Domain.Enums;
 using Connection360.Domain.Ports.Persistence;
 using FluentAssertions;
 using Moq;
@@ -30,7 +31,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         {
             _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("123", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
 
-            Func<Task> act = () => _sut.GetCustomerNotificationSettings("123", CancellationToken.None);
+            Func<Task> act = () => _sut.GetCustomerNotificationSettings("123", UserRoleApplication.CLIENT, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
@@ -42,7 +43,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channelsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync((CustomerNotificationChannels?)null);
             _eventsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync((CustomerNotificationEvents?)null);
 
-            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123", CancellationToken.None);
+            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123", UserRoleApplication.CLIENT, CancellationToken.None);
 
             result.NotificationChannels!.Application.Should().BeFalse();
             result.NotificationEvents!.ChangeState.Should().BeFalse();
@@ -58,7 +59,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _eventsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new CustomerNotificationEvents(1, 5, true, false, true, false, true));
 
-            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123", CancellationToken.None);
+            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123", UserRoleApplication.CLIENT, CancellationToken.None);
 
             result.NotificationChannels!.Application.Should().BeTrue();
             result.NotificationChannels.Email.Should().BeTrue();
@@ -75,7 +76,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
                 NotificationEvents = new NotificationEventsResponse { ClientId = "" }
             };
 
-            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, CancellationToken.None);
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
@@ -90,7 +91,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             };
             _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("123", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
 
-            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, CancellationToken.None);
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
@@ -107,7 +108,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channelsRepositoryMock.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(10);
             _eventsRepositoryMock.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>())).ReturnsAsync(20);
 
-            CustomerNotificationsSettingsResponse result = await _sut.CreateCustomerNotificationSettings(request, CancellationToken.None);
+            CustomerNotificationsSettingsResponse result = await _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
 
             result.NotificationChannels!.NotificationChannelId.Should().Be(10);
             result.NotificationEvents!.NotificationEventId.Should().Be(20);
@@ -125,7 +126,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("123", It.IsAny<CancellationToken>())).ReturnsAsync(5);
             _channelsRepositoryMock.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(0);
 
-            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, CancellationToken.None);
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
@@ -142,7 +143,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channelsRepositoryMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
             _eventsRepositoryMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-            Boolean result = await _sut.UpdateCustomerNotificationSettings(request, CancellationToken.None);
+            Boolean result = await _sut.UpdateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
 
             result.Should().BeTrue();
         }
@@ -158,7 +159,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("123", It.IsAny<CancellationToken>())).ReturnsAsync(5);
             _channelsRepositoryMock.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(request, CancellationToken.None);
+            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
         }

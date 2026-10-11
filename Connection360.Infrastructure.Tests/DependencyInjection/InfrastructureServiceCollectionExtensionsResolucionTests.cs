@@ -59,6 +59,7 @@ namespace Connection360.Infrastructure.Tests.DependencyInjection
 
             sp.GetRequiredService<ICustomerRepository>().Should().BeOfType<CustomerRepository>();
             sp.GetRequiredService<ICollaboratorRepository>().Should().BeOfType<CollaboratorRepository>();
+            sp.GetRequiredService<ICollaboratorNotificationChannelsRepository>().Should().BeOfType<CollaboratorNotificationChannelsRepository>();
             sp.GetRequiredService<ICustomersOfCollaboratorsRepository>().Should().BeOfType<CustomersOfCollaboratorsRepository>();
             sp.GetRequiredService<IMasterSettingsRepository>().Should().BeOfType<MasterSettingsRepository>();
             sp.GetRequiredService<ICustomerNotificationChannelsRepository>().Should().BeOfType<CustomerNotificationChannelsRepository>();

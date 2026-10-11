@@ -2,6 +2,7 @@
 using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.UseCases.Persistence;
 using Connection360.Domain.Entities.Persistence;
+using Connection360.Domain.Enums;
 using Connection360.Domain.Ports.Persistence;
 using FluentAssertions;
 using Moq;
@@ -44,7 +45,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channels.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync(new CustomerNotificationChannels(9, 5, true, false, true));
             _events.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync((CustomerNotificationEvents?)null);
 
-            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123");
+            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123", UserRoleApplication.CLIENT);
 
             result.NotificationChannels!.NotificationChannelId.Should().Be(9);
             result.NotificationChannels.Application.Should().BeTrue();
@@ -62,7 +63,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channels.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync((CustomerNotificationChannels?)null);
             _events.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync(new CustomerNotificationEvents(4, 5, true, true, true, true, true));
 
-            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123");
+            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123", UserRoleApplication.CLIENT);
 
             result.NotificationChannels!.NotificationChannelId.Should().Be(0);
             result.NotificationChannels.Application.Should().BeFalse();
@@ -77,7 +78,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         {
             _customers.Setup(r => r.GetCustomerByIdAsync("999", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
 
-            Func<Task> act = () => _sut.GetCustomerNotificationSettings("999");
+            Func<Task> act = () => _sut.GetCustomerNotificationSettings("999", UserRoleApplication.CLIENT);
 
             (await act.Should().ThrowAsync<ArgumentException>()).Which.ParamName.Should().Be("clientId");
             _channels.VerifyNoOtherCalls();
@@ -93,7 +94,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channels.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(10);
             _events.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>())).ReturnsAsync(20);
 
-            CustomerNotificationsSettingsResponse result = await _sut.CreateCustomerNotificationSettings(request);
+            CustomerNotificationsSettingsResponse result = await _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT);
 
             result.NotificationChannels!.NotificationChannelId.Should().Be(10);
             result.NotificationEvents!.NotificationEventId.Should().Be(20);
@@ -107,7 +108,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channels.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
             _events.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>())).ReturnsAsync(2);
 
-            await _sut.CreateCustomerNotificationSettings(request);
+            await _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT);
 
             _customers.Verify(r => r.GetCustomerByIdAsync("123", It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -117,7 +118,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         {
             var request = new CustomerNotificationsSettingsResponse();
 
-            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request);
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT);
 
             (await act.Should().ThrowAsync<ArgumentException>()).Which.ParamName.Should().Be("clientId");
             _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -129,7 +130,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         {
             _customers.Setup(r => r.GetCustomerByIdAsync("404", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
 
-            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(Settings("404", "404"));
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(Settings("404", "404"), UserRoleApplication.CLIENT);
 
             await act.Should().ThrowAsync<ArgumentException>();
             _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -142,7 +143,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channels.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(10);
             _events.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>())).ReturnsAsync(0);
 
-            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(Settings());
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(Settings(), UserRoleApplication.CLIENT);
 
             await act.Should().ThrowAsync<ArgumentException>().WithMessage("*eventos*");
             _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -154,7 +155,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         {
             _channels.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(-1);
 
-            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(Settings());
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(Settings(), UserRoleApplication.CLIENT);
 
             await act.Should().ThrowAsync<ArgumentException>().WithMessage("*canales*");
             _events.Verify(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -171,7 +172,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _events.Setup(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>()))
                 .Callback<CustomerNotificationEvents, CancellationToken>((e, _) => capturedEvents = e).ReturnsAsync(2);
 
-            await _sut.CreateCustomerNotificationSettings(Settings());
+            await _sut.CreateCustomerNotificationSettings(Settings(), UserRoleApplication.CLIENT);
 
             capturedChannels.Should().NotBeNull();
             capturedChannels!.IdNotificationChannel.Should().Be(0);
@@ -194,7 +195,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         [Fact]
         public async Task UpdateCustomerNotificationSettings_SinClientId_LanzaArgumentExceptionYHaceRollback()
         {
-            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(new CustomerNotificationsSettingsResponse());
+            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(new CustomerNotificationsSettingsResponse(), UserRoleApplication.CLIENT);
 
             (await act.Should().ThrowAsync<ArgumentException>()).Which.ParamName.Should().Be("clientId");
             _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -205,7 +206,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         {
             _customers.Setup(r => r.GetCustomerByIdAsync("404", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
 
-            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(Settings("404", "404"));
+            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(Settings("404", "404"), UserRoleApplication.CLIENT);
 
             await act.Should().ThrowAsync<ArgumentException>().WithMessage("*cliente*");
             _uow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -217,7 +218,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channels.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
             _events.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-            Boolean result = await _sut.UpdateCustomerNotificationSettings(Settings(channelClient: null, eventClient: "123"));
+            Boolean result = await _sut.UpdateCustomerNotificationSettings(Settings(channelClient: null, eventClient: "123"), UserRoleApplication.CLIENT);
 
             result.Should().BeTrue();
             _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -229,7 +230,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _channels.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
             _events.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(Settings());
+            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(Settings(), UserRoleApplication.CLIENT);
 
             await act.Should().ThrowAsync<ArgumentException>().WithMessage("*eventos*");
             _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -241,7 +242,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
         {
             _channels.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(Settings());
+            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(Settings(), UserRoleApplication.CLIENT);
 
             await act.Should().ThrowAsync<ArgumentException>().WithMessage("*canales*");
             _events.Verify(r => r.UpdateAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -258,7 +259,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _events.Setup(r => r.UpdateAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>()))
                 .Callback<CustomerNotificationEvents, CancellationToken>((e, _) => capturedEvents = e).ReturnsAsync(true);
 
-            await _sut.UpdateCustomerNotificationSettings(Settings());
+            await _sut.UpdateCustomerNotificationSettings(Settings(), UserRoleApplication.CLIENT);
 
             capturedChannels!.IdNotificationChannel.Should().Be(1);
             capturedChannels.IdCustomer.Should().Be(5);
@@ -274,7 +275,7 @@ namespace Connection360.Application.Tests.UseCases.Persistence
                 NotificationEvents = new NotificationEventsResponse { ClientId = "123" }
             };
 
-            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(request);
+            Func<Task> act = () => _sut.UpdateCustomerNotificationSettings(request, UserRoleApplication.CLIENT);
 
             await act.Should().ThrowAsync<NullReferenceException>();
             _uow.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);

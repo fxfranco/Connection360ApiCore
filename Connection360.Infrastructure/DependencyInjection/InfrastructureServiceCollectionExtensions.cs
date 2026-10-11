@@ -66,6 +66,7 @@ namespace Connection360.Infrastructure.DependencyInjection
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped<IMasterSettingsRepository, MasterSettingsRepository>();
             services.AddScoped<ICollaboratorRepository, CollaboratorRepository>();
+            services.AddScoped<ICollaboratorNotificationChannelsRepository, CollaboratorNotificationChannelsRepository>();
             services.AddScoped<ICustomersOfCollaboratorsRepository, CustomersOfCollaboratorsRepository>();
             services.AddScoped<IOutboxMessagesRepository, OutboxMessagesRepository>();
             services.AddScoped<IApplicationDataSheetEntregadosRepository, ApplicationDataSheetEntregadosRepository>();

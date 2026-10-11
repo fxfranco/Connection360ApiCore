@@ -1,4 +1,5 @@
-﻿using Connection360.Api.Controllers;
+﻿using Connection360.Domain.Enums;
+using Connection360.Api.Controllers;
 using Connection360.Api.Models;
 using Connection360.Api.Tests.TestSupport;
 using Connection360.Application.DTOs;
@@ -99,12 +100,39 @@ namespace Connection360.Api.Tests.Controllers
         public async Task GetNotificationsSettings_ConCualquierRolValido_RetornaOk(String role)
         {
             var expected = new CustomerNotificationsSettingsResponse();
-            _notificationsSettingsMock.Setup(u => u.GetCustomerNotificationSettings("123", It.IsAny<CancellationToken>())).ReturnsAsync(expected);
+            _notificationsSettingsMock.Setup(u => u.GetCustomerNotificationSettings("123", It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>())).ReturnsAsync(expected);
             SettingsController sut = BuildSut(role);
 
             IActionResult result = await sut.GetNotificationsSettings("123", CancellationToken.None);
 
             result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(expected);
+        }
+
+        [Theory]
+        [InlineData("ADMIN", UserRoleApplication.ADMIN)]
+        [InlineData("CLIENT", UserRoleApplication.CLIENT)]
+        [InlineData("ANALISTAOPE", UserRoleApplication.ANALISTAOPE)]
+        [InlineData("ANALISTASAC", UserRoleApplication.ANALISTASAC)]
+        public async Task NotificationsSettings_EnviaAlCasoDeUsoElRolDelUsuarioAutenticado(String claim, UserRoleApplication expectedRole)
+        {
+            var response = new CustomerNotificationsSettingsResponse
+            {
+                NotificationChannels = new NotificationChannelsResponse { ClientId = "ID-1", NotificationChannelId = 1 }
+            };
+            _notificationsSettingsMock.Setup(u => u.GetCustomerNotificationSettings("ID-1", It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>())).ReturnsAsync(response);
+            _notificationsSettingsMock.Setup(u => u.CreateCustomerNotificationSettings(response, It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>())).ReturnsAsync(response);
+            _notificationsSettingsMock.Setup(u => u.UpdateCustomerNotificationSettings(response, It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+            SettingsController sut = BuildSut(claim);
+
+            await sut.GetNotificationsSettings("ID-1", CancellationToken.None);
+            IActionResult created = await sut.CreateNotificationsSettings(response, CancellationToken.None);
+            await sut.UpdateNotificationsSettings(response, CancellationToken.None);
+
+            // Sin NotificationEvents (caso colaborador) la ruta de creación no debe fallar.
+            created.Should().BeOfType<CreatedAtRouteResult>();
+            _notificationsSettingsMock.Verify(u => u.GetCustomerNotificationSettings("ID-1", expectedRole, It.IsAny<CancellationToken>()), Times.Once);
+            _notificationsSettingsMock.Verify(u => u.CreateCustomerNotificationSettings(response, expectedRole, It.IsAny<CancellationToken>()), Times.Once);
+            _notificationsSettingsMock.Verify(u => u.UpdateCustomerNotificationSettings(response, expectedRole, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Theory]
@@ -118,8 +146,8 @@ namespace Connection360.Api.Tests.Controllers
                 NotificationChannels = new NotificationChannelsResponse { NotificationChannelId = 1 },
                 NotificationEvents = new NotificationEventsResponse { NotificationEventId = 2 }
             };
-            _notificationsSettingsMock.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<CancellationToken>())).ReturnsAsync(response);
-            _notificationsSettingsMock.Setup(u => u.UpdateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+            _notificationsSettingsMock.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>())).ReturnsAsync(response);
+            _notificationsSettingsMock.Setup(u => u.UpdateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
             SettingsController sut = BuildSut(role);
 
             IActionResult created = await sut.CreateNotificationsSettings(response, CancellationToken.None);

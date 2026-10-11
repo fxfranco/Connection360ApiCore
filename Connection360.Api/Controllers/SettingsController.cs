@@ -42,8 +42,11 @@ namespace Connection360.Api.Controllers
             _outboxMessagesUseCase = outboxMessagesUseCase;
         }
 
-        /// <summary>Obtiene la configuración de notificaciones (canales y eventos) de un cliente.</summary>
-        /// <param name="idClient">Identificador del cliente.</param>
+        /// <summary>
+        /// Obtiene la configuración de notificaciones. Para el rol CLIENT devuelve canales y eventos del cliente;
+        /// para ADMIN, ANALISTAOPE y ANALISTASAC devuelve únicamente los canales del colaborador.
+        /// </summary>
+        /// <param name="idClient">Identificador del cliente, o identificación del colaborador según el rol.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>La configuración de notificaciones del cliente, envuelta en la respuesta estándar de la API.</returns>
         /// <response code="200">Configuración de notificaciones obtenida correctamente.</response>
@@ -59,7 +62,7 @@ namespace Connection360.Api.Controllers
             {
                 return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
             }
-            CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.GetCustomerNotificationSettings(idClient, cancellationToken);
+            CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.GetCustomerNotificationSettings(idClient, role, cancellationToken);
             return Ok(result);
         }
 
@@ -80,8 +83,8 @@ namespace Connection360.Api.Controllers
             {
                 return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
             }
-            CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.CreateCustomerNotificationSettings(customerNotificationsSettings, cancellationToken);
-            return CreatedAtRoute(nameof(CreateNotificationsSettings), new { idClient = result.NotificationChannels.ClientId ?? result.NotificationEvents.ClientId, idChannel = result.NotificationChannels.NotificationChannelId, idEvent = result.NotificationEvents.NotificationEventId}, result);
+            CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.CreateCustomerNotificationSettings(customerNotificationsSettings, role, cancellationToken);
+            return CreatedAtRoute(nameof(CreateNotificationsSettings), new { idClient = result.NotificationChannels?.ClientId ?? result.NotificationEvents?.ClientId, idChannel = result.NotificationChannels?.NotificationChannelId, idEvent = result.NotificationEvents?.NotificationEventId}, result);
         }
 
         /// <summary>Actualiza la configuración de notificaciones (canales y eventos) de un cliente.</summary>
@@ -103,7 +106,7 @@ namespace Connection360.Api.Controllers
             {
                 return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
             }
-            Boolean result = await _customerNotificationsSettingsUseCase.UpdateCustomerNotificationSettings(customerNotificationsSettings, cancellationToken);
+            Boolean result = await _customerNotificationsSettingsUseCase.UpdateCustomerNotificationSettings(customerNotificationsSettings, role, cancellationToken);
             return NoContent();
         }
 
