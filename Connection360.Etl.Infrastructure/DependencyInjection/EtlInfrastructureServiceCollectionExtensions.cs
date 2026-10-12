@@ -25,6 +25,7 @@ namespace Connection360.Etl.Infrastructure.DependencyInjection
             services.Configure<ExternalApiSettings>(configuration.GetSection(ExternalApiSettings.SectionName));
             services.Configure<EtlJobControlSettings>(configuration.GetSection(EtlJobControlSettings.SectionName));
             services.Configure<EtlChangeTrackingSettings>(configuration.GetSection(EtlChangeTrackingSettings.SectionName));
+            services.Configure<MaterializedViewSettings>(configuration.GetSection(MaterializedViewSettings.SectionName));
 
             // Cargar la sección directamente para poder registrar un HttpClient con nombre por cada API
             var externalApiSettings = configuration.GetSection(ExternalApiSettings.SectionName).Get<ExternalApiSettings>();
@@ -65,6 +66,9 @@ namespace Connection360.Etl.Infrastructure.DependencyInjection
             services.AddScoped<IApplicationDataSheetRepository, ApplicationDataSheetRepository>();
             services.AddScoped<ILogStatusTrackingRepository, LogStatusTrackingRepository>();
             services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
+            services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<IMaterializedViewRepository, MaterializedViewRepository>();
+            services.AddScoped<ICustomerNotificationChannelsRepository, CustomerNotificationChannelsRepository>();
             services.AddScoped<IEtlJobControlRepository, EtlJobControlRepository>();
             services.AddScoped<IUnitOfWork, Connection360.Etl.Infrastructure.Persistence.UnitOfWork>();
 

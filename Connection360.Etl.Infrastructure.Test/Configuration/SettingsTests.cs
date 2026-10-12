@@ -23,6 +23,25 @@ namespace Connection360.Etl.Infrastructure.Tests.Configuration
         }
 
         [Fact]
+        public void MaterializedViewSettings_ValoresPorDefecto()
+        {
+            var settings = new MaterializedViewSettings();
+
+            MaterializedViewSettings.SectionName.Should().Be("MaterializedViews");
+            settings.RefreshEnabled.Should().BeTrue();
+            settings.CommandTimeoutSeconds.Should().Be(600);
+        }
+
+        [Fact]
+        public void MaterializedViewSettings_SePuedenSobrescribir()
+        {
+            var settings = new MaterializedViewSettings { RefreshEnabled = false, CommandTimeoutSeconds = 30 };
+
+            settings.RefreshEnabled.Should().BeFalse();
+            settings.CommandTimeoutSeconds.Should().Be(30);
+        }
+
+        [Fact]
         public void EtlJobControlSettings_ValoresPorDefecto()
         {
             EtlJobControlSettings.SectionName.Should().Be("EtlJobControl");

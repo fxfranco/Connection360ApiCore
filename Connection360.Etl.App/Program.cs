@@ -135,8 +135,33 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
     logger.LogInformation("Depuración de etl_job_control finalizada: {Deleted} registro(s) eliminados.", deletedRows);
 }
 
+// ---------- 4. Sincronización de las vistas materializadas de lectura (connection360read) ----------
+// Corre AL FINAL, cuando ya terminaron los procesos ETL y la depuración, para no competir con la
+// carga principal por recursos de PostgreSQL. Refresca cada vista con REFRESH ... CONCURRENTLY (no
+// bloquea las lecturas) y nunca lanza: si una vista falla se registra y se sigue con las demás.
+Boolean viewsRefreshSuccess;
+await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
+{
+    var refreshMaterializedViewsUseCase = scope.ServiceProvider.GetRequiredService<IRefreshMaterializedViewsUseCase>();
+
+    using Activity? jobSpan = EtlTelemetry.StartJob(EtlTelemetry.ViewsJob);
+    var result = await refreshMaterializedViewsUseCase.ExecuteAsync(cancellationTokenSource.Token);
+    EtlTelemetry.RecordViewsResult(jobSpan, result);
+
+    logger.LogInformation(
+        "Sincronización de vistas materializadas finalizada. Éxito={Success}. Omitida={Skipped}. Refrescadas={Refreshed}. Fallidas={Failed}. Duración={Duration}.",
+        result.Success, result.Skipped, result.Views.Count(v => v.Success), result.Views.Count(v => !v.Success), result.Duration);
+
+    foreach (var failed in result.Views.Where(v => !v.Success))
+    {
+        logger.LogError("Detalle del error al refrescar {View}: {ErrorMessage}", failed.View, failed.ErrorMessage);
+    }
+
+    viewsRefreshSuccess = result.Success;
+}
+
 // Código de salida estándar para que un scheduler (Windows Task Scheduler, cron, etc.) pueda
-// detectar si alguna de las dos corridas ETL falló.
-Environment.ExitCode = (mainEtlSuccess && logsEtlSuccess) ? 0 : 1;
+// detectar si alguna de las corridas ETL o la sincronización de vistas falló.
+Environment.ExitCode = (mainEtlSuccess && logsEtlSuccess && viewsRefreshSuccess) ? 0 : 1;
 processSpan?.SetTag("etl.success", Environment.ExitCode == 0);
 processSpan?.SetStatus(Environment.ExitCode == 0 ? ActivityStatusCode.Ok : ActivityStatusCode.Error);

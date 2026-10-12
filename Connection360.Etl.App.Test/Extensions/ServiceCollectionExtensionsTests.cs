@@ -51,13 +51,15 @@ namespace Connection360.Etl.App.Test.Extensions
             Boolean paginationEnabled = false,
             Int32 pageSize = 500,
             Int32 retentionDays = 30,
-            String systemUser = "ETL_TEST")
+            String systemUser = "ETL_TEST",
+            Boolean viewsRefreshEnabled = true)
         {
             var services = new ServiceCollection();
             services.AddLogging();
             services.AddSingleton<IOptions<ExternalApiSettings>>(Options.Create(new ExternalApiSettings { PaginationEnabled = paginationEnabled, PageSize = pageSize }));
             services.AddSingleton<IOptions<EtlChangeTrackingSettings>>(Options.Create(new EtlChangeTrackingSettings { SystemUser = systemUser }));
             services.AddSingleton<IOptions<EtlJobControlSettings>>(Options.Create(new EtlJobControlSettings { ApplicationDataSheetRetentionDays = retentionDays }));
+            services.AddSingleton<IOptions<MaterializedViewSettings>>(Options.Create(new MaterializedViewSettings { RefreshEnabled = viewsRefreshEnabled }));
             services.AddSingleton(_gateway.Object);
             services.AddSingleton(_merger.Object);
             services.AddSingleton(_shipmentsMapping.Object);
@@ -84,6 +86,7 @@ namespace Connection360.Etl.App.Test.Extensions
         [InlineData(typeof(IRunEtlProcessUseCase))]
         [InlineData(typeof(IRunLogsEtlProcessUseCase))]
         [InlineData(typeof(IPurgeEtlJobControlUseCase))]
+        [InlineData(typeof(IRefreshMaterializedViewsUseCase))]
         public void AddEtlApplicationServices_RegistraCadaCasoDeUsoComoScopedConFabrica(Type serviceType)
         {
             var services = new ServiceCollection();
@@ -96,13 +99,13 @@ namespace Connection360.Etl.App.Test.Extensions
         }
 
         [Fact]
-        public void AddEtlApplicationServices_RegistraExactamenteTresServicios()
+        public void AddEtlApplicationServices_RegistraExactamenteCuatroServicios()
         {
             var services = new ServiceCollection();
 
             services.AddEtlApplicationServices();
 
-            services.Should().HaveCount(3);
+            services.Should().HaveCount(4);
         }
 
         // ---------- Resolución ----------
@@ -138,6 +141,17 @@ namespace Connection360.Etl.App.Test.Extensions
             var useCase = scope.ServiceProvider.GetRequiredService<IPurgeEtlJobControlUseCase>();
 
             useCase.Should().BeOfType<PurgeEtlJobControlUseCase>();
+        }
+
+        [Fact]
+        public void Resolver_IRefreshMaterializedViewsUseCase_DevuelveRefreshMaterializedViewsUseCase()
+        {
+            using var provider = CreateServices().AddEtlApplicationServices().BuildServiceProvider();
+            using var scope = provider.CreateScope();
+
+            var useCase = scope.ServiceProvider.GetRequiredService<IRefreshMaterializedViewsUseCase>();
+
+            useCase.Should().BeOfType<RefreshMaterializedViewsUseCase>();
         }
 
         [Fact]
@@ -178,10 +192,12 @@ namespace Connection360.Etl.App.Test.Extensions
             Action runEtl = () => scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>();
             Action runLogs = () => scope.ServiceProvider.GetRequiredService<IRunLogsEtlProcessUseCase>();
             Action purge = () => scope.ServiceProvider.GetRequiredService<IPurgeEtlJobControlUseCase>();
+            Action views = () => scope.ServiceProvider.GetRequiredService<IRefreshMaterializedViewsUseCase>();
 
             runEtl.Should().Throw<InvalidOperationException>().WithMessage("*IExternalDataGateway*");
             runLogs.Should().Throw<InvalidOperationException>().WithMessage("*IExternalDataGateway*");
             purge.Should().Throw<InvalidOperationException>().WithMessage("*IUnitOfWork*");
+            views.Should().Throw<InvalidOperationException>().WithMessage("*IUnitOfWork*");
         }
 
         [Fact]
@@ -306,6 +322,41 @@ namespace Connection360.Etl.App.Test.Extensions
             deleted.Should().Be(0);
         }
 
+        // ---------- Sincronización de vistas materializadas ----------
+
+        [Fact]
+        public async Task RefreshMaterializedViewsUseCase_Habilitado_RefrescaLasTresVistasConElRepositorioDelUnitOfWork()
+        {
+            var viewsRepository = new Mock<IMaterializedViewRepository>();
+            _unitOfWork.Setup(u => u.GetRepository<IMaterializedViewRepository>()).Returns(viewsRepository.Object);
+            using var provider = CreateServices(viewsRefreshEnabled: true).AddEtlApplicationServices().BuildServiceProvider();
+            await using var scope = provider.CreateAsyncScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IRefreshMaterializedViewsUseCase>();
+
+            var result = await useCase.ExecuteAsync();
+
+            result.Success.Should().BeTrue();
+            result.Skipped.Should().BeFalse();
+            foreach (MaterializedViewName view in Enum.GetValues<MaterializedViewName>())
+                viewsRepository.Verify(r => r.RefreshConcurrentlyAsync(view, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RefreshMaterializedViewsUseCase_DeshabilitadoPorConfiguracion_NoTocaLaBaseDeDatos()
+        {
+            var viewsRepository = new Mock<IMaterializedViewRepository>();
+            _unitOfWork.Setup(u => u.GetRepository<IMaterializedViewRepository>()).Returns(viewsRepository.Object);
+            using var provider = CreateServices(viewsRefreshEnabled: false).AddEtlApplicationServices().BuildServiceProvider();
+            await using var scope = provider.CreateAsyncScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IRefreshMaterializedViewsUseCase>();
+
+            var result = await useCase.ExecuteAsync();
+
+            result.Skipped.Should().BeTrue();
+            result.Success.Should().BeTrue();
+            viewsRepository.Verify(r => r.RefreshConcurrentlyAsync(It.IsAny<MaterializedViewName>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
         // ---------- Usuario de sistema del seguimiento de cambios ----------
 
         [Fact]
@@ -343,6 +394,9 @@ namespace Connection360.Etl.App.Test.Extensions
             _unitOfWork.Setup(u => u.GetRepository<IApplicationDataSheetRepository>()).Returns(repository.Object);
             _unitOfWork.Setup(u => u.GetRepository<ILogStatusTrackingRepository>()).Returns(logRepository.Object);
             _unitOfWork.Setup(u => u.GetRepository<IOutboxMessageRepository>()).Returns(outboxRepository.Object);
+            _unitOfWork.Setup(u => u.GetRepository<ICustomerRepository>()).Returns(Mock.Of<ICustomerRepository>());
+            _unitOfWork.Setup(u => u.GetRepository<ICustomerNotificationChannelsRepository>()).Returns(Mock.Of<ICustomerNotificationChannelsRepository>(
+                r => r.GetByCustomerIdentificationsAsync(It.IsAny<IEnumerable<String>>(), It.IsAny<CancellationToken>()) == Task.FromResult<IReadOnlyDictionary<String, CustomerNotificationChannelSettings>>(new Dictionary<String, CustomerNotificationChannelSettings>())));
 
             _changeDetector
                 .Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))

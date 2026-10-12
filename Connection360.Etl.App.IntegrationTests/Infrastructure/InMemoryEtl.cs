@@ -32,6 +32,12 @@ namespace Connection360.Etl.App.IntegrationTests.Infrastructure
         public List<LogStatusTracking> LogRows { get; } = new();
         public List<OutboxMessage> Outbox { get; } = new();
 
+        /// <summary>connection360write.customers en memoria (identificacion); lista para poder detectar duplicados.</summary>
+        public List<String> Customers { get; } = new();
+
+        /// <summary>customer_notification_channels por identificación del cliente (el que no esté aquí no tiene configuración).</summary>
+        public Dictionary<String, CustomerNotificationChannelSettings> CustomerChannels { get; } = new(StringComparer.Ordinal);
+
         /// <summary>Secuencia de eventos transaccionales: "begin", "commit", "rollback".</summary>
         public List<String> Transactions { get; } = new();
 
@@ -58,6 +64,8 @@ namespace Connection360.Etl.App.IntegrationTests.Infrastructure
                 [typeof(IEtlJobControlRepository)] = new JobControlRepository(store),
                 [typeof(ILogStatusTrackingRepository)] = new LogRepository(store),
                 [typeof(IOutboxMessageRepository)] = new OutboxRepository(store),
+                [typeof(ICustomerRepository)] = new CustomerRepository(store),
+                [typeof(ICustomerNotificationChannelsRepository)] = new CustomerChannelsRepository(store),
             };
         }
 
@@ -199,6 +207,44 @@ namespace Connection360.Etl.App.IntegrationTests.Infrastructure
                 var list = rows.ToList();
                 _store.LogRows.AddRange(list);
                 return Task.FromResult(list.Count);
+            }
+        }
+
+        private sealed class CustomerRepository : ICustomerRepository
+        {
+            private readonly InMemoryEtlStore _store;
+
+            public CustomerRepository(InMemoryEtlStore store) => _store = store;
+
+            public Task<Int32> InsertMissingAsync(IEnumerable<String> identifications, CancellationToken cancellationToken = default)
+            {
+                Int32 inserted = 0;
+                foreach (String id in identifications.Where(i => !String.IsNullOrWhiteSpace(i)).Distinct(StringComparer.Ordinal))
+                {
+                    if (_store.Customers.Contains(id, StringComparer.Ordinal))
+                        continue;
+                    _store.Customers.Add(id);
+                    inserted++;
+                }
+
+                return Task.FromResult(inserted);
+            }
+        }
+
+        private sealed class CustomerChannelsRepository : ICustomerNotificationChannelsRepository
+        {
+            private readonly InMemoryEtlStore _store;
+
+            public CustomerChannelsRepository(InMemoryEtlStore store) => _store = store;
+
+            public Task<IReadOnlyDictionary<String, CustomerNotificationChannelSettings>> GetByCustomerIdentificationsAsync(
+                IEnumerable<String> identifications, CancellationToken cancellationToken = default)
+            {
+                var result = identifications
+                    .Where(i => _store.Customers.Contains(i, StringComparer.Ordinal) && _store.CustomerChannels.ContainsKey(i))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToDictionary(i => i, i => _store.CustomerChannels[i], StringComparer.Ordinal);
+                return Task.FromResult<IReadOnlyDictionary<String, CustomerNotificationChannelSettings>>(result);
             }
         }
 

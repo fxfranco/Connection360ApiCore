@@ -14,6 +14,7 @@ namespace Connection360.Etl.Infrastructure.Tests.TestHelpers
         public Dictionary<String, Object?> Parameters { get; init; } = new(StringComparer.OrdinalIgnoreCase);
         public DbTransaction? Transaction { get; init; }
         public CancellationToken Token { get; init; }
+        public Int32 CommandTimeout { get; init; }
     }
 
     /// <summary>
@@ -137,6 +138,7 @@ namespace Connection360.Etl.Infrastructure.Tests.TestHelpers
                 CommandText = CommandText,
                 Transaction = DbTransaction,
                 Token = token,
+                CommandTimeout = CommandTimeout,
             };
 
             foreach (DbParameter parameter in _parameters.Items)

@@ -30,6 +30,8 @@ namespace Connection360.Etl.Application.Tests.Support
         public Mock<ILogStatusTrackingRepository> LogRepository { get; } = new();
         public Mock<IOutboxMessageRepository> OutboxRepository { get; } = new();
         public Mock<IApplicationDataSheetRepository> SheetRepository { get; } = new();
+        public Mock<ICustomerRepository> CustomerRepository { get; } = new();
+        public Mock<ICustomerNotificationChannelsRepository> ChannelsRepository { get; } = new();
         public ListLogger<RunEtlProcessUseCase> Logger { get; } = new();
 
         /// <summary>Páginas que devolverá la pasarela por cada API.</summary>
@@ -41,12 +43,20 @@ namespace Connection360.Etl.Application.Tests.Support
         public List<OutboxMessage> InsertedOutboxMessages { get; } = new();
         public List<List<ApplicationDataSheet>> UpsertedBatches { get; } = new();
 
+        /// <summary>Identificaciones (NitCliente) recibidas por ICustomerRepository.InsertMissingAsync, una lista por ronda.</summary>
+        public List<List<String>> InsertedCustomerBatches { get; } = new();
+
+        /// <summary>Canales por NitCliente que devolverá ICustomerNotificationChannelsRepository (vacío = ningún cliente con configuración).</summary>
+        public Dictionary<String, CustomerNotificationChannelSettings> ChannelsByClient { get; } = new(StringComparer.Ordinal);
+
         public RunEtlHarness(Boolean migrationAlreadyCompleted = false)
         {
             UnitOfWork.Setup(u => u.GetRepository<IEtlJobControlRepository>()).Returns(JobControl.Object);
             UnitOfWork.Setup(u => u.GetRepository<ILogStatusTrackingRepository>()).Returns(LogRepository.Object);
             UnitOfWork.Setup(u => u.GetRepository<IOutboxMessageRepository>()).Returns(OutboxRepository.Object);
             UnitOfWork.Setup(u => u.GetRepository<IApplicationDataSheetRepository>()).Returns(SheetRepository.Object);
+            UnitOfWork.Setup(u => u.GetRepository<ICustomerRepository>()).Returns(CustomerRepository.Object);
+            UnitOfWork.Setup(u => u.GetRepository<ICustomerNotificationChannelsRepository>()).Returns(ChannelsRepository.Object);
 
             UnitOfWork.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
                 .Callback(() => Calls.Add("Begin")).Returns(Task.CompletedTask);
@@ -109,6 +119,14 @@ namespace Connection360.Etl.Application.Tests.Support
             SheetRepository.Setup(r => r.GetIdsByDocumentAsync(It.IsAny<IEnumerable<String>>(), It.IsAny<CancellationToken>()))
                 .Callback(() => Calls.Add("GetIds"))
                 .ReturnsAsync(new Dictionary<String, Int64>());
+
+            CustomerRepository.Setup(r => r.InsertMissingAsync(It.IsAny<IEnumerable<String>>(), It.IsAny<CancellationToken>()))
+                .Callback((IEnumerable<String> ids, CancellationToken _) => InsertedCustomerBatches.Add(ids.ToList()))
+                .ReturnsAsync((IEnumerable<String> ids, CancellationToken _) => ids.Distinct().Count());
+            ChannelsRepository.Setup(r => r.GetByCustomerIdentificationsAsync(It.IsAny<IEnumerable<String>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((IEnumerable<String> ids, CancellationToken _) =>
+                    (IReadOnlyDictionary<String, CustomerNotificationChannelSettings>)ids.Where(ChannelsByClient.ContainsKey).Distinct()
+                        .ToDictionary(id => id, id => ChannelsByClient[id], StringComparer.Ordinal));
 
             Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
                 .Callback(() => Calls.Add("Detect"))

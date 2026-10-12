@@ -10,7 +10,8 @@ namespace Connection360.Etl.Application.DTOs
     /// ClientId, EventType, DocumentNumber, Title, Message, MessageDate. No se configura ninguna
     /// política de nombres al serializar: System.Text.Json usa por defecto el PascalCase de las
     /// propiedades .NET, igual que el resto de la base de código (no hay JsonSerializerOptions con
-    /// PropertyNamingPolicy configurado en ningún proyecto).
+    /// PropertyNamingPolicy configurado en ningún proyecto). <see cref="NotificationChannel"/> se
+    /// agrega al final con los canales (Application, Email, TextMessages) del cliente.
     /// </summary>
     public sealed class EtlOutboxPayload
     {
@@ -20,5 +21,8 @@ namespace Connection360.Etl.Application.DTOs
         public String Title { get; set; } = String.Empty;
         public String Message { get; set; } = String.Empty;
         public DateTime MessageDate { get; set; }
+
+        /// <summary>Canales de notificación del cliente (ClientId); todos en false si no tiene configuración.</summary>
+        public EtlNotificationChannelPayload NotificationChannel { get; set; } = new();
     }
 }

@@ -79,6 +79,17 @@ namespace Connection360.Etl.App.Extensions
                 return new PurgeEtlJobControlUseCase(unitOfWork, retentionDays, logger);
             });
 
+            // Sincronización de vistas materializadas (connection360read) al finalizar los procesos ETL:
+            // RefreshMaterializedViewsUseCase (Application) no puede depender de MaterializedViewSettings
+            // (Infrastructure), así que esta fábrica le pasa el indicador ya resuelto.
+            services.AddScoped<IRefreshMaterializedViewsUseCase>(sp =>
+            {
+                var refreshEnabled = sp.GetRequiredService<IOptions<MaterializedViewSettings>>().Value.RefreshEnabled;
+                var unitOfWork = sp.GetRequiredService<IUnitOfWork>();
+                var logger = sp.GetRequiredService<ILogger<RefreshMaterializedViewsUseCase>>();
+                return new RefreshMaterializedViewsUseCase(unitOfWork, refreshEnabled, logger);
+            });
+
             return services;
         }
 

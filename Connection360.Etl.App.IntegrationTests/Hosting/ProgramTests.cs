@@ -1,4 +1,5 @@
 ﻿using Connection360.Etl.App.IntegrationTests.Infrastructure;
+using Connection360.Etl.Domain.Enums;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
     /// <summary>
     /// Ejecuta el Program.cs REAL de Connection360.Etl.App (host real, configuración real, DI real:
     /// AddEtlApplicationServices + AddEtlInfrastructure + NpgsqlDataSource) sustituyendo únicamente
-    /// los tres casos de uso por fakes, de modo que no haya BD, Kafka ni HTTP.
+    /// los cuatro casos de uso por fakes, de modo que no haya BD, Kafka ni HTTP.
     /// </summary>
     public class ProgramTests
     {
@@ -25,7 +26,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
         // ---------- Flujo completo ----------
 
         [Fact]
-        public void Program_TodoExitoso_EjecutaLogsLuegoPrincipalLuegoDepuracionYSaleConCero()
+        public void Program_TodoExitoso_EjecutaLogsLuegoPrincipalLuegoDepuracionLuegoVistasYSaleConCero()
         {
             var fakes = new ProgramFakes();
 
@@ -33,7 +34,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
 
             run.Exception.Should().BeNull();
             run.ExitCode.Should().Be(0);
-            fakes.Probe.Calls.Should().Equal("logs", "main", "purge");
+            fakes.Probe.Calls.Should().Equal("logs", "main", "purge", "views");
         }
 
         [Fact]
@@ -43,8 +44,8 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
 
             RunProgram(fakes);
 
-            fakes.Probe.ScopeIds.Should().HaveCount(3).And.OnlyHaveUniqueItems();
-            fakes.Probe.ScopesDisposed.Should().Be(3);
+            fakes.Probe.ScopeIds.Should().HaveCount(4).And.OnlyHaveUniqueItems();
+            fakes.Probe.ScopesDisposed.Should().Be(4);
         }
 
         [Fact]
@@ -54,8 +55,8 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
 
             RunProgram(fakes);
 
-            fakes.Probe.TokenWasCancellable.Should().Equal(true, true, true);
-            fakes.Probe.TokenWasCancelled.Should().Equal(false, false, false);
+            fakes.Probe.TokenWasCancellable.Should().Equal(true, true, true, true);
+            fakes.Probe.TokenWasCancelled.Should().Equal(false, false, false, false);
         }
 
         [Fact]
@@ -65,7 +66,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
 
             RunProgram(fakes);
 
-            fakes.Probe.DataSources.Should().HaveCount(3);
+            fakes.Probe.DataSources.Should().HaveCount(4);
             fakes.Probe.DataSources.Distinct().Should().ContainSingle("el NpgsqlDataSource debe ser singleton para todo el proceso");
             var connectionString = fakes.Probe.DataSources[0].ConnectionString;
             connectionString.Should().Contain("db.connection360.test").And.Contain("etl_test");
@@ -86,6 +87,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
             messages.Should().Contain(m => m.StartsWith("Corrida ETL (logs) finalizada. Éxito=True. Transformados=3. Cargados=3. Duración=00:00:05"));
             messages.Should().Contain(m => m.StartsWith("Corrida ETL (bodega de datos) finalizada. Éxito=True. Transformados=5. Cargados=4. Duración=00:00:05"));
             messages.Should().Contain("Depuración de etl_job_control finalizada: 4 registro(s) eliminados.");
+            messages.Should().Contain(m => m.StartsWith("Sincronización de vistas materializadas finalizada. Éxito=True. Omitida=False. Refrescadas=3. Fallidas=0. Duración=00:00:03"));
             run.Logs.Entries.Should().NotContain(e => e.Level == LogLevel.Error);
         }
 
@@ -99,7 +101,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
             var run = RunProgram(fakes);
 
             run.ExitCode.Should().Be(1);
-            fakes.Probe.Calls.Should().Equal("logs", "main", "purge");
+            fakes.Probe.Calls.Should().Equal("logs", "main", "purge", "views");
             run.Logs.Entries.Should().Contain(e => e.Level == LogLevel.Error && e.Message == "Detalle del error: falló-logs");
             run.Logs.Entries.Should().Contain(e => e.Message.StartsWith("Corrida ETL (logs) finalizada. Éxito=False"));
         }
@@ -112,7 +114,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
             var run = RunProgram(fakes);
 
             run.ExitCode.Should().Be(1);
-            fakes.Probe.Calls.Should().Equal("logs", "main", "purge");
+            fakes.Probe.Calls.Should().Equal("logs", "main", "purge", "views");
             run.Logs.Entries.Should().Contain(e => e.Level == LogLevel.Error && e.Message == "Detalle del error: falló-principal");
             run.Logs.Entries.Should().Contain(e => e.Message.StartsWith("Corrida ETL (bodega de datos) finalizada. Éxito=False"));
         }
@@ -157,6 +159,60 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
 
             run.ExitCode.Should().Be(0);
             run.Logs.Entries.Should().NotContain(e => e.Message.StartsWith("Extract ["));
+        }
+
+        [Fact]
+        public void Program_LaSincronizacionDeVistasCorreAlFinal_DespuesDeTodosLosProcesosEtl()
+        {
+            var fakes = new ProgramFakes();
+
+            RunProgram(fakes);
+
+            var calls = fakes.Probe.Calls.ToList();
+            calls.Last().Should().Be("views");
+            calls.IndexOf("views").Should().BeGreaterThan(calls.IndexOf("main"));
+            calls.IndexOf("views").Should().BeGreaterThan(calls.IndexOf("logs"));
+        }
+
+        [Fact]
+        public void Program_FallaUnaVistaMaterializada_SaleConUnoYRegistraElDetalleDelError()
+        {
+            var fakes = new ProgramFakes { ViewsResult = () => ProgramFakes.BuildViewsResult(MaterializedViewName.LogStatusTracking) };
+
+            var run = RunProgram(fakes);
+
+            run.ExitCode.Should().Be(1);
+            fakes.Probe.Calls.Should().Equal("logs", "main", "purge", "views");
+            run.Logs.Entries.Should().Contain(e => e.Message.StartsWith("Sincronización de vistas materializadas finalizada. Éxito=False. Omitida=False. Refrescadas=2. Fallidas=1"));
+            run.Logs.Entries.Should().Contain(e => e.Level == LogLevel.Error
+                && e.Message == "Detalle del error al refrescar LogStatusTracking: falló-LogStatusTracking");
+        }
+
+        [Fact]
+        public void Program_FallanLosProcesosEtl_AunAsiSincronizaLasVistasYSaleConUno()
+        {
+            var fakes = new ProgramFakes
+            {
+                LogsResult = () => ProgramFakes.FailureResult("e1"),
+                MainResult = () => ProgramFakes.FailureResult("e2"),
+            };
+
+            var run = RunProgram(fakes);
+
+            run.ExitCode.Should().Be(1);
+            fakes.Probe.Calls.Should().Equal("logs", "main", "purge", "views");
+        }
+
+        [Fact]
+        public void Program_SincronizacionOmitidaPorConfiguracion_NoEsErrorYSaleConCero()
+        {
+            var fakes = new ProgramFakes { ViewsResult = ProgramFakes.SkippedViewsResult };
+
+            var run = RunProgram(fakes);
+
+            run.ExitCode.Should().Be(0);
+            run.Logs.Entries.Should().Contain(e => e.Message.StartsWith("Sincronización de vistas materializadas finalizada. Éxito=True. Omitida=True. Refrescadas=0. Fallidas=0"));
+            run.Logs.Entries.Should().NotContain(e => e.Level == LogLevel.Error);
         }
 
         // ---------- Excepciones no controladas ----------

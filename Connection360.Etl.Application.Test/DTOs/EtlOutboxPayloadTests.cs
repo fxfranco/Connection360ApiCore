@@ -18,6 +18,10 @@ namespace Connection360.Etl.Application.Tests.DTOs
             payload.Title.Should().BeEmpty();
             payload.Message.Should().BeEmpty();
             payload.MessageDate.Should().Be(default);
+            payload.NotificationChannel.Should().NotBeNull();
+            payload.NotificationChannel.Application.Should().BeFalse();
+            payload.NotificationChannel.Email.Should().BeFalse();
+            payload.NotificationChannel.TextMessages.Should().BeFalse();
         }
 
         [Fact]
@@ -31,14 +35,34 @@ namespace Connection360.Etl.Application.Tests.DTOs
                 Title = "T",
                 Message = "M",
                 MessageDate = new DateTime(2025, 3, 4, 5, 6, 7, DateTimeKind.Utc),
+                NotificationChannel = new EtlNotificationChannelPayload { Application = true, Email = false, TextMessages = true },
             };
 
             using JsonDocument doc = JsonDocument.Parse(JsonSerializer.Serialize(payload));
 
             doc.RootElement.EnumerateObject().Select(p => p.Name)
-                .Should().Equal("ClientId", "EventType", "DocumentNumber", "Title", "Message", "MessageDate");
+                .Should().Equal("ClientId", "EventType", "DocumentNumber", "Title", "Message", "MessageDate", "NotificationChannel");
             doc.RootElement.GetProperty("ClientId").GetString().Should().Be("900123");
             doc.RootElement.GetProperty("MessageDate").GetDateTime().Should().Be(payload.MessageDate);
+
+            JsonElement channel = doc.RootElement.GetProperty("NotificationChannel");
+            channel.EnumerateObject().Select(p => p.Name).Should().Equal("Application", "Email", "TextMessages");
+            channel.GetProperty("Application").GetBoolean().Should().BeTrue();
+            channel.GetProperty("Email").GetBoolean().Should().BeFalse();
+            channel.GetProperty("TextMessages").GetBoolean().Should().BeTrue();
+        }
+
+        [Fact]
+        public void Deserializar_SinNotificationChannel_DejaTodosLosCanalesEnFalse()
+        {
+            const String json = "{\"ClientId\":\"1\",\"EventType\":\"Comment\"}";
+
+            EtlOutboxPayload payload = JsonSerializer.Deserialize<EtlOutboxPayload>(json)!;
+
+            payload.NotificationChannel.Should().NotBeNull();
+            payload.NotificationChannel.Application.Should().BeFalse();
+            payload.NotificationChannel.Email.Should().BeFalse();
+            payload.NotificationChannel.TextMessages.Should().BeFalse();
         }
 
         [Fact]

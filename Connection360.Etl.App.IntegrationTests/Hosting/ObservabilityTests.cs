@@ -1,4 +1,5 @@
 ﻿using Connection360.Etl.App.IntegrationTests.Infrastructure;
+using Connection360.Etl.Domain.Enums;
 using Connection360.Observability.Domain.Models;
 using Connection360.Observability.Domain.Ports;
 using FluentAssertions;
@@ -102,6 +103,42 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
         }
 
         [Fact]
+        public void Corrida_Exitosa_GeneraUnSpanHijoDeLaSincronizacionDeVistasMaterializadas()
+        {
+            var store = new RecordingTelemetryStore();
+
+            RunProgram(new ProgramFakes(), store);
+
+            TraceRecord root = store.Traces.Single(t => t.Name == "etl.process");
+            TraceRecord views = store.Traces.Single(t => t.Attributes.TryGetValue("etl.job", out var job) && (String?)job == "materialized_views");
+            views.TraceId.Should().Be(root.TraceId);
+            views.ParentSpanId.Should().Be(root.SpanId);
+            views.Status.Should().Be("Ok");
+            views.Attributes["etl.views.refreshed"].Should().Be(3);
+            views.Attributes["etl.views.failed"].Should().Be(0);
+            store.Metrics.Where(m => m.Name == "etl.views.refreshes").Should().HaveCount(3)
+                .And.OnlyContain(m => (Boolean)m.Attributes["success"]! && m.Sum == 1);
+            store.Metrics.Should().Contain(m => m.Name == "etl.views.refresh.duration" && m.Kind == "Histogram");
+        }
+
+        [Fact]
+        public void Corrida_FallaUnaVista_MarcaElSpanDeVistasYElProcesoEnError()
+        {
+            var store = new RecordingTelemetryStore();
+            var fakes = new ProgramFakes { ViewsResult = () => ProgramFakes.BuildViewsResult(MaterializedViewName.ApplicationDataSheetNoEntregados) };
+
+            var run = RunProgram(fakes, store);
+
+            run.ExitCode.Should().Be(1);
+            TraceRecord views = store.Traces.Single(t => t.Attributes.TryGetValue("etl.job", out var job) && (String?)job == "materialized_views");
+            views.Status.Should().Be("Error");
+            views.StatusDescription.Should().Contain("ApplicationDataSheetNoEntregados");
+            store.Traces.Single(t => t.Name == "etl.process").Status.Should().Be("Error");
+            store.Metrics.Should().Contain(m => m.Name == "etl.views.refreshes" && (Boolean)m.Attributes["success"]! == false
+                && (String)m.Attributes["etl.view"]! == "ApplicationDataSheetNoEntregados");
+        }
+
+        [Fact]
         public void Corrida_ConFallo_MarcaLosSpansEnErrorYSaleConUno()
         {
             var store = new RecordingTelemetryStore();
@@ -142,7 +179,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
             var run = RunProgram(fakes, store, "--Observability:Enabled=false");
 
             run.ExitCode.Should().Be(0);
-            fakes.Probe.Calls.Should().Equal("logs", "main", "purge");
+            fakes.Probe.Calls.Should().Equal("logs", "main", "purge", "views");
             store.Logs.Should().BeEmpty();
             store.Traces.Should().BeEmpty();
             store.Metrics.Should().BeEmpty();

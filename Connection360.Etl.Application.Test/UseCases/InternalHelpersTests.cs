@@ -185,7 +185,8 @@ namespace Connection360.Etl.Application.Tests.UseCases
         {
             Type type = ApplicationAssembly.GetType("Connection360.Etl.Application.UseCases.EtlChangeNotifier", throwOnError: true)!;
             var catalog = new Mock<IEtlChangeMessageCatalog>();
-            object notifier = Activator.CreateInstance(type, logRepo.Object, outbox.Object, catalog.Object, "SYS")!;
+            var channels = new Mock<ICustomerNotificationChannelsRepository>();
+            object notifier = Activator.CreateInstance(type, logRepo.Object, outbox.Object, channels.Object, catalog.Object, "SYS")!;
             return (Task)type.GetMethod("NotifyChangesAsync")!.Invoke(notifier, new Object?[] { changes, CancellationToken.None })!;
         }
 

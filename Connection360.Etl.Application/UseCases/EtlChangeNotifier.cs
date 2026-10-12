@@ -5,6 +5,7 @@ using Connection360.Etl.Domain.Interfaces;
 using Connection360.Etl.Domain.Ports.Persistence;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,17 +27,20 @@ namespace Connection360.Etl.Application.UseCases
     {
         private readonly ILogStatusTrackingRepository _logRepository;
         private readonly IOutboxMessageRepository _outboxRepository;
+        private readonly ICustomerNotificationChannelsRepository _channelsRepository;
         private readonly IEtlChangeMessageCatalog _messageCatalog;
         private readonly String _systemUser;
 
         public EtlChangeNotifier(
             ILogStatusTrackingRepository logRepository,
             IOutboxMessageRepository outboxRepository,
+            ICustomerNotificationChannelsRepository channelsRepository,
             IEtlChangeMessageCatalog messageCatalog,
             String systemUser)
         {
             _logRepository = logRepository;
             _outboxRepository = outboxRepository;
+            _channelsRepository = channelsRepository;
             _messageCatalog = messageCatalog;
             _systemUser = systemUser;
         }
@@ -47,6 +51,14 @@ namespace Connection360.Etl.Application.UseCases
                 return;
 
             DateTime now = DateTime.UtcNow;
+
+            // Canales de notificación de TODOS los clientes de la ronda en una sola consulta (no una
+            // por cambio), dentro de la misma transacción. Un cliente sin configuración (o que no
+            // aparece) usa CustomerNotificationChannelSettings.None = todo en false.
+            List<String> clientIds = changes.Where(c => c.StateChanged || c.CommentChanged).Select(c => c.NitCliente).Distinct(StringComparer.Ordinal).ToList();
+            IReadOnlyDictionary<String, CustomerNotificationChannelSettings> channelsByClient = clientIds.Count == 0
+                ? new Dictionary<String, CustomerNotificationChannelSettings>(StringComparer.Ordinal)
+                : await _channelsRepository.GetByCustomerIdentificationsAsync(clientIds, cancellationToken);
 
             var logRows = new List<LogStatusTracking>();
             var outboxMessages = new List<OutboxMessage>();
@@ -70,7 +82,7 @@ namespace Connection360.Etl.Application.UseCases
                         NuevoEstado = change.NuevoEstado,
                     });
 
-                    outboxMessages.Add(BuildOutboxMessage(change, EtlChangeEventType.ChangeState, title, message, now));
+                    outboxMessages.Add(BuildOutboxMessage(change, EtlChangeEventType.ChangeState, title, message, now, channelsByClient));
                 }
 
                 // Cambio de COMENTARIO y/o FECHA COMENTARIO: únicamente notificación (outbox), sin
@@ -78,7 +90,7 @@ namespace Connection360.Etl.Application.UseCases
                 if (change.CommentChanged)
                 {
                     var (title, message) = _messageCatalog.GetCommentChangeMessage();
-                    outboxMessages.Add(BuildOutboxMessage(change, EtlChangeEventType.Comment, title, message, now));
+                    outboxMessages.Add(BuildOutboxMessage(change, EtlChangeEventType.Comment, title, message, now, channelsByClient));
                 }
             }
 
@@ -92,8 +104,13 @@ namespace Connection360.Etl.Application.UseCases
         }
 
         private static OutboxMessage BuildOutboxMessage(
-            ApplicationDataSheetChange change, EtlChangeEventType eventType, String title, String message, DateTime now)
+            ApplicationDataSheetChange change, EtlChangeEventType eventType, String title, String message, DateTime now,
+            IReadOnlyDictionary<String, CustomerNotificationChannelSettings> channelsByClient)
         {
+            CustomerNotificationChannelSettings channels = channelsByClient.TryGetValue(change.NitCliente, out var found)
+                ? found
+                : CustomerNotificationChannelSettings.None;
+
             String eventTypeValue = eventType.ToDbValue();
 
             var payload = new EtlOutboxPayload
@@ -104,6 +121,12 @@ namespace Connection360.Etl.Application.UseCases
                 Title = title,
                 Message = message,
                 MessageDate = now,
+                NotificationChannel = new EtlNotificationChannelPayload
+                {
+                    Application = channels.Application,
+                    Email = channels.Email,
+                    TextMessages = channels.TextMessages,
+                },
             };
 
             return new OutboxMessage

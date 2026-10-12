@@ -40,6 +40,8 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
             ["ExternalApi:Apis:ASIS:ApiKey"] = "   ",
             ["EtlJobControl:ApplicationDataSheetRetentionDays"] = "14",
             ["EtlChangeTracking:SystemUser"] = "ROBOT_ETL",
+            ["MaterializedViews:RefreshEnabled"] = "false",
+            ["MaterializedViews:CommandTimeoutSeconds"] = "45",
         };
 
         private static ServiceProvider BuildProvider(IConfiguration configuration, Action<IServiceCollection>? customize = null)
@@ -162,7 +164,10 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
         [InlineData(typeof(IApplicationDataSheetRepository), typeof(ApplicationDataSheetRepository))]
         [InlineData(typeof(ILogStatusTrackingRepository), typeof(LogStatusTrackingRepository))]
         [InlineData(typeof(IOutboxMessageRepository), typeof(OutboxMessageRepository))]
+        [InlineData(typeof(ICustomerRepository), typeof(CustomerRepository))]
+        [InlineData(typeof(ICustomerNotificationChannelsRepository), typeof(CustomerNotificationChannelsRepository))]
         [InlineData(typeof(IEtlJobControlRepository), typeof(EtlJobControlRepository))]
+        [InlineData(typeof(IMaterializedViewRepository), typeof(MaterializedViewRepository))]
         [InlineData(typeof(IUnitOfWork), typeof(UnitOfWork))]
         [InlineData(typeof(DbSession), typeof(DbSession))]
         public async Task AddEtlInfrastructure_ResuelveCadaServicioConSuImplementacion(Type serviceType, Type implementationType)
@@ -210,7 +215,37 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
             unitOfWork.GetRepository<IApplicationDataSheetRepository>().Should().BeOfType<ApplicationDataSheetRepository>();
             unitOfWork.GetRepository<ILogStatusTrackingRepository>().Should().BeOfType<LogStatusTrackingRepository>();
             unitOfWork.GetRepository<IOutboxMessageRepository>().Should().BeOfType<OutboxMessageRepository>();
+            unitOfWork.GetRepository<ICustomerRepository>().Should().BeOfType<CustomerRepository>();
+            unitOfWork.GetRepository<ICustomerNotificationChannelsRepository>().Should().BeOfType<CustomerNotificationChannelsRepository>();
+            unitOfWork.GetRepository<IMaterializedViewRepository>().Should().BeOfType<MaterializedViewRepository>();
             unitOfWork.GetRepository<IEtlJobControlRepository>().Should().BeSameAs(scope.ServiceProvider.GetRequiredService<IEtlJobControlRepository>());
+        }
+
+        [Fact]
+        public async Task AddEtlInfrastructure_EnlazaLaSeccionMaterializedViews()
+        {
+            await using var provider = BuildProvider(BuildConfiguration(DefaultValues()));
+            await using AsyncServiceScope scope = provider.CreateAsyncScope();
+
+            var settings = scope.ServiceProvider.GetRequiredService<IOptions<MaterializedViewSettings>>().Value;
+
+            settings.RefreshEnabled.Should().BeFalse();
+            settings.CommandTimeoutSeconds.Should().Be(45);
+        }
+
+        [Fact]
+        public async Task AddEtlInfrastructure_SinSeccionMaterializedViews_UsaLosValoresPorDefecto()
+        {
+            var values = DefaultValues();
+            values.Remove("MaterializedViews:RefreshEnabled");
+            values.Remove("MaterializedViews:CommandTimeoutSeconds");
+            await using var provider = BuildProvider(BuildConfiguration(values));
+            await using AsyncServiceScope scope = provider.CreateAsyncScope();
+
+            var settings = scope.ServiceProvider.GetRequiredService<IOptions<MaterializedViewSettings>>().Value;
+
+            settings.RefreshEnabled.Should().BeTrue();
+            settings.CommandTimeoutSeconds.Should().Be(600);
         }
 
         [Fact]

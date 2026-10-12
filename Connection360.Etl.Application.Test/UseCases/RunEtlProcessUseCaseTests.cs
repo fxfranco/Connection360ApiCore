@@ -570,7 +570,9 @@ namespace Connection360.Etl.Application.Tests.UseCases
             h.UnitOfWork.Verify(u => u.GetRepository<IEtlJobControlRepository>(), Times.Once);
             h.UnitOfWork.Verify(u => u.GetRepository<ILogStatusTrackingRepository>(), Times.Once);
             h.UnitOfWork.Verify(u => u.GetRepository<IOutboxMessageRepository>(), Times.Once);
+            h.UnitOfWork.Verify(u => u.GetRepository<ICustomerNotificationChannelsRepository>(), Times.Once);
             h.UnitOfWork.Verify(u => u.GetRepository<IApplicationDataSheetRepository>(), Times.Exactly(2));
+            h.UnitOfWork.Verify(u => u.GetRepository<ICustomerRepository>(), Times.Exactly(2));
         }
     }
 }

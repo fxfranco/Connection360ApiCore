@@ -20,7 +20,7 @@ namespace Connection360.Etl.Application.UseCases
     /// <list type="number">
     /// <item><description><b>Extract</b>: consulta cada API operativa configurada en "ExternalApi" (BPMS, SIM, OPENCOMEX, ASISCOMEX, SYSTEMCARRIER), vía <see cref="IExternalDataGateway"/>. La API "DATALOGS" NO se consulta aquí: tiene su propio proceso ETL independiente, ver <see cref="RunLogsEtlProcessUseCase"/>.</description></item>
     /// <item><description><b>Transform</b>: combina los datasets operativos por número de documento (HBL) con <see cref="IDynamicDataSetMerger"/> y los convierte en filas de bodega de datos con <see cref="IShipmentsDataSheetMappingService"/>.</description></item>
-    /// <item><description><b>Load</b>: persiste el resultado en PostgreSQL (connection360write.application_data_sheet), vía <see cref="IUnitOfWork"/> / <see cref="IApplicationDataSheetRepository"/>. En la misma transacción de cada ronda también se detectan y notifican los cambios de ESTADO/COMENTARIO (ver más abajo), salvo durante la migración inicial.</description></item>
+    /// <item><description><b>Load</b>: persiste el resultado en PostgreSQL (connection360write.application_data_sheet), vía <see cref="IUnitOfWork"/> / <see cref="IApplicationDataSheetRepository"/>. En la misma transacción de cada ronda también se insertan en connection360write.customers los NitCliente que todavía no existen (sin duplicados, ver <see cref="ICustomerRepository"/>) y se detectan y notifican los cambios de ESTADO/COMENTARIO (ver más abajo), salvo durante la migración inicial.</description></item>
     /// </list>
     /// A diferencia de los casos de uso de Connection360.Api (que consultan las APIs filtrando/acotando por un cliente puntual para responder una petición HTTP), esta corrida es una carga completa sin filtros: el objetivo es poblar la bodega de datos con TODOS los documentos disponibles.
     /// <para>
@@ -142,7 +142,8 @@ namespace Connection360.Etl.Application.UseCases
             // no al resolverse.
             var logStatusTrackingRepository = _unitOfWork.GetRepository<ILogStatusTrackingRepository>();
             var outboxMessageRepository = _unitOfWork.GetRepository<IOutboxMessageRepository>();
-            var changeNotifier = new EtlChangeNotifier(logStatusTrackingRepository, outboxMessageRepository, _messageCatalog, _changeTrackingSystemUser);
+            var customerNotificationChannelsRepository = _unitOfWork.GetRepository<ICustomerNotificationChannelsRepository>();
+            var changeNotifier = new EtlChangeNotifier(logStatusTrackingRepository, outboxMessageRepository, customerNotificationChannelsRepository, _messageCatalog, _changeTrackingSystemUser);
 
             try
             {
@@ -210,6 +211,7 @@ namespace Connection360.Etl.Application.UseCases
                             // job "application_data_sheet_migration" (para poder ver el progreso de
                             // la migración en etl_job_control mientras corre).
                             Int32 insertedInitial = await repository.UpsertBatchAsync(sheets, cancellationToken);
+                            await EnsureCustomersAsync(uow, sheets, cancellationToken);
                             await jobControl.RegisterPageProgressAsync(pageNumber, insertedInitial, cancellationToken);
                             await migrationJobControl.RegisterPageProgressAsync(pageNumber, insertedInitial, cancellationToken);
                             return insertedInitial;
@@ -225,6 +227,10 @@ namespace Connection360.Etl.Application.UseCases
                         var changes = _changeDetector.DetectChanges(sheets, previousSnapshots);
 
                         Int32 affected = await repository.UpsertBatchAsync(sheets, cancellationToken);
+
+                        // Los clientes (NitCliente) de la ronda deben existir en customers ANTES de notificar:
+                        // así el notifier ya puede consultar sus canales en esta misma transacción.
+                        await EnsureCustomersAsync(uow, sheets, cancellationToken);
 
                         if (changes.Count > 0)
                         {
@@ -314,6 +320,20 @@ namespace Connection360.Etl.Application.UseCases
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Inserta en connection360write.customers los NitCliente de la ronda que todavía no existen
+        /// (uno por cliente, sin duplicados), dentro de la transacción de la ronda y en una sola
+        /// sentencia por lote (ver <see cref="ICustomerRepository.InsertMissingAsync"/>).
+        /// </summary>
+        private async Task EnsureCustomersAsync(IUnitOfWork uow, IReadOnlyList<ApplicationDataSheet> sheets, CancellationToken cancellationToken)
+        {
+            var customerRepository = uow.GetRepository<ICustomerRepository>();
+            Int32 inserted = await customerRepository.InsertMissingAsync(sheets.Select(s => s.NitCliente), cancellationToken);
+
+            if (inserted > 0)
+                _logger.LogInformation("{Inserted} cliente(s) nuevo(s) insertado(s) en connection360write.customers.", inserted);
         }
     }
 }

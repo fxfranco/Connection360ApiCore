@@ -1,9 +1,11 @@
 ﻿using System.Net;
+using System.Text.Json;
 using Connection360.Etl.App.Extensions;
 using Connection360.Etl.App.IntegrationTests.Infrastructure;
 using Connection360.Etl.Application.Ports;
 using Connection360.Etl.Application.UseCases;
 using Connection360.Etl.Domain.Constants;
+using Connection360.Etl.Domain.Entities;
 using Connection360.Etl.Domain.Enums;
 using Connection360.Etl.Domain.Ports.Persistence;
 using Connection360.Etl.Infrastructure.Configuration;
@@ -249,6 +251,58 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
             store.Sheets["HBL-002"].Comentario.Should().Be("c2");
             store.JobsOf(EtlJobName.ApplicationDataSheet).Should().HaveCount(2).And.OnlyContain(j => j.Status == "COMPLETED");
             store.JobsOf(EtlJobName.ApplicationDataSheetMigration).Should().ContainSingle("solo la primera corrida registra la migración");
+        }
+
+        [Fact]
+        public async Task EtlPrincipal_InsertaClientesSinDuplicarYEnviaSusCanalesEnElPayloadDelOutbox()
+        {
+            var store = new InMemoryEtlStore();
+            // El cliente 900123 ya existe en customers y tiene canales; 900456 existe sin canales; 900789 es nuevo.
+            store.Customers.Add("900123");
+            store.Customers.Add("900456");
+            store.CustomerChannels["900123"] = new CustomerNotificationChannelSettings(true, false, true);
+            Int32 run = 1;
+            var handler = CreateHandler(bpms: _ => run == 1
+                ? StubApiHandler.Page(OperationalFields,
+                    Row("HBL-001", "CREADO", nit: "900123"),
+                    Row("HBL-002", "CREADO", nit: "900123"),                        // mismo cliente en el mismo lote
+                    Row("HBL-003", "CREADO", nit: "900456"))
+                : StubApiHandler.Page(OperationalFields,
+                    Row("HBL-001", "EN TRANSITO", nit: "900123"),                   // cambio de estado (con canales)
+                    Row("HBL-002", "CREADO", nit: "900123"),
+                    Row("HBL-003", "EN TRANSITO", nit: "900456"),                   // cambio de estado (sin canales)
+                    Row("HBL-004", "CREADO", nit: "900789")));                      // cliente y documento nuevos
+            using var provider = BuildProvider(store, handler);
+
+            await using (var first = provider.CreateAsyncScope())
+            {
+                (await first.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync()).Success.Should().BeTrue();
+            }
+
+            store.Customers.Should().BeEquivalentTo(new[] { "900123", "900456" }, "los clientes que ya existían se omiten");
+
+            run = 2;
+            await using var second = provider.CreateAsyncScope();
+            var result = await second.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync();
+
+            result.Success.Should().BeTrue(result.ErrorMessage);
+            store.Customers.Should().BeEquivalentTo(new[] { "900123", "900456", "900789" });
+            store.Customers.Should().OnlyHaveUniqueItems();
+
+            using JsonDocument withChannels = JsonDocument.Parse(store.Outbox.Single(o => o.Payload.Contains("\"HBL-001\"")).Payload);
+            JsonElement channels = withChannels.RootElement.GetProperty("NotificationChannel");
+            channels.GetProperty("Application").GetBoolean().Should().BeTrue();
+            channels.GetProperty("Email").GetBoolean().Should().BeFalse();
+            channels.GetProperty("TextMessages").GetBoolean().Should().BeTrue();
+
+            foreach (String document in new[] { "HBL-003", "HBL-004" })
+            {
+                using JsonDocument withoutChannels = JsonDocument.Parse(store.Outbox.Single(o => o.Payload.Contains($"\"{document}\"")).Payload);
+                JsonElement none = withoutChannels.RootElement.GetProperty("NotificationChannel");
+                none.GetProperty("Application").GetBoolean().Should().BeFalse();
+                none.GetProperty("Email").GetBoolean().Should().BeFalse();
+                none.GetProperty("TextMessages").GetBoolean().Should().BeFalse();
+            }
         }
 
         [Fact]

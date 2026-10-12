@@ -1,5 +1,6 @@
 ﻿using Connection360.Etl.Application.DTOs;
 using Connection360.Etl.Application.Ports;
+using Connection360.Etl.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
@@ -56,6 +57,31 @@ namespace Connection360.Etl.App.IntegrationTests.Infrastructure
         public Func<EtlRunResult> LogsResult { get; set; } = () => SuccessResult(transformed: 3, loaded: 3, ("DATALOGS", 3));
         public Func<EtlRunResult> MainResult { get; set; } = () => SuccessResult(transformed: 5, loaded: 4, ("BPMS", 5), ("SIM", 2));
         public Func<Int32> PurgeResult { get; set; } = () => 4;
+        public Func<MaterializedViewsRefreshResult> ViewsResult { get; set; } = SuccessfulViewsResult;
+
+        public static MaterializedViewsRefreshResult SuccessfulViewsResult() => BuildViewsResult(failed: Array.Empty<MaterializedViewName>());
+
+        public static MaterializedViewsRefreshResult SkippedViewsResult() => new()
+        {
+            Skipped = true,
+            StartedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            FinishedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        public static MaterializedViewsRefreshResult BuildViewsResult(params MaterializedViewName[] failed)
+        {
+            var result = new MaterializedViewsRefreshResult
+            {
+                StartedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                FinishedAtUtc = new DateTime(2026, 1, 1, 0, 0, 3, DateTimeKind.Utc),
+            };
+            foreach (var view in Enum.GetValues<MaterializedViewName>())
+            {
+                var hasFailed = failed.Contains(view);
+                result.Views.Add(new MaterializedViewRefreshOutcome(view, !hasFailed, TimeSpan.FromSeconds(1), hasFailed ? $"falló-{view}" : null));
+            }
+            return result;
+        }
 
         public static EtlRunResult SuccessResult(Int32 transformed, Int32 loaded, params (String Api, Int32 Count)[] extracted)
         {
@@ -87,6 +113,7 @@ namespace Connection360.Etl.App.IntegrationTests.Infrastructure
             services.AddScoped<IRunLogsEtlProcessUseCase>(sp => new FakeLogs(this, sp));
             services.AddScoped<IRunEtlProcessUseCase>(sp => new FakeMain(this, sp));
             services.AddScoped<IPurgeEtlJobControlUseCase>(sp => new FakePurge(this, sp));
+            services.AddScoped<IRefreshMaterializedViewsUseCase>(sp => new FakeViews(this, sp));
         }
 
         private void Observe(String step, IServiceProvider sp, CancellationToken token)
@@ -149,6 +176,24 @@ namespace Connection360.Etl.App.IntegrationTests.Infrastructure
             {
                 _owner.Observe("purge", _sp, cancellationToken);
                 return Task.FromResult(_owner.PurgeResult());
+            }
+        }
+
+        private sealed class FakeViews : IRefreshMaterializedViewsUseCase
+        {
+            private readonly ProgramFakes _owner;
+            private readonly IServiceProvider _sp;
+
+            public FakeViews(ProgramFakes owner, IServiceProvider sp)
+            {
+                _owner = owner;
+                _sp = sp;
+            }
+
+            public Task<MaterializedViewsRefreshResult> ExecuteAsync(CancellationToken cancellationToken = default)
+            {
+                _owner.Observe("views", _sp, cancellationToken);
+                return Task.FromResult(_owner.ViewsResult());
             }
         }
     }
