@@ -16,7 +16,7 @@ namespace Connection360Notification.Domain.Tests
         {
             var sut = new NotificationMessage(
                 clientId: "CLI-1",
-                type: NotificationType.Comment,
+                eventType: NotificationType.Comment,
                 message: "Mensaje",
                 documentNumber: "HBL-1",
                 title: "Titulo",
@@ -29,7 +29,7 @@ namespace Connection360Notification.Domain.Tests
             sut.Id.Should().Be("ID-FIJO");
             sut.IdNotification.Should().Be(42);
             sut.ClientId.Should().Be("CLI-1");
-            sut.Type.Should().Be(NotificationType.Comment);
+            sut.EventType.Should().Be(NotificationType.Comment);
             sut.Message.Should().Be("Mensaje");
             sut.DocumentNumber.Should().Be("HBL-1");
             sut.Title.Should().Be("Titulo");
@@ -169,15 +169,97 @@ namespace Connection360Notification.Domain.Tests
         }
 
         [Fact]
+        public void Constructor_SinCanales_NotificationChannelNuncaEsNulaYNoTieneCanalesHabilitados()
+        {
+            var sut = new NotificationMessage("CLI-1", NotificationType.Comment, "Mensaje");
+
+            sut.NotificationChannel.Should().NotBeNull();
+            sut.NotificationChannel.HasAnyEnabled.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Constructor_ConCanales_ConservaLaConfiguracionRecibida()
+        {
+            var canales = new NotificationChannelPreferences { Email = true, TextMessages = true };
+
+            var sut = new NotificationMessage("CLI-1", NotificationType.Comment, "Mensaje", notificationChannel: canales);
+
+            sut.NotificationChannel.Should().BeSameAs(canales);
+        }
+
+        [Fact]
+        public void Serializacion_IdaYVuelta_PreservaLosCanales()
+        {
+            var original = new NotificationMessage(
+                "CLI-1", NotificationType.ChangeState, "Mensaje",
+                notificationChannel: new NotificationChannelPreferences { Application = true, Email = true });
+
+            var copia = JsonSerializer.Deserialize<NotificationMessage>(JsonSerializer.Serialize(original));
+
+            copia!.NotificationChannel.Application.Should().BeTrue();
+            copia.NotificationChannel.Email.Should().BeTrue();
+            copia.NotificationChannel.TextMessages.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Deserializacion_ConNotificationChannelDelPayload_CapturaLosTresIndicadores()
+        {
+            var json = "{\"ClientId\":\"CLI-2\",\"Message\":\"Hola\",\"NotificationChannel\":{\"Application\":false,\"Email\":true,\"TextMessages\":true}}";
+
+            var sut = JsonSerializer.Deserialize<NotificationMessage>(json);
+
+            sut!.NotificationChannel.Application.Should().BeFalse();
+            sut.NotificationChannel.Email.Should().BeTrue();
+            sut.NotificationChannel.TextMessages.Should().BeTrue();
+        }
+
+        [Fact]
+        public void Deserializacion_SinNotificationChannel_QuedaSinCanalesHabilitadosYNoEsNula()
+        {
+            var sut = JsonSerializer.Deserialize<NotificationMessage>("{\"ClientId\":\"CLI-2\",\"Message\":\"Hola\"}");
+
+            sut!.NotificationChannel.Should().NotBeNull();
+            sut.NotificationChannel.HasAnyEnabled.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Deserializacion_ConNotificationChannelNulo_QuedaSinCanalesHabilitadosYNoEsNula()
+        {
+            var sut = JsonSerializer.Deserialize<NotificationMessage>("{\"ClientId\":\"CLI-2\",\"Message\":\"Hola\",\"NotificationChannel\":null}");
+
+            sut!.NotificationChannel.Should().NotBeNull();
+            sut.NotificationChannel.HasAnyEnabled.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Deserializacion_ConNotificationChannelVacio_QuedaSinCanalesHabilitados()
+        {
+            var sut = JsonSerializer.Deserialize<NotificationMessage>("{\"ClientId\":\"CLI-2\",\"Message\":\"Hola\",\"NotificationChannel\":{}}");
+
+            sut!.NotificationChannel.HasAnyEnabled.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Serializacion_ExponeElTipoDeEventoComoEventType()
+        {
+            var json = JsonSerializer.Serialize(new NotificationMessage("CLI-1", NotificationType.Comment, "Mensaje"));
+
+            using var doc = JsonDocument.Parse(json);
+            doc.RootElement.TryGetProperty("EventType", out var valor).Should().BeTrue();
+            valor.GetInt32().Should().Be((Int32)NotificationType.Comment);
+            doc.RootElement.TryGetProperty("Type", out _).Should().BeFalse();
+        }
+
+        [Fact]
         public void Deserializacion_ConJsonMinimo_AplicaValoresPorDefecto()
         {
-            var json = "{\"ClientId\":\"CLI-2\",\"Type\":1,\"Message\":\"Hola\"}";
+            var json = "{\"ClientId\":\"CLI-2\",\"EventType\":1,\"Message\":\"Hola\"}";
 
             var sut = JsonSerializer.Deserialize<NotificationMessage>(json);
 
             sut.Should().NotBeNull();
             sut!.ClientId.Should().Be("CLI-2");
-            sut.Type.Should().Be(NotificationType.Comment);
+            sut.EventType.Should().Be(NotificationType.Comment);
             sut.Message.Should().Be("Hola");
             sut.Status.Should().Be(NotificationStatus.Unread);
             Guid.TryParse(sut.Id, out _).Should().BeTrue();
@@ -187,7 +269,7 @@ namespace Connection360Notification.Domain.Tests
         public void Deserializacion_ConFechasEnFormatoInvariante_LasConserva()
         {
             var fecha = FechaFija.ToString("O", CultureInfo.InvariantCulture);
-            var json = $"{{\"ClientId\":\"CLI-2\",\"Type\":0,\"Message\":\"Hola\",\"MessageDate\":\"{fecha}\",\"NotificationDate\":\"{fecha}\"}}";
+            var json = $"{{\"ClientId\":\"CLI-2\",\"EventType\":0,\"Message\":\"Hola\",\"MessageDate\":\"{fecha}\",\"NotificationDate\":\"{fecha}\"}}";
 
             var sut = JsonSerializer.Deserialize<NotificationMessage>(json);
 
@@ -198,7 +280,7 @@ namespace Connection360Notification.Domain.Tests
         [Fact]
         public void Deserializacion_SinClientId_LanzaArgumentException()
         {
-            var json = "{\"Type\":0,\"Message\":\"Hola\"}";
+            var json = "{\"EventType\":0,\"Message\":\"Hola\"}";
 
             Action act = () => JsonSerializer.Deserialize<NotificationMessage>(json);
 

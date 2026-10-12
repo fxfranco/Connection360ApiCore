@@ -28,8 +28,8 @@ namespace Connection360Notification.Domain
         /// <summary>Identificador del cliente destinatario de la notificación.</summary>
         public String ClientId { get; private set; }
 
-        /// <summary>Tipo de evento que originó la notificación.</summary>
-        public NotificationType Type { get; private set; }
+        /// <summary>Tipo de evento que originó la notificación (viene en el Payload como "EventType").</summary>
+        public NotificationType EventType { get; private set; }
 
         /// <summary>Número de documento (envío/pedido, etc.) asociado a la notificación, cuando aplica.</summary>
         public String DocumentNumber { get; private set; }
@@ -49,6 +49,13 @@ namespace Connection360Notification.Domain
         /// <summary>Fecha y hora en que la notificación fue registrada/generada.</summary>
         public DateTime NotificationDate { get; private set; }
 
+        /// <summary>
+        /// Canales de notificación habilitados para el cliente destinatario (viene en el Payload del
+        /// mensaje de Kafka). Nunca es null: si el mensaje no la trae, queda sin canales habilitados
+        /// y se aplica el canal por defecto (aplicación) — ver <see cref="NotificationChannelPreferences.GetEnabledChannels"/>.
+        /// </summary>
+        public NotificationChannelPreferences NotificationChannel { get; private set; }
+
         // IMPORTANTE: messageDate y notificationDate son "DateTime" (no "DateTime?"), a
         // propósito. System.Text.Json solo puede usar un constructor marcado con [JsonConstructor]
         // para deserializar si CADA parámetro coincide en nombre (sin distinguir mayúsculas de
@@ -62,7 +69,7 @@ namespace Connection360Notification.Domain
         [JsonConstructor]
         public NotificationMessage(
             String clientId,
-            NotificationType type,
+            NotificationType eventType,
             String message,
             String documentNumber = "",
             String title = "",
@@ -70,7 +77,8 @@ namespace Connection360Notification.Domain
             NotificationStatus status = NotificationStatus.Unread,
             DateTime notificationDate = default,
             Int64 idNotification = 0,
-            String? id = null)
+            String? id = null,
+            NotificationChannelPreferences? notificationChannel = null)
         {
             if (String.IsNullOrWhiteSpace(clientId))
                 throw new ArgumentException("El cliente destino de la notificación es obligatorio.", nameof(clientId));
@@ -81,13 +89,14 @@ namespace Connection360Notification.Domain
             Id = String.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString() : id;
             IdNotification = idNotification;
             ClientId = clientId;
-            Type = type;
+            EventType = eventType;
             Message = message;
             DocumentNumber = documentNumber ?? String.Empty;
             Title = title ?? String.Empty;
             MessageDate = messageDate == default ? DateTime.UtcNow : messageDate;
             Status = status;
             NotificationDate = notificationDate == default ? DateTime.UtcNow : notificationDate;
+            NotificationChannel = notificationChannel ?? new NotificationChannelPreferences();
         }
 
         /// <summary>Asignado por el repositorio al guardar: identificador secuencial de negocio, consistente con NotificationsListResponse.IdNotification.</summary>

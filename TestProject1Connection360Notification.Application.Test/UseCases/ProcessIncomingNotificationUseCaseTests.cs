@@ -1,4 +1,4 @@
-﻿using Connection360Notification.Application.Ports.Output;
+﻿using Connection360Notification.Application.Services;
 using Connection360Notification.Application.UseCases;
 using Connection360Notification.Domain;
 using Connection360Notification.Domain.Ports.Outbound;
@@ -12,12 +12,12 @@ namespace Connection360Notification.Application.Tests.UseCases
     public class ProcessIncomingNotificationUseCaseTests
     {
         private readonly Mock<INotificationRepository> _notificationRepositoryMock = new();
-        private readonly Mock<INotifierService> _notifierServiceMock = new();
+        private readonly Mock<INotificationDispatcher> _dispatcherMock = new();
         private readonly ProcessIncomingNotificationUseCase _sut;
 
         public ProcessIncomingNotificationUseCaseTests()
         {
-            _sut = new ProcessIncomingNotificationUseCase(_notificationRepositoryMock.Object, _notifierServiceMock.Object);
+            _sut = new ProcessIncomingNotificationUseCase(_notificationRepositoryMock.Object, _dispatcherMock.Object);
         }
 
         private static NotificationMessage CrearNotificacion(String clientId = "123", String title = "Titulo de prueba")
@@ -36,8 +36,8 @@ namespace Connection360Notification.Application.Tests.UseCases
                 .Callback(() => orden.Add("save"))
                 .Returns(Task.CompletedTask);
 
-            _notifierServiceMock
-                .Setup(n => n.SendNotificationToUserAsync(It.IsAny<String>(), It.IsAny<String>(), It.IsAny<Object>()))
+            _dispatcherMock
+                .Setup(n => n.DispatchAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
                 .Callback(() => orden.Add("notify"))
                 .Returns(Task.CompletedTask);
 
@@ -47,13 +47,13 @@ namespace Connection360Notification.Application.Tests.UseCases
         }
 
         [Fact]
-        public async Task ExecuteAsync_NotificaAlClientIdConElTituloYLaNotificacionCompletaComoData()
+        public async Task ExecuteAsync_DespachaLaNotificacionCompletaPorLosCanalesDelUsuario()
         {
             var notification = CrearNotificacion(clientId: "456", title: "Cambio de estado");
 
             await _sut.ExecuteAsync(notification, CancellationToken.None);
 
-            _notifierServiceMock.Verify(n => n.SendNotificationToUserAsync("456", "Cambio de estado", notification), Times.Once);
+            _dispatcherMock.Verify(n => n.DispatchAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -85,15 +85,15 @@ namespace Connection360Notification.Application.Tests.UseCases
             Func<Task> act = () => _sut.ExecuteAsync(notification, CancellationToken.None);
 
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("bd caida");
-            _notifierServiceMock.Verify(n => n.SendNotificationToUserAsync(It.IsAny<String>(), It.IsAny<String>(), It.IsAny<Object>()), Times.Never);
+            _dispatcherMock.Verify(n => n.DispatchAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
         public async Task ExecuteAsync_SiNotificarFalla_PropagaLaExcepcionDespuesDePersistir()
         {
             var notification = CrearNotificacion();
-            _notifierServiceMock
-                .Setup(n => n.SendNotificationToUserAsync(It.IsAny<String>(), It.IsAny<String>(), It.IsAny<Object>()))
+            _dispatcherMock
+                .Setup(n => n.DispatchAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("signalr"));
 
             Func<Task> act = () => _sut.ExecuteAsync(notification, CancellationToken.None);
@@ -108,7 +108,7 @@ namespace Connection360Notification.Application.Tests.UseCases
             try { await _sut.ExecuteAsync(null!, CancellationToken.None); } catch (ArgumentNullException) { }
 
             _notificationRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
-            _notifierServiceMock.Verify(n => n.SendNotificationToUserAsync(It.IsAny<String>(), It.IsAny<String>(), It.IsAny<Object>()), Times.Never);
+            _dispatcherMock.Verify(n => n.DispatchAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -120,6 +120,17 @@ namespace Connection360Notification.Application.Tests.UseCases
             await _sut.ExecuteAsync(notification, cts.Token);
 
             _notificationRepositoryMock.Verify(r => r.SaveAsync(notification, cts.Token), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_PropagaElTokenDeCancelacionAlDespachador()
+        {
+            using var cts = new CancellationTokenSource();
+            var notification = CrearNotificacion();
+
+            await _sut.ExecuteAsync(notification, cts.Token);
+
+            _dispatcherMock.Verify(d => d.DispatchAsync(notification, cts.Token), Times.Once);
         }
     }
 }

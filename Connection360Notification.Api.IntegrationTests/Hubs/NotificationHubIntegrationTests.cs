@@ -1,5 +1,7 @@
 ﻿using Connection360Notification.Api.IntegrationTests.Infrastructure;
-using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Application.Services;
+using Connection360Notification.Domain;
+using Connection360Notification.Domain.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +14,7 @@ using Xunit;
 namespace Connection360Notification.Api.IntegrationTests.Hubs
 {
     /// <summary>
-    /// Pruebas del hub de SignalR (NotificationHub) mapeado en Program.cs y de SignalRNotifierService,
+    /// Pruebas del hub de SignalR (NotificationHub) mapeado en Program.cs y de SignalRNotificationChannel (vía el despachador de notificaciones),
     /// usando el cliente WebSocket en memoria del TestServer (sin red real ni puertos).
     /// </summary>
     public class NotificationHubIntegrationTests : IClassFixture<RealNotifierWebApplicationFactory>
@@ -28,6 +30,9 @@ namespace Connection360Notification.Api.IntegrationTests.Hubs
             _factory = factory;
             _factory.ResetMocks();
         }
+
+        private static NotificationMessage Notificacion(String clientId, String title, String documentNumber = "") =>
+            new(clientId, NotificationType.Comment, "contenido", documentNumber, title);
 
         // ---------- negociación HTTP ----------
 
@@ -80,7 +85,7 @@ namespace Connection360Notification.Api.IntegrationTests.Hubs
             return request;
         }
 
-        // ---------- WebSocket + SignalRNotifierService ----------
+        // ---------- WebSocket + SignalRNotificationChannel (vía el despachador de notificaciones) ----------
 
         [Fact]
         public async Task SendNotificationToUser_EnviaElMensajeSoloALaConexionDelClienteDestino()
@@ -91,9 +96,9 @@ namespace Connection360Notification.Api.IntegrationTests.Hubs
 
             using (IServiceScope scope = _factory.Services.CreateScope())
             {
-                var notifier = scope.ServiceProvider.GetRequiredService<INotifierService>();
-                await notifier.SendNotificationToUserAsync("cliente-1", "para-uno", new { Dato = 1 });
-                await notifier.SendNotificationToUserAsync("cliente-2", "para-dos", null);
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchAsync(Notificacion("cliente-1", "para-uno", documentNumber: "DOC-1"), CancellationToken.None);
+                await dispatcher.DispatchAsync(Notificacion("cliente-2", "para-dos"), CancellationToken.None);
             }
 
             JsonElement mensaje1 = await ReceiveInvocationAsync(cliente1, cts.Token);
@@ -102,13 +107,14 @@ namespace Connection360Notification.Api.IntegrationTests.Hubs
             mensaje1.GetProperty("target").GetString().Should().Be("ReceiveNotification");
             JsonElement argumentos1 = mensaje1.GetProperty("arguments")[0];
             argumentos1.GetProperty("message").GetString().Should().Be("para-uno");
-            argumentos1.GetProperty("data").GetProperty("dato").GetInt32().Should().Be(1);
+            argumentos1.GetProperty("data").GetProperty("clientId").GetString().Should().Be("cliente-1");
+            argumentos1.GetProperty("data").GetProperty("documentNumber").GetString().Should().Be("DOC-1");
             argumentos1.GetProperty("timestamp").GetDateTime().Should().BeAfter(DateTime.UtcNow.AddMinutes(-5));
 
             mensaje2.GetProperty("target").GetString().Should().Be("ReceiveNotification");
             JsonElement argumentos2 = mensaje2.GetProperty("arguments")[0];
             argumentos2.GetProperty("message").GetString().Should().Be("para-dos");
-            argumentos2.GetProperty("data").ValueKind.Should().Be(JsonValueKind.Null);
+            argumentos2.GetProperty("data").GetProperty("clientId").GetString().Should().Be("cliente-2");
 
             await CloseAsync(cliente1);
             await CloseAsync(cliente2);
@@ -118,9 +124,9 @@ namespace Connection360Notification.Api.IntegrationTests.Hubs
         public async Task SendNotificationToUser_CuandoElClienteNoEstaConectado_NoLanzaExcepcion()
         {
             using IServiceScope scope = _factory.Services.CreateScope();
-            var notifier = scope.ServiceProvider.GetRequiredService<INotifierService>();
+            var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
 
-            Func<Task> act = () => notifier.SendNotificationToUserAsync("nadie-conectado", "hola");
+            Func<Task> act = () => dispatcher.DispatchAsync(Notificacion("nadie-conectado", "hola"), CancellationToken.None);
 
             await act.Should().NotThrowAsync();
         }
@@ -134,8 +140,8 @@ namespace Connection360Notification.Api.IntegrationTests.Hubs
 
             using (IServiceScope scope = _factory.Services.CreateScope())
             {
-                var notifier = scope.ServiceProvider.GetRequiredService<INotifierService>();
-                await notifier.SendNotificationToUserAsync("cliente-3", "solo-cliente-3");
+                var dispatcher = scope.ServiceProvider.GetRequiredService<INotificationDispatcher>();
+                await dispatcher.DispatchAsync(Notificacion("cliente-3", "solo-cliente-3"), CancellationToken.None);
             }
 
             // Si la conexion sin idClient hubiese recibido el mensaje, este seria su primer frame de invocacion.

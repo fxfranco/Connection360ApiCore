@@ -1,6 +1,8 @@
 ﻿using Connection360Notification.Application.Ports.Output;
 using Connection360Notification.Domain.Ports.Outbound;
+using Connection360Notification.Infrastructure.Adapters.Output;
 using Connection360Notification.Infrastructure.DependencyInjection;
+using Connection360Notification.Infrastructure.Email;
 using Connection360Notification.Infrastructure.Messaging;
 using Connection360Notification.Infrastructure.Persistence.Mongo;
 using FluentAssertions;
@@ -31,13 +33,25 @@ namespace Connection360Notification.Infrastructure.Tests.DependencyInjection
         }
 
         [Fact]
-        public void AddInfrastructure_RegistraElNotifierService()
+        public void AddInfrastructure_RegistraLosCanalesDeNotificacion()
         {
             var services = new ServiceCollection();
 
             services.AddInfrastructure(BuildConfiguration());
 
-            services.Should().Contain(sd => sd.ServiceType == typeof(INotifierService));
+            services.Count(sd => sd.ServiceType == typeof(INotificationChannel)).Should().Be(3);
+        }
+
+        [Fact]
+        public void AddInfrastructure_RegistraElEnviadorDeCorreoMailKitComoSingleton()
+        {
+            var services = new ServiceCollection();
+
+            services.AddInfrastructure(BuildConfiguration());
+
+            services.Should().Contain(sd => sd.ServiceType == typeof(IEmailSender)
+                && sd.ImplementationType == typeof(MailKitEmailSender)
+                && sd.Lifetime == ServiceLifetime.Singleton);
         }
 
         [Fact]

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Connection360Notification.Infrastructure.Messaging
 {
@@ -20,6 +21,18 @@ namespace Connection360Notification.Infrastructure.Messaging
         private readonly KafkaSettings _kafkaSettings;
 
         private readonly ILogger<KafkaConsumerHostedService> _logger;
+
+        // Opciones de deserialización del Payload de Kafka. Se ignoran mayúsculas/minúsculas en los
+        // nombres de propiedad para que el objeto anidado NotificationChannel (Application, Email,
+        // TextMessages) se capture igual venga en PascalCase (ETL) o en camelCase (otros productores).
+        // El constructor de NotificationMessage ya enlaza sus parámetros sin distinguir mayúsculas.
+        // JsonStringEnumConverter permite que EventType llegue como texto ("ChangeState", "Comment":
+        // lo que escribe el ETL en el Payload) o como número (lo que escribe la API al publicar).
+        private static readonly JsonSerializerOptions PayloadSerializerOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
         // Métricas propias del consumidor (librería nativa System.Diagnostics.Metrics).
         private static readonly Counter<long> ConsumedMessages = Connection360Telemetry.Meter.CreateCounter<long>(
@@ -54,7 +67,7 @@ namespace Connection360Notification.Infrastructure.Messaging
                     var result = _consumer.Consume(stoppingToken);
                     if (result?.Message?.Value != null)
                     {
-                        var notification = JsonSerializer.Deserialize<NotificationMessage>(result.Message.Value);
+                        var notification = JsonSerializer.Deserialize<NotificationMessage>(result.Message.Value, PayloadSerializerOptions);
                         if (notification != null)
                         {
                             // La orquestación real (guardar + notificar por SignalR) vive en

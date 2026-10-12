@@ -121,6 +121,52 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
         }
 
         [Fact]
+        public async Task SaveAsync_GuardaLosCanalesDeNotificacionDelMensaje()
+        {
+            var notificacion = new NotificationMessage(
+                "CLI-1", NotificationType.Comment, "Mensaje", idNotification: 3, id: "ID-3",
+                notificationChannel: new NotificationChannelPreferences { Application = true, TextMessages = true });
+            NotificationDocument? guardado = null;
+            _collectionMock
+                .Setup(c => c.ReplaceOneAsync(It.IsAny<FilterDefinition<NotificationDocument>>(), It.IsAny<NotificationDocument>(), It.IsAny<ReplaceOptions>(), It.IsAny<CancellationToken>()))
+                .Callback<FilterDefinition<NotificationDocument>, NotificationDocument, ReplaceOptions, CancellationToken>((_, d, _, _) => guardado = d)
+                .ReturnsAsync(new ReplaceOneResult.Acknowledged(0, 0, null));
+
+            await _sut.SaveAsync(notificacion, CancellationToken.None);
+
+            guardado!.NotificationChannel.Application.Should().BeTrue();
+            guardado.NotificationChannel.Email.Should().BeFalse();
+            guardado.NotificationChannel.TextMessages.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task GetAllAsync_MapeaLosCanalesDeNotificacionDelDocumento()
+        {
+            var documento = Documento("ID-9", 9, "CLI-9");
+            documento.NotificationChannel = new NotificationChannelDocument { Email = true, TextMessages = true };
+            ConfigurarFind(documento);
+
+            var resultado = await _sut.GetAllAsync(CancellationToken.None);
+
+            var canales = resultado.Single().NotificationChannel;
+            canales.Application.Should().BeFalse();
+            canales.Email.Should().BeTrue();
+            canales.TextMessages.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task GetAllAsync_DocumentoAntiguoSinCanales_SeLeeSinCanalesHabilitados()
+        {
+            var documento = Documento("ID-9", 9, "CLI-9");
+            documento.NotificationChannel = null!;
+            ConfigurarFind(documento);
+
+            var resultado = await _sut.GetAllAsync(CancellationToken.None);
+
+            resultado.Single().NotificationChannel.HasAnyEnabled.Should().BeFalse();
+        }
+
+        [Fact]
         public async Task SaveAsync_PropagaElTokenDeCancelacion()
         {
             using var cts = new CancellationTokenSource();
@@ -182,7 +228,7 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
             n.Id.Should().Be("ID-9");
             n.IdNotification.Should().Be(9);
             n.ClientId.Should().Be("CLI-9");
-            n.Type.Should().Be(NotificationType.Comment);
+            n.EventType.Should().Be(NotificationType.Comment);
             n.DocumentNumber.Should().Be("HBL-1");
             n.Title.Should().Be("Titulo");
             n.Message.Should().Be("Mensaje");

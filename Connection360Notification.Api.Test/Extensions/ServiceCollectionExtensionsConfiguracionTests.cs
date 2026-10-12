@@ -3,6 +3,7 @@ using Asp.Versioning.ApiExplorer;
 using Connection360Notification.Api.Extensions;
 using Connection360Notification.Application.Ports;
 using Connection360Notification.Application.Ports.Inbound;
+using Connection360Notification.Application.Services;
 using Connection360Notification.Application.Ports.Output;
 using Connection360Notification.Application.UseCases;
 using Connection360Notification.Domain.Ports.Outbound;
@@ -46,7 +47,7 @@ namespace Connection360Notification.Api.Tests.Extensions
             var services = new ServiceCollection();
             services.AddLogging();
             services.AddSingleton(Mock.Of<INotificationRepository>());
-            services.AddSingleton(Mock.Of<INotifierService>());
+            services.AddSingleton(Mock.Of<INotificationChannel>());
             services.AddSingleton(Mock.Of<IKafkaProducerService>());
             register(services);
             return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
@@ -65,7 +66,9 @@ namespace Connection360Notification.Api.Tests.Extensions
             AssertDescriptor<INotificationUseCase, NotificationUseCase>(services);
             AssertDescriptor<IGetNotificationsUseCase, GetNotificationsUseCase>(services);
             AssertDescriptor<IProcessIncomingNotificationUseCase, ProcessIncomingNotificationUseCase>(services);
-            services.Should().HaveCount(3);
+            AssertDescriptor<INotificationChannelRegistry, NotificationChannelRegistry>(services);
+            AssertDescriptor<INotificationDispatcher, NotificationDispatcher>(services);
+            services.Should().HaveCount(5);
         }
 
         [Fact]
@@ -92,6 +95,32 @@ namespace Connection360Notification.Api.Tests.Extensions
 
             a.Should().BeSameAs(b);
             a.Should().NotBeSameAs(c);
+        }
+
+        [Fact]
+        public void AddApplicationServicesDev_RegistraLosUseCasesConLasImplementacionesYCicloDeVidaScoped()
+        {
+            var services = new ServiceCollection();
+
+            IServiceCollection result = services.AddApplicationServicesDev();
+
+            result.Should().BeSameAs(services);
+            AssertDescriptor<INotificationUseCase, NotificationUseCase>(services);
+            AssertDescriptor<IGetNotificationsUseCase, GetNotificationsUseCase>(services);
+            AssertDescriptor<IProcessIncomingNotificationUseCase, ProcessIncomingNotificationUseCase>(services);
+        }
+
+        [Fact]
+        public void AddApplicationServicesDev_ResuelveLosUseCasesDentroDeUnScope()
+        {
+            using ServiceProvider provider = BuildProviderWithFakes(s => s.AddApplicationServicesDev());
+            using IServiceScope scope = provider.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<INotificationUseCase>().Should().BeOfType<NotificationUseCase>();
+            scope.ServiceProvider.GetRequiredService<IGetNotificationsUseCase>().Should().BeOfType<GetNotificationsUseCase>();
+            scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>().Should().BeOfType<ProcessIncomingNotificationUseCase>();
+            scope.ServiceProvider.GetRequiredService<INotificationChannelRegistry>().Should().BeOfType<NotificationChannelRegistry>();
+            scope.ServiceProvider.GetRequiredService<INotificationDispatcher>().Should().BeOfType<NotificationDispatcher>();
         }
 
         private static void AssertDescriptor<TService, TImplementation>(IServiceCollection services)
@@ -129,6 +158,25 @@ namespace Connection360Notification.Api.Tests.Extensions
 
             options.GroupNameFormat.Should().Be("'v'VVV");
             options.SubstituteApiVersionInUrl.Should().BeTrue();
+        }
+
+        [Fact]
+        public void AddApiVersioningSetupDev_ConfiguraLasOpcionesDeVersionadoYApiExplorer()
+        {
+            var services = new ServiceCollection();
+
+            IServiceCollection result = services.AddApiVersioningSetupDev();
+            using ServiceProvider provider = services.BuildServiceProvider();
+
+            result.Should().BeSameAs(services);
+            ApiVersioningOptions options = provider.GetRequiredService<IOptions<ApiVersioningOptions>>().Value;
+            options.DefaultApiVersion.Should().Be(new ApiVersion(1, 0));
+            options.AssumeDefaultVersionWhenUnspecified.Should().BeTrue();
+            options.ReportApiVersions.Should().BeTrue();
+            options.ApiVersionReader.Should().BeOfType<UrlSegmentApiVersionReader>();
+            ApiExplorerOptions explorer = provider.GetRequiredService<IOptions<ApiExplorerOptions>>().Value;
+            explorer.GroupNameFormat.Should().Be("'v'VVV");
+            explorer.SubstituteApiVersionInUrl.Should().BeTrue();
         }
 
         // ---------- JWT (produccion: Auth0 / Authority) ----------
@@ -238,7 +286,91 @@ namespace Connection360Notification.Api.Tests.Extensions
             await options.Events.MessageReceived(context);
 
             context.Token.Should().BeNull();
-        }        
+        }
+
+        // ---------- JWT (Dev: clave simetrica) ----------
+
+        [Fact]
+        public void AddJwtAuthenticationDev_RetornaLaMismaColeccion()
+        {
+            var services = new ServiceCollection();
+
+            services.AddJwtAuthenticationDev(BuildConfig()).Should().BeSameAs(services);
+        }
+
+        [Fact]
+        public void AddJwtAuthenticationDev_ConfiguraLosParametrosDeValidacionDelToken()
+        {
+            JwtBearerOptions options = GetJwtOptions(s => s.AddJwtAuthenticationDev(BuildConfig()));
+
+            options.RequireHttpsMetadata.Should().BeTrue();
+            options.SaveToken.Should().BeFalse();
+            var p = options.TokenValidationParameters;
+            p.ValidateIssuer.Should().BeTrue();
+            p.ValidIssuer.Should().Be(Issuer);
+            p.ValidateAudience.Should().BeTrue();
+            p.ValidAudience.Should().Be(Audience);
+            p.ValidateIssuerSigningKey.Should().BeTrue();
+            p.ValidateLifetime.Should().BeTrue();
+            p.ClockSkew.Should().Be(TimeSpan.FromSeconds(30));
+            p.RoleClaimType.Should().Be(Roles);
+            p.NameClaimType.Should().Be(ClaimTypes.NameIdentifier);
+            p.IssuerSigningKey.Should().NotBeNull();
+            ((Microsoft.IdentityModel.Tokens.SymmetricSecurityKey)p.IssuerSigningKey).Key.Should().Equal(Encoding.UTF8.GetBytes(Secret));
+        }
+
+        [Fact]
+        public void AddJwtAuthenticationDev_SinSecret_LanzaInvalidOperationException()
+        {
+            var services = new ServiceCollection();
+
+            Action act = () => services.AddJwtAuthenticationDev(BuildConfig(includeSecret: false));
+
+            act.Should().Throw<InvalidOperationException>().WithMessage("*Jwt:Secret*");
+        }
+
+        [Fact]
+        public void AddJwtAuthenticationDev_SinRoles_LanzaInvalidOperationException()
+        {
+            var services = new ServiceCollection();
+
+            Action act = () => services.AddJwtAuthenticationDev(BuildConfig(includeRoles: false));
+
+            act.Should().Throw<InvalidOperationException>().WithMessage("*Jwt:Role*");
+        }
+
+        [Fact]
+        public async Task AddJwtAuthenticationDev_OnMessageReceived_ConTokenEnQueryYRutaDelHub_AsignaElToken()
+        {
+            JwtBearerOptions options = GetJwtOptions(s => s.AddJwtAuthenticationDev(BuildConfig()));
+            MessageReceivedContext context = BuildMessageContext(options, "/api/v1/hubs/notifications", "?access_token=tok");
+
+            await options.Events.MessageReceived(context);
+
+            context.Token.Should().Be("tok");
+        }
+
+        [Fact]
+        public async Task AddJwtAuthenticationDev_OnMessageReceived_ConOtraRuta_NoAsignaElToken()
+        {
+            JwtBearerOptions options = GetJwtOptions(s => s.AddJwtAuthenticationDev(BuildConfig()));
+            MessageReceivedContext context = BuildMessageContext(options, "/api/v1/otra", "?access_token=tok");
+
+            await options.Events.MessageReceived(context);
+
+            context.Token.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task AddJwtAuthenticationDev_OnMessageReceived_SinToken_NoAsignaElToken()
+        {
+            JwtBearerOptions options = GetJwtOptions(s => s.AddJwtAuthenticationDev(BuildConfig()));
+            MessageReceivedContext context = BuildMessageContext(options, "/api/v1/hubs/notifications", String.Empty);
+
+            await options.Events.MessageReceived(context);
+
+            context.Token.Should().BeNull();
+        }
 
         private static MessageReceivedContext BuildMessageContext(JwtBearerOptions options, String path, String query)
         {

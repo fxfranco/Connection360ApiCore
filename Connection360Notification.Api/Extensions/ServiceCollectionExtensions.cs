@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using Connection360Notification.Application.Ports;
 using Connection360Notification.Application.Ports.Inbound;
+using Connection360Notification.Application.Services;
 using Connection360Notification.Application.UseCases;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -17,6 +18,11 @@ namespace Connection360Notification.Api.Extensions
             //Notifications
             services.AddScoped<IGetNotificationsUseCase, GetNotificationsUseCase>();
             services.AddScoped<IProcessIncomingNotificationUseCase, ProcessIncomingNotificationUseCase>();
+
+            // Envío por canales (Strategy + Registry). Las implementaciones de INotificationChannel
+            // las registra Infrastructure (AddInfrastructure).
+            services.AddScoped<INotificationChannelRegistry, NotificationChannelRegistry>();
+            services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
             return services;
         }
 

@@ -1,3 +1,6 @@
+﻿using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Domain;
+using Connection360Notification.Domain.Enums;
 using Connection360Notification.Infrastructure.Adapters.Input;
 using Connection360Notification.Infrastructure.Adapters.Output;
 using FluentAssertions;
@@ -7,18 +10,18 @@ using Xunit;
 
 namespace Connection360Notification.Infrastructure.Tests.Adapters
 {
-    public class SignalRNotifierServiceTests
+    public class SignalRNotificationChannelTests
     {
         private readonly Mock<IHubContext<NotificationHub>> _hubContextMock = new();
         private readonly Mock<IHubClients> _hubClientsMock = new();
         private readonly Mock<IClientProxy> _clientProxyMock = new();
-        private readonly SignalRNotifierService _sut;
+        private readonly SignalRNotificationChannel _sut;
 
-        public SignalRNotifierServiceTests()
+        public SignalRNotificationChannelTests()
         {
             _hubContextMock.Setup(h => h.Clients).Returns(_hubClientsMock.Object);
             _hubClientsMock.Setup(c => c.User(It.IsAny<String>())).Returns(_clientProxyMock.Object);
-            _sut = new SignalRNotifierService(_hubContextMock.Object);
+            _sut = new SignalRNotificationChannel(_hubContextMock.Object);
         }
 
         [Fact]
@@ -115,6 +118,65 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
                 .ThrowsAsync(new InvalidOperationException("hub caido"));
 
             Func<Task> act = () => _sut.SendNotificationToUserAsync("CLIENTE-123", "hola");
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("hub caido");
+        }
+
+        // ---------- Contrato de canal (INotificationChannel) ----------
+
+        [Fact]
+        public void Channel_EsElCanalDeAplicacion()
+        {
+            _sut.Channel.Should().Be(NotificationChannelType.Application);
+            ((INotificationChannel)_sut).Should().BeSameAs(_sut);
+        }
+
+        [Fact]
+        public async Task SendAsync_EnviaAlClientIdLaNotificacionConElTituloComoMensajeYLaNotificacionCompletaComoData()
+        {
+            var notificacion = new NotificationMessage("CLIENTE-9", NotificationType.Comment, "contenido", title: "Titulo corto");
+            Object[]? capturedArgs = null;
+            _clientProxyMock
+                .Setup(p => p.SendCoreAsync("ReceiveNotification", It.IsAny<Object[]>(), It.IsAny<CancellationToken>()))
+                .Callback<String, Object[], CancellationToken>((_, args, _) => capturedArgs = args)
+                .Returns(Task.CompletedTask);
+
+            await _sut.SendAsync(notificacion, CancellationToken.None);
+
+            _hubClientsMock.Verify(c => c.User("CLIENTE-9"), Times.Once);
+            capturedArgs.Should().ContainSingle();
+            var payload = capturedArgs![0];
+            payload.GetType().GetProperty("Message")!.GetValue(payload).Should().Be("Titulo corto");
+            payload.GetType().GetProperty("Data")!.GetValue(payload).Should().BeSameAs(notificacion);
+        }
+
+        [Fact]
+        public async Task SendAsync_ReenviaElTokenDeCancelacionAlProxy()
+        {
+            using var cts = new CancellationTokenSource();
+            var notificacion = new NotificationMessage("CLIENTE-9", NotificationType.Comment, "contenido");
+
+            await _sut.SendAsync(notificacion, cts.Token);
+
+            _clientProxyMock.Verify(p => p.SendCoreAsync("ReceiveNotification", It.IsAny<Object[]>(), cts.Token), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendAsync_ConNotificacionNula_LanzaArgumentNullException()
+        {
+            Func<Task> act = () => _sut.SendAsync(null!, CancellationToken.None);
+
+            await act.Should().ThrowAsync<ArgumentNullException>();
+        }
+
+        [Fact]
+        public async Task SendAsync_SiElHubFalla_PropagaLaExcepcion()
+        {
+            _clientProxyMock
+                .Setup(p => p.SendCoreAsync(It.IsAny<String>(), It.IsAny<Object[]>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("hub caido"));
+
+            Func<Task> act = () => _sut.SendAsync(new NotificationMessage("C", NotificationType.Comment, "m"), CancellationToken.None);
 
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("hub caido");
         }

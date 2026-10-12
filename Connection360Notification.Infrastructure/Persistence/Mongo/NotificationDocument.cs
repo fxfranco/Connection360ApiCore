@@ -40,5 +40,11 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
         public NotificationStatus Status { get; set; }
 
         public DateTime NotificationDate { get; set; }
+
+        /// <summary>
+        /// Canales de notificación habilitados del cliente cuando llegó el mensaje. Los documentos
+        /// guardados antes de existir este campo no lo traen: se leen con todos los canales en false.
+        /// </summary>
+        public NotificationChannelDocument NotificationChannel { get; set; } = new();
     }
 }

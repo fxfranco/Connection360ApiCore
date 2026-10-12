@@ -29,7 +29,7 @@ namespace Connection360Notification.Application.UseCases
 
             var notification = new NotificationMessage(
                 clientId: request.Recipient,
-                type: parsedType.ToDomain(),
+                eventType: parsedType.ToDomain(),
                 message: request.Content,
                 documentNumber: request.DocumentNumber ?? String.Empty,
                 title: request.Title ?? String.Empty,

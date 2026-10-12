@@ -175,7 +175,7 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
                 .Callback<NotificationMessage, CancellationToken>((n, _) => ids.Add(n.Id))
                 .Returns(Task.CompletedTask);
             ConfigurarConsumo(
-                () => Resultado("{\"ClientId\":\"\",\"Type\":0,\"Message\":\"x\"}"),
+                () => Resultado("{\"ClientId\":\"\",\"EventType\":0,\"Message\":\"x\"}"),
                 () => Resultado(Json(Notificacion("OK"))));
 
             await EjecutarHastaTerminar();
@@ -225,6 +225,120 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
 
             _consumerMock.Verify(c => c.Consume(It.IsAny<CancellationToken>()), Times.Never);
             _consumerMock.Verify(c => c.Close(), Times.Once);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConPayloadDelEtlConNotificationChannel_CapturaLosTresIndicadores()
+        {
+            NotificationMessage? recibida = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => recibida = n)
+                .Returns(Task.CompletedTask);
+            // Forma exacta del Payload que escribe el ETL en outbox_messages (PascalCase).
+            const String payload = "{\"ClientId\":\"900123\",\"EventType\":\"ChangeState\",\"DocumentNumber\":\"HBL-1\",\"Title\":\"Cambio\",\"Message\":\"Detalle\","
+                + "\"MessageDate\":\"2024-05-06T07:08:09Z\",\"NotificationChannel\":{\"Application\":false,\"Email\":true,\"TextMessages\":true}}";
+            ConfigurarConsumo(() => Resultado(payload));
+
+            await EjecutarHastaTerminar();
+
+            recibida.Should().NotBeNull();
+            recibida!.ClientId.Should().Be("900123");
+            recibida.EventType.Should().Be(NotificationType.ChangeState);
+            recibida.NotificationChannel.Application.Should().BeFalse();
+            recibida.NotificationChannel.Email.Should().BeTrue();
+            recibida.NotificationChannel.TextMessages.Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData("\"Comment\"", NotificationType.Comment)]
+        [InlineData("\"ChangeState\"", NotificationType.ChangeState)]
+        [InlineData("\"comment\"", NotificationType.Comment)]
+        [InlineData("1", NotificationType.Comment)]
+        [InlineData("0", NotificationType.ChangeState)]
+        public async Task ExecuteAsync_EnlazaElEventTypeDelPayloadComoTextoONumero(String valorJson, NotificationType esperado)
+        {
+            NotificationMessage? recibida = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => recibida = n)
+                .Returns(Task.CompletedTask);
+            ConfigurarConsumo(() => Resultado($"{{\"ClientId\":\"900123\",\"EventType\":{valorJson},\"Message\":\"Detalle\"}}"));
+
+            await EjecutarHastaTerminar();
+
+            recibida.Should().NotBeNull();
+            recibida!.EventType.Should().Be(esperado);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConEventTypeDesconocido_DescartaElMensajeYContinua()
+        {
+            var ids = new List<String>();
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => ids.Add(n.Id))
+                .Returns(Task.CompletedTask);
+            ConfigurarConsumo(
+                () => Resultado("{\"ClientId\":\"900123\",\"EventType\":\"NoExiste\",\"Message\":\"Detalle\"}"),
+                () => Resultado(Json(Notificacion("OK"))));
+
+            await EjecutarHastaTerminar();
+
+            ids.Should().Equal("OK");
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConNotificationChannelEnCamelCase_TambienLoCaptura()
+        {
+            NotificationMessage? recibida = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => recibida = n)
+                .Returns(Task.CompletedTask);
+            const String payload = "{\"clientId\":\"900123\",\"message\":\"Detalle\",\"notificationChannel\":{\"application\":true,\"email\":true,\"textMessages\":false}}";
+            ConfigurarConsumo(() => Resultado(payload));
+
+            await EjecutarHastaTerminar();
+
+            recibida.Should().NotBeNull();
+            recibida!.NotificationChannel.Application.Should().BeTrue();
+            recibida.NotificationChannel.Email.Should().BeTrue();
+            recibida.NotificationChannel.TextMessages.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConPayloadSinNotificationChannel_EntregaCanalesSinHabilitar()
+        {
+            NotificationMessage? recibida = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => recibida = n)
+                .Returns(Task.CompletedTask);
+            ConfigurarConsumo(() => Resultado("{\"ClientId\":\"900123\",\"Message\":\"Detalle\"}"));
+
+            await EjecutarHastaTerminar();
+
+            recibida.Should().NotBeNull();
+            recibida!.NotificationChannel.Should().NotBeNull();
+            recibida.NotificationChannel.HasAnyEnabled.Should().BeFalse("sin configuración se aplicará el canal por defecto (aplicación)");
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConNotificationChannelEnElMensajeSerializado_ElCasoDeUsoRecibeLosCanales()
+        {
+            NotificationMessage? recibida = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => recibida = n)
+                .Returns(Task.CompletedTask);
+            var original = new NotificationMessage("CLI-1", NotificationType.Comment, "Mensaje", "HBL-1", "Titulo", Fecha, NotificationStatus.Unread, Fecha, 0, "ID-1",
+                new NotificationChannelPreferences { Application = true, TextMessages = true });
+            ConfigurarConsumo(() => Resultado(Json(original)));
+
+            await EjecutarHastaTerminar();
+
+            recibida!.NotificationChannel.Should().BeEquivalentTo(original.NotificationChannel);
         }
 
         [Fact]

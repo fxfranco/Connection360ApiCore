@@ -35,7 +35,7 @@ namespace Connection360Notification.Application.Tests.UseCases
             await _sut.ExecuteSendAsync(new CreateNotificationRequest("CLI-1", "Contenido", tipo), CancellationToken.None);
 
             publicada.Should().NotBeNull();
-            publicada!.Type.Should().Be(esperado);
+            publicada!.EventType.Should().Be(esperado);
             publicada.ClientId.Should().Be("CLI-1");
             publicada.Message.Should().Be("Contenido");
         }
@@ -137,7 +137,7 @@ namespace Connection360Notification.Application.Tests.UseCases
 
             await _sut.ExecuteSendAsync(new CreateNotificationRequest("CLI-1", "Contenido", "1"), CancellationToken.None);
 
-            publicada!.Type.Should().Be(DomainNotificationType.Comment);
+            publicada!.EventType.Should().Be(DomainNotificationType.Comment);
         }
 
         [Fact]

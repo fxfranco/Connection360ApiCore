@@ -1,5 +1,7 @@
 using Connection360Notification.Application.Ports;
 using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Domain;
+using Connection360Notification.Domain.Enums;
 using Connection360Notification.Domain.Ports.Outbound;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
@@ -27,7 +29,10 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
     public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         public Mock<IGetNotificationsUseCase> NotificationsUseCaseMock { get; } = new();
-        public Mock<INotifierService> NotifierServiceMock { get; } = new();
+        /// <summary>Canales de notificación simulados (uno por NotificationChannelType) que sustituyen a los reales por defecto.</summary>
+        public Mock<INotificationChannel> ApplicationChannelMock { get; } = CreateChannelMock(NotificationChannelType.Application);
+        public Mock<INotificationChannel> EmailChannelMock { get; } = CreateChannelMock(NotificationChannelType.Email);
+        public Mock<INotificationChannel> SmsChannelMock { get; } = CreateChannelMock(NotificationChannelType.TextMessages);
 
         public Mock<INotificationRepository> NotificationRepositoryMock { get; } = new();
         public Mock<IKafkaProducerService> KafkaProducerMock { get; } = new();
@@ -42,19 +47,46 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
         public void ResetMocks()
         {
             NotificationsUseCaseMock.Reset();
-            NotifierServiceMock.Reset();
+            foreach (Mock<INotificationChannel> channel in ChannelMocks)
+            {
+                channel.Reset();
+            }
+            ConfigureChannelMocks();
             NotificationRepositoryMock.Reset();
             KafkaProducerMock.Reset();
+        }
+
+        private IEnumerable<Mock<INotificationChannel>> ChannelMocks => new[] { ApplicationChannelMock, EmailChannelMock, SmsChannelMock };
+
+        private static Mock<INotificationChannel> CreateChannelMock(NotificationChannelType type)
+        {
+            var mock = new Mock<INotificationChannel>();
+            ConfigureChannelMock(mock, type);
+            return mock;
+        }
+
+        private static void ConfigureChannelMock(Mock<INotificationChannel> mock, NotificationChannelType type)
+        {
+            mock.SetupGet(c => c.Channel).Returns(type);
+            mock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        }
+
+        private void ConfigureChannelMocks()
+        {
+            ConfigureChannelMock(ApplicationChannelMock, NotificationChannelType.Application);
+            ConfigureChannelMock(EmailChannelMock, NotificationChannelType.Email);
+            ConfigureChannelMock(SmsChannelMock, NotificationChannelType.TextMessages);
         }
 
         /// <summary>Entorno de ASP.NET Core con el que se arranca el host (por defecto "Development").</summary>
         protected virtual String EnvironmentName => "Development";
 
         /// <summary>
-        /// Si es true (por defecto) se sustituye <see cref="INotifierService"/> por un mock; si es false se
-        /// conserva el <c>SignalRNotifierService</c> real para poder probar el envío por SignalR extremo a extremo.
+        /// Si es true (por defecto) los canales de notificación (<see cref="INotificationChannel"/>: aplicación, correo y SMS)
+        /// se sustituyen por mocks; el registro de canales y el despachador de Application siguen siendo los reales. Si es false
+        /// se conservan los canales reales para poder probar el envío por SignalR extremo a extremo.
         /// </summary>
-        protected virtual Boolean MockNotifierService => true;
+        protected virtual Boolean MockNotificationChannels => true;
 
         /// <summary>
         /// Si es true (por defecto) se sustituye <see cref="IGetNotificationsUseCase"/> por un mock; si es false se
@@ -99,9 +131,13 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
                 // Puertos de salida de infraestructura (MongoDB y Kafka) simulados: nunca hay conexiones reales.
                 ReplaceWithMock(services, NotificationRepositoryMock.Object);
                 ReplaceWithMock(services, KafkaProducerMock.Object);
-                if (MockNotifierService)
+                if (MockNotificationChannels)
                 {
-                    ReplaceWithMock(services, NotifierServiceMock.Object);
+                    services.RemoveAll<INotificationChannel>();
+                    foreach (Mock<INotificationChannel> channel in ChannelMocks)
+                    {
+                        services.AddSingleton(channel.Object);
+                    }
                 }
 
                 // --- Sin servicios hospedados que tocan infraestructura real (Kafka / MongoDB) ---

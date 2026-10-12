@@ -60,7 +60,7 @@ namespace Connection360Notification.Application.Mapping
                 Id = notification.Id,
                 IdNotification = notification.IdNotification,
                 ClientId = notification.ClientId,
-                NotificationType = notification.Type.ToDto(),
+                NotificationType = notification.EventType.ToDto(),
                 DocumentNumber = notification.DocumentNumber,
                 Title = notification.Title,
                 Message = notification.Message,

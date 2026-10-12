@@ -75,7 +75,57 @@ namespace Connection360Notification.Api.IntegrationTests.Hosting
             await useCase.ExecuteAsync(notification, CancellationToken.None);
 
             _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
-            _factory.NotifierServiceMock.Verify(n => n.SendNotificationToUserAsync("cliente-1", "titulo", notification), Times.Once);
+            // Sin canales configurados en la notificación se usa el canal por defecto: aplicación.
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+            _factory.SmsChannelMock.Verify(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConCorreoYSmsHabilitados_NotificaSoloPorEsosCanales()
+        {
+            var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo",
+                notificationChannel: new NotificationChannelPreferences { Email = true, TextMessages = true });
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.SmsChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConLosTresCanalesHabilitados_NotificaPorLosTres()
+        {
+            var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo",
+                notificationChannel: new NotificationChannelPreferences { Application = true, Email = true, TextMessages = true });
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.SmsChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_SiElCorreoFalla_ElCanalDeAplicacionIgualSeEntregaYSePropagaElError()
+        {
+            var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo",
+                notificationChannel: new NotificationChannelPreferences { Application = true, Email = true });
+            _factory.EmailChannelMock
+                .Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("smtp caido"));
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            Func<Task> act = () => useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("smtp caido");
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -88,7 +138,7 @@ namespace Connection360Notification.Api.IntegrationTests.Hosting
             await useCase.ExecuteSendAsync(request, CancellationToken.None);
 
             _factory.KafkaProducerMock.Verify(k => k.ProduceNotificationAsync(
-                It.Is<NotificationMessage>(n => n.ClientId == "cliente-2" && n.Message == "contenido" && n.Type == NotificationType.Comment && n.DocumentNumber == "DOC-9"),
+                It.Is<NotificationMessage>(n => n.ClientId == "cliente-2" && n.Message == "contenido" && n.EventType == NotificationType.Comment && n.DocumentNumber == "DOC-9"),
                 It.IsAny<CancellationToken>()), Times.Once);
         }
 

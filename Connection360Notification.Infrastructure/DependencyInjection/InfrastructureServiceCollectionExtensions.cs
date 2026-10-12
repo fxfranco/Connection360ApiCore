@@ -2,6 +2,7 @@
 using Connection360Notification.Domain.Ports.Outbound;
 using Connection360Notification.Infrastructure.Adapters.Input;
 using Connection360Notification.Infrastructure.Adapters.Output;
+using Connection360Notification.Infrastructure.Email;
 using Connection360Notification.Infrastructure.Messaging;
 using Connection360Notification.Infrastructure.Persistence.Mongo;
 using Microsoft.AspNetCore.SignalR;
@@ -49,7 +50,15 @@ namespace Connection360Notification.Infrastructure.DependencyInjection
             services.AddSignalR();
             // Registrar el proveedor personalizado de ID de usuario para SignalR
             services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
-            services.AddScoped<INotifierService, SignalRNotifierService>();
+
+            // Canales de notificación (Strategy): cada uno encapsula su envío técnico. El registro de canales
+            // (Application) los recibe todos como IEnumerable<INotificationChannel> y los resuelve por usuario.
+            // Para agregar un canal nuevo: implementar INotificationChannel y registrarlo aquí.
+            services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
+            services.AddSingleton<IEmailSender, MailKitEmailSender>();
+            services.AddScoped<INotificationChannel, SignalRNotificationChannel>();
+            services.AddScoped<INotificationChannel, EmailNotificationChannel>();
+            services.AddScoped<INotificationChannel, SmsNotificationChannel>();
 
             // 3. Worker Background Service para Consumo de Kafka
             services.AddHostedService<KafkaConsumerHostedService>();

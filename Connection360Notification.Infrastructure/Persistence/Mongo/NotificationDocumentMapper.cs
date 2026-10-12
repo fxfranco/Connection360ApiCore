@@ -15,13 +15,14 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
                 Id = notification.Id,
                 IdNotification = notification.IdNotification,
                 ClientId = notification.ClientId,
-                Type = notification.Type,
+                Type = notification.EventType,
                 DocumentNumber = notification.DocumentNumber,
                 Title = notification.Title,
                 Message = notification.Message,
                 MessageDate = notification.MessageDate,
                 Status = notification.Status,
-                NotificationDate = notification.NotificationDate
+                NotificationDate = notification.NotificationDate,
+                NotificationChannel = NotificationChannelDocument.FromDomain(notification.NotificationChannel)
             };
         }
 
@@ -29,7 +30,7 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
         {
             return new NotificationMessage(
                 clientId: document.ClientId,
-                type: document.Type,
+                eventType: document.Type,
                 message: document.Message,
                 documentNumber: document.DocumentNumber,
                 title: document.Title,
@@ -37,7 +38,8 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
                 status: document.Status,
                 notificationDate: document.NotificationDate,
                 idNotification: document.IdNotification,
-                id: document.Id);
+                id: document.Id,
+                notificationChannel: document.NotificationChannel?.ToDomain());
         }
     }
 }

@@ -8,10 +8,10 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
         protected override String EnvironmentName => "Production";
     }
 
-    /// <summary>Conserva el <c>SignalRNotifierService</c> real para probar el envío por el hub de SignalR.</summary>
+    /// <summary>Conserva los canales de notificación reales (SignalR, correo y SMS) para probar el envío por el hub de SignalR.</summary>
     public class RealNotifierWebApplicationFactory : CustomWebApplicationFactory
     {
-        protected override Boolean MockNotifierService => false;
+        protected override Boolean MockNotificationChannels => false;
     }
 
     /// <summary>Conserva los casos de uso reales de la capa de aplicación (con repositorio y Kafka simulados).</summary>
