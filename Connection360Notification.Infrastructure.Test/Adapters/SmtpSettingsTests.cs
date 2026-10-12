@@ -20,6 +20,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
 
             sut.Port.Should().Be(587);
             sut.TimeoutSeconds.Should().Be(30);
+            sut.CheckCertificateRevocation.Should().BeTrue("la revocación del certificado se valida salvo que se desactive explícitamente");
             sut.Server.Should().BeEmpty();
             sut.SenderEmail.Should().BeEmpty();
             sut.Password.Should().BeEmpty();
@@ -38,7 +39,8 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
                 ["SmtpSettings:SenderEmail"] = "tucorreo@gmail.com",
                 ["SmtpSettings:Password"] = "clave",
                 ["SmtpSettings:RecipientEmail"] = "destino@ejemplo.com",
-                ["SmtpSettings:TimeoutSeconds"] = "10"
+                ["SmtpSettings:TimeoutSeconds"] = "10",
+                ["SmtpSettings:CheckCertificateRevocation"] = "false"
             }).Build();
 
             var sut = configuration.GetSection(SmtpSettings.SectionName).Get<SmtpSettings>()!;
@@ -50,6 +52,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             sut.Password.Should().Be("clave");
             sut.RecipientEmail.Should().Be("destino@ejemplo.com");
             sut.TimeoutSeconds.Should().Be(10);
+            sut.CheckCertificateRevocation.Should().BeFalse();
         }
     }
 }

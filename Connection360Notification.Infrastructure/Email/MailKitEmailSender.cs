@@ -32,7 +32,11 @@ namespace Connection360Notification.Infrastructure.Email
             mime.Subject = message.Subject;
             mime.Body = new TextPart("plain") { Text = message.Body };
 
-            using var client = new SmtpClient { Timeout = Math.Max(1, _settings.TimeoutSeconds) * 1000 };
+            using var client = new SmtpClient
+            {
+                Timeout = Math.Max(1, _settings.TimeoutSeconds) * 1000,
+                CheckCertificateRevocation = _settings.CheckCertificateRevocation
+            };
 
             // 465 = TLS desde el primer byte; cualquier otro puerto (587) = STARTTLS obligatorio.
             SecureSocketOptions security = _settings.Port == ImplicitSslPort

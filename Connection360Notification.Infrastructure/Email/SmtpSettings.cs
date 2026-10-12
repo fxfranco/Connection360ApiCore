@@ -38,5 +38,13 @@
 
         /// <summary>Tiempo máximo, en segundos, para conectar/enviar. Evita bloquear el procesamiento si el servidor no responde.</summary>
         public Int32 TimeoutSeconds { get; set; } = 30;
+
+        /// <summary>
+        /// Si es true (por defecto) se consulta la revocación (CRL/OCSP) del certificado del servidor SMTP. Ponerlo en
+        /// false SOLO si el equipo no puede alcanzar los servidores de revocación (firewall, proxy, sin internet hacia
+        /// esos hosts) y falla con "la función de revocación no puede comprobar la revocación". Con false se siguen
+        /// validando la cadena de confianza, la vigencia y el nombre del servidor; solo se omite la consulta de revocación.
+        /// </summary>
+        public Boolean CheckCertificateRevocation { get; set; } = true;
     }
 }
