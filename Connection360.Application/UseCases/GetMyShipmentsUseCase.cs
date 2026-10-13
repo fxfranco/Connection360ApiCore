@@ -42,7 +42,7 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             var filters = new Dictionary<String, String>();
 
@@ -102,7 +102,7 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
@@ -166,7 +166,7 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
@@ -223,7 +223,7 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
@@ -290,7 +290,7 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             // El historial (log_status_tracking) se consulta solo para el documento pedido: el servicio de
             // dominio igualmente filtra por ExternalDataFields.DocumentNumber, asi que el resultado es el mismo

@@ -33,7 +33,7 @@ namespace Connection360.Application.UseCases
             };
 
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             var filters = new Dictionary<String, String>();
             DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(filters, cancellationToken);

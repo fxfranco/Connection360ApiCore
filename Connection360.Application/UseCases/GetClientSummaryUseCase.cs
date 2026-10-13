@@ -33,7 +33,7 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             // 1. Aplica filtros a la api si se tienen
             //var filters = new Dictionary<String, String>
@@ -82,7 +82,7 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? String.Empty : request.IdClient;
+            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
 
             // 1. Aplica filtros a la api si se tienen
             //var filters = new Dictionary<String, String>
