@@ -14,6 +14,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Net;
+using System.Net.Http;
+using System.Net.Security;
+using Microsoft.Extensions.Http;
 using Xunit;
 
 namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
@@ -152,6 +155,71 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
             Action act = () => factory.CreateClient("ROTA");
 
             act.Should().Throw<UriFormatException>();
+        }
+
+        /// <summary>Constructor de handlers mínimo para aplicar las acciones registradas por AddHttpClient y poder inspeccionar el handler primario.</summary>
+        private sealed class InspectableHandlerBuilder : HttpMessageHandlerBuilder
+        {
+            public InspectableHandlerBuilder(String name, IServiceProvider services)
+            {
+                Name = name;
+                Services = services;
+                PrimaryHandler = new HttpClientHandler();
+            }
+
+            public override String? Name { get; set; }
+            public override HttpMessageHandler PrimaryHandler { get; set; }
+            public override IList<DelegatingHandler> AdditionalHandlers { get; } = new List<DelegatingHandler>();
+            public override IServiceProvider Services { get; }
+            public override HttpMessageHandler Build() => PrimaryHandler;
+        }
+
+        private static HttpClientHandler BuildPrimaryHandler(ServiceProvider provider, String apiName)
+        {
+            HttpClientFactoryOptions options = provider.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>().Get(apiName);
+            var builder = new InspectableHandlerBuilder(apiName, provider);
+            foreach (Action<HttpMessageHandlerBuilder> action in options.HttpMessageHandlerBuilderActions)
+            {
+                action(builder);
+            }
+            return (HttpClientHandler)builder.PrimaryHandler;
+        }
+
+        [Fact]
+        public void AddEtlInfrastructure_SinAllowInvalidServerCertificate_NoCambiaElHandlerYSeValidaElCertificado()
+        {
+            using var provider = BuildProvider(BuildConfiguration(DefaultValues()));
+
+            provider.GetRequiredService<IOptions<ExternalApiSettings>>().Value.AllowInvalidServerCertificate.Should().BeFalse();
+            BuildPrimaryHandler(provider, "BPMS").ServerCertificateCustomValidationCallback.Should().BeNull();
+        }
+
+        [Fact]
+        public void AddEtlInfrastructure_AllowInvalidServerCertificateFalso_NoCambiaElHandler()
+        {
+            var values = DefaultValues();
+            values["ExternalApi:AllowInvalidServerCertificate"] = "false";
+            using var provider = BuildProvider(BuildConfiguration(values));
+
+            BuildPrimaryHandler(provider, "SIM").ServerCertificateCustomValidationCallback.Should().BeNull();
+        }
+
+        [Theory]
+        [InlineData("BPMS")]
+        [InlineData("SIM")]
+        [InlineData("ASIS")]
+        public void AddEtlInfrastructure_AllowInvalidServerCertificateVerdadero_AceptaCualquierCertificadoEnCadaApi(String apiName)
+        {
+            var values = DefaultValues();
+            values["ExternalApi:AllowInvalidServerCertificate"] = "true";
+            using var provider = BuildProvider(BuildConfiguration(values));
+
+            HttpClientHandler handler = BuildPrimaryHandler(provider, apiName);
+
+            handler.ServerCertificateCustomValidationCallback.Should().NotBeNull();
+            handler.ServerCertificateCustomValidationCallback!
+                .Invoke(new HttpRequestMessage(), null, null, SslPolicyErrors.RemoteCertificateNameMismatch | SslPolicyErrors.RemoteCertificateChainErrors)
+                .Should().BeTrue();
         }
 
         [Theory]

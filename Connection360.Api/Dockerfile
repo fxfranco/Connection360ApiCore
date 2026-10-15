@@ -1,33 +1,47 @@
-# ETAPA 1: Construcción (SDK)
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# syntax=docker/dockerfile:1.7
+# ============================================================================================
+# Connection360.Api
+#   Contexto de build: RAÍZ de la solución (así se copian TODAS las dependencias del proyecto).
+#     docker build -f Connection360.Api/Dockerfile -t <registro>/connection360.api:<version> .
+#   Lo normal es usar deploy/build-images.ps1 (o .sh), que toma la versión del <Version> del .csproj.
+#
+#   Configuración: el appsettings.json de la imagen queda VACÍO ({}). Todo se entrega al arrancar el
+#   contenedor con variables de entorno (sección__clave, p. ej. Jwt__Secret) o con un archivo montado.
+# ============================================================================================
+ARG DOTNET_VERSION=10.0
+
+# ---------- ETAPA 1: compilación y publicación ----------
+FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION} AS build
 WORKDIR /src
-
-# 1. Copiar TODOS los archivos de proyecto (.csproj) manteniendo la estructura de carpetas
-COPY ["Connection360.Api/Connection360.Api.csproj", "Connection360.Api/"]
-COPY ["Connection360.Application/Connection360.Application.csproj", "Connection360.Application/"]
-COPY ["Connection360.Domain/Connection360.Domain.csproj", "Connection360.Domain/"]
-COPY ["Connection360.Infrastructure/Connection360.Infrastructure.csproj", "Connection360.Infrastructure/"]
-
-# Copiar archivos de proyecto y restaurar dependencias
-RUN dotnet restore "Connection360.Api/Connection360.Api.csproj"
-
-# Copiar todo el código y publicar la API
 COPY . .
-WORKDIR "/src/Connection360.Api"
-RUN dotnet publish "Connection360.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# ETAPA 2: Ejecución (Runtime ligero)
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS final
+# Si se pasa APP_VERSION se usa en lugar del <Version> del .csproj (versión manual).
+ARG APP_VERSION=
+# restore + publish en el mismo RUN para reutilizar la caché de NuGet entre builds (BuildKit).
+RUN --mount=type=cache,id=connection360-nuget,target=/root/.nuget/packages,sharing=locked \
+    dotnet restore "Connection360.Api/Connection360.Api.csproj" \
+ && dotnet publish "Connection360.Api/Connection360.Api.csproj" -c Release -o /app/publish --no-restore \
+        -p:UseAppHost=false ${APP_VERSION:+-p:Version=${APP_VERSION}}
+
+# appsettings vacío: se eliminan los de la publicación (incluido cualquier Development) y se deja un {}.
+RUN find /app/publish -maxdepth 1 -name 'appsettings*.json' -delete \
+ && echo '{}' > /app/publish/appsettings.json
+
+# ---------- ETAPA 2: ejecución (solo runtime de ASP.NET, sin SDK) ----------
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS final
 WORKDIR /app
 
-# 1. Copiamos el certificado directamente en /app (Donde estás parado gracias al WORKDIR)
-COPY ["Connection360.Api/aspnetapp.pfx", "./"]
+ARG APP_VERSION=
+LABEL org.opencontainers.image.title="Connection360.Api" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.description="Connection360 API Core (hexagonal: application, domain, infrastructure)"
 
-# Copiar los archivos publicados (incluye automáticamente tus appsettings.json)
+ENV ASPNETCORE_ENVIRONMENT=Production \
+    ASPNETCORE_HTTP_PORTS=8080
+
 COPY --from=build /app/publish .
 
-# Forzar a Kestrel a escuchar en el puerto solicitado bajo HTTPS
-ENV ASPNETCORE_URLS=https://+:44369
-EXPOSE 44369
-
+# Sin privilegios de root (usuario "app" de la imagen base).
+USER $APP_UID
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "Connection360.Api.dll"]

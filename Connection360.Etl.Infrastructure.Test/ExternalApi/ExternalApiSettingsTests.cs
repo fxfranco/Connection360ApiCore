@@ -7,6 +7,12 @@ namespace Connection360.Etl.Infrastructure.Tests.ExternalApi
     public class ExternalApiSettingsTests
     {
         [Fact]
+        public void AllowInvalidServerCertificate_PorDefecto_DebeSerFalso()
+        {
+            new ExternalApiSettings().AllowInvalidServerCertificate.Should().BeFalse();
+        }
+
+        [Fact]
         public void GetConfig_ApiExistente_DebeRetornarSuConfiguracion()
         {
             var settings = new ExternalApiSettings();

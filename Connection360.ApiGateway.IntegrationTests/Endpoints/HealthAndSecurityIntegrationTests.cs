@@ -20,6 +20,34 @@ namespace Connection360.ApiGateway.IntegrationTests.Endpoints
         }
 
         [Fact]
+        public async Task HttpPlano_PorDefecto_SeRedirigeAHttps()
+        {
+            // https_port le indica a UseHttpsRedirection a qué puerto HTTPS redirigir (en TestServer no hay endpoint real).
+            using var factory = new GatewayWebApplicationFactory(new Dictionary<String, String?> { ["https_port"] = "443" });
+            using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+            HttpResponseMessage response = await client.GetAsync("/health");
+
+            response.StatusCode.Should().Be(HttpStatusCode.TemporaryRedirect);
+            response.Headers.Location!.Scheme.Should().Be("https");
+        }
+
+        [Fact]
+        public async Task HttpPlano_ConHttpsRedirectionDeshabilitado_SeAtiendeSinRedirigir()
+        {
+            using var factory = new GatewayWebApplicationFactory(new Dictionary<String, String?>
+            {
+                ["https_port"] = "443",
+                ["HttpsRedirection:Enabled"] = "false"
+            });
+            using var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+            HttpResponseMessage response = await client.GetAsync("/health");
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        [Fact]
         public async Task Health_EsAccesibleSinAutenticacion()
         {
             // Ningún endpoint del Gateway llama a RequireAuthorization(); UseAuthorization() no exige

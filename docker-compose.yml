@@ -1,45 +1,293 @@
+# ==================================================================================================
+# Connection360 - orquestación de los componentes .NET
+#
+#   Componentes de ESTE compose : api-gateway, api-connection360, api-notification, etl-orchestrator (+ etl-app manual)
+#   Contenedores EXTERNOS (ya dockerizados aparte): PostgreSQL, MongoDB y Kafka. Se alcanzan por la red
+#   Docker compartida (DOCKER_NETWORK) usando sus nombres de contenedor/servicio en las cadenas de conexión del .env.
+#
+#   Toda la configuración (lo que antes vivía en cada appsettings.json) se entrega por VARIABLES DE ENTORNO:
+#   las imágenes llevan el appsettings.json VACÍO. Los valores salen del archivo .env (ver .env.example).
+#
+#   Uso:
+#     docker network create connection360-network      # solo si aún no existe (la comparten los demás contenedores)
+#     cp .env.example .env   ->  completar valores
+#     docker compose up -d                              # gateway + APIs + orquestador
+#     docker compose run --rm etl-app                   # corrida manual puntual del ETL (opcional)
+#
+#   Versiones: las imágenes se etiquetan con el <Version> de cada .csproj (deploy/build-images.ps1 | .sh).
+#   Defínelas en el .env (APIGATEWAY_VERSION, ...) o deja el valor por defecto "latest".
+# ==================================================================================================
+name: connection360
+
+# ---------- Bloques reutilizables (anclas YAML) ----------
+x-logging-env: &logging-env
+  Logging__LogLevel__Default: ${LOG_LEVEL_DEFAULT:-Information}
+  Logging__LogLevel__Microsoft.AspNetCore: Warning
+
+x-console-logging-env: &console-logging-env
+  Logging__LogLevel__Default: ${LOG_LEVEL_DEFAULT:-Information}
+  Logging__LogLevel__Microsoft: Warning
+  Logging__LogLevel__Microsoft.Hosting.Lifetime: Information
+
+x-observability-env: &observability-env
+  # Telemetría (logs, métricas y trazas) hacia MongoDB. El resto de opciones (colas, lotes, retenciones...)
+  # tiene sus valores por defecto en el código, idénticos a los del appsettings.
+  Observability__Enabled: ${OBSERVABILITY_ENABLED:-true}
+  Observability__Mongo__ConnectionString: ${MONGO_CONNECTION:?Define MONGO_CONNECTION en el .env}
+  Observability__Mongo__DatabaseName: ${MONGO_DATABASE:?Define MONGO_DATABASE en el .env}
+
+x-jwt-env: &jwt-env
+  Jwt__Issuer: ${JWT_ISSUER:?Define JWT_ISSUER en el .env}
+  Jwt__Audience: ${JWT_AUDIENCE:?Define JWT_AUDIENCE en el .env}
+  Jwt__Secret: ${JWT_SECRET:?Define JWT_SECRET en el .env}
+  Jwt__Roles: ${JWT_ROLES:?Define JWT_ROLES en el .env}
+
+x-kafka-env: &kafka-env
+  KafkaSettings__BootstrapServers: ${KAFKA_BOOTSTRAP_SERVERS:?Define KAFKA_BOOTSTRAP_SERVERS en el .env}
+  KafkaSettings__GroupId: ${KAFKA_GROUP_ID:-notification-consumer-group}
+  KafkaSettings__Topic: ${KAFKA_TOPIC:-notification-events}
+
+x-api-healthcheck: &api-healthcheck
+  # Prueba TCP al puerto interno (las imágenes aspnet no traen curl).
+  test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080' || exit 1"]
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 20s
+
+# Configuración de Connection360.Etl.App (la hereda como proceso hijo cuando la lanza el Orchestrator).
+x-etl-env: &etl-env
+  <<: [*console-logging-env, *observability-env]
+  DOTNET_ENVIRONMENT: Production
+  ConnectionStrings__PostgresConnection: ${POSTGRES_CONNECTION:?Define POSTGRES_CONNECTION en el .env}
+  EtlJobControl__ApplicationDataSheetRetentionDays: ${ETL_JOB_CONTROL_RETENTION_DAYS:-30}
+  MaterializedViews__RefreshEnabled: ${ETL_VIEWS_REFRESH_ENABLED:-true}
+  MaterializedViews__CommandTimeoutSeconds: ${ETL_VIEWS_COMMAND_TIMEOUT_SECONDS:-600}
+  EtlChangeTracking__SystemUser: ${ETL_SYSTEM_USER:-ETL_CONNECTION360}
+  ExternalApi__PaginationEnabled: ${EXTERNAL_API_PAGINATION_ENABLED:-false}
+  ExternalApi__PageSize: ${EXTERNAL_API_PAGE_SIZE:-500}
+  # SOLO DESARROLLO: true = el ETL acepta cualquier certificado TLS de las APIs externas (p. ej. el
+  # certificado de desarrollo de "localhost" al consumirlas por IP). En producción debe ser false.
+  ExternalApi__AllowInvalidServerCertificate: ${EXTERNAL_API_ALLOW_INVALID_CERT:-false}
+  ExternalApi__Apis__BPMS__BaseUrl: ${BPMS_BASE_URL:?Define BPMS_BASE_URL en el .env}
+  ExternalApi__Apis__BPMS__DataEndpoint: /api/excelfields/latest-data
+  ExternalApi__Apis__BPMS__ApiKey: ${BPMS_API_KEY:-}
+  ExternalApi__Apis__BPMS__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+  ExternalApi__Apis__DATALOGS__BaseUrl: ${DATALOGS_BASE_URL:?Define DATALOGS_BASE_URL en el .env}
+  ExternalApi__Apis__DATALOGS__DataEndpoint: /api/excelfields/latestLogs-data
+  ExternalApi__Apis__DATALOGS__ApiKey: ${DATALOGS_API_KEY:-}
+  ExternalApi__Apis__DATALOGS__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+  ExternalApi__Apis__SIM__BaseUrl: ${SIM_BASE_URL:?Define SIM_BASE_URL en el .env}
+  ExternalApi__Apis__SIM__DataEndpoint: /api/excelfields/latest-data
+  ExternalApi__Apis__SIM__ApiKey: ${SIM_API_KEY:-}
+  ExternalApi__Apis__SIM__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+  ExternalApi__Apis__OPENCOMEX__BaseUrl: ${OPENCOMEX_BASE_URL:?Define OPENCOMEX_BASE_URL en el .env}
+  ExternalApi__Apis__OPENCOMEX__DataEndpoint: /api/excelfields/latest-data
+  ExternalApi__Apis__OPENCOMEX__ApiKey: ${OPENCOMEX_API_KEY:-}
+  ExternalApi__Apis__OPENCOMEX__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+  ExternalApi__Apis__ASISCOMEX__BaseUrl: ${ASISCOMEX_BASE_URL:?Define ASISCOMEX_BASE_URL en el .env}
+  ExternalApi__Apis__ASISCOMEX__DataEndpoint: /api/excelfields/latest-data
+  ExternalApi__Apis__ASISCOMEX__ApiKey: ${ASISCOMEX_API_KEY:-}
+  ExternalApi__Apis__ASISCOMEX__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+  ExternalApi__Apis__SYSTEMCARRIER__BaseUrl: ${SYSTEMCARRIER_BASE_URL:?Define SYSTEMCARRIER_BASE_URL en el .env}
+  ExternalApi__Apis__SYSTEMCARRIER__DataEndpoint: /api/excelfields/latest-data
+  ExternalApi__Apis__SYSTEMCARRIER__ApiKey: ${SYSTEMCARRIER_API_KEY:-}
+  ExternalApi__Apis__SYSTEMCARRIER__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+
 services:
-  # SERVICIO 1: Tu API Gateway  
+  # ------------------------------------------------------------------------------------------------
+  # API Gateway (YARP): ÚNICO componente expuesto hacia el front (equipo externo). Atiende HTTP y HTTPS.
+  # ------------------------------------------------------------------------------------------------
   api-gateway:
-    image: fxfranco13/connection360.apigateway:1.0.0-alphabaseinit.1
+    image: ${REGISTRY:-fxfranco13}/connection360.apigateway:${APIGATEWAY_VERSION:-latest}
     build:
-      context: ./Connection360.ApiGateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Connection360.ApiGateway/Dockerfile
     container_name: connection360_apigateway
+    restart: unless-stopped
     ports:
-      - "44368:44368"
+      - "${GATEWAY_HTTP_PORT:-8080}:8080"     # HTTP
+      - "${GATEWAY_HTTPS_PORT:-8443}:8443"    # HTTPS
+    volumes:
+      # Certificado TLS (.pfx) del gateway: se monta en tiempo de ejecución, NUNCA va dentro de la imagen.
+      - ${GATEWAY_CERT_DIR:-./certs}:/https:ro
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:44368
-      # Le indicamos a Kestrel la ruta interna del archivo publicado y su contraseña
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=36oApi*netCo.
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/aspnetapp.pfx
-    networks:
-      - connection360-network
+      <<: [*logging-env, *jwt-env]
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ASPNETCORE_HTTPS_PORTS: "8443"
+      Kestrel__Certificates__Default__Path: /https/${GATEWAY_CERT_FILE:-gateway.pfx}
+      Kestrel__Certificates__Default__Password: ${GATEWAY_CERT_PASSWORD:?Define GATEWAY_CERT_PASSWORD en el .env}
+      # false = acepta HTTP y HTTPS sin redirigir; true = redirige HTTP -> HTTPS.
+      HttpsRedirection__Enabled: ${GATEWAY_HTTPS_REDIRECT:-false}
+      # Solo si el gateway queda DETRÁS de un balanceador/proxy de confianza del hosting (para ver la IP y el esquema
+      # reales del cliente, p. ej. en el rate limiting). No lo actives si el gateway recibe tráfico directo de internet:
+      # un cliente podría falsear X-Forwarded-For.
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: ${GATEWAY_FORWARDED_HEADERS:-false}
+      Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-15}
+      Jwt__RefreshTokenDays: ${JWT_REFRESH_TOKEN_DAYS:-7}
+      RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-100}
+      RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      RateLimiting__QueueLimit: ${RATE_LIMIT_QUEUE_LIMIT:-0}
+      # Orígenes del front permitidos por CORS (los vacíos se ignoran).
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN_0:?Define CORS_ORIGIN_0 (origen del front) en el .env}
+      Cors__AllowedOrigins__1: ${CORS_ORIGIN_1:-}
+      Cors__AllowedOrigins__2: ${CORS_ORIGIN_2:-}
+      Cors__AllowedOrigins__3: ${CORS_ORIGIN_3:-}
+      # ----- YARP: rutas -----
+      ReverseProxy__Routes__signalr-route__ClusterId: signalr-cluster
+      ReverseProxy__Routes__signalr-route__Order: "1"
+      ReverseProxy__Routes__signalr-route__Match__Path: /api/v{version}/hubs/notifications/{**catch-all}
+      ReverseProxy__Routes__signalr-route__Transforms__0__RequestHeader: X-Forwarded-By
+      ReverseProxy__Routes__signalr-route__Transforms__0__Set: ApiGateway
+      ReverseProxy__Routes__notification-route__ClusterId: notification-cluster
+      ReverseProxy__Routes__notification-route__Order: "2"
+      ReverseProxy__Routes__notification-route__Match__Path: /api/v{version}/notifications/{**catch-all}
+      ReverseProxy__Routes__notification-route__Transforms__0__PathPattern: /api/v{version}/notifications/{**catch-all}
+      ReverseProxy__Routes__notification-route__Transforms__1__RequestHeader: X-Forwarded-By
+      ReverseProxy__Routes__notification-route__Transforms__1__Set: ApiGateway
+      ReverseProxy__Routes__products-route__ClusterId: products-cluster
+      ReverseProxy__Routes__products-route__Order: "3"
+      ReverseProxy__Routes__products-route__Match__Path: /api/{**catch-all}
+      ReverseProxy__Routes__products-route__Transforms__0__PathPattern: /api/{**catch-all}
+      ReverseProxy__Routes__products-route__Transforms__1__RequestHeader: X-Forwarded-By
+      ReverseProxy__Routes__products-route__Transforms__1__Set: ApiGateway
+      # ----- YARP: clusters (destinos = nombres de servicio de este compose, por HTTP dentro de la red) -----
+      ReverseProxy__Clusters__signalr-cluster__LoadBalancingPolicy: RoundRobin
+      ReverseProxy__Clusters__signalr-cluster__Destinations__destination1__Address: ${NOTIFICATION_API_URL:-http://api-notification:8080/}
+      ReverseProxy__Clusters__signalr-cluster__HttpRequest__ActivityTimeout: 00:05:00
+      ReverseProxy__Clusters__signalr-cluster__HttpRequest__AllowResponseBuffering: "false"
+      ReverseProxy__Clusters__notification-cluster__LoadBalancingPolicy: RoundRobin
+      ReverseProxy__Clusters__notification-cluster__Destinations__destination1__Address: ${NOTIFICATION_API_URL:-http://api-notification:8080/}
+      ReverseProxy__Clusters__notification-cluster__HealthCheck__Active__Enabled: "true"
+      ReverseProxy__Clusters__notification-cluster__HealthCheck__Active__Interval: 00:00:10
+      ReverseProxy__Clusters__notification-cluster__HealthCheck__Active__Timeout: 00:00:05
+      ReverseProxy__Clusters__notification-cluster__HealthCheck__Active__Path: /health
+      ReverseProxy__Clusters__products-cluster__LoadBalancingPolicy: RoundRobin
+      ReverseProxy__Clusters__products-cluster__Destinations__destination1__Address: ${CORE_API_URL:-http://api-connection360:8080/}
+      ReverseProxy__Clusters__products-cluster__HealthCheck__Active__Enabled: "true"
+      ReverseProxy__Clusters__products-cluster__HealthCheck__Active__Interval: 00:00:10
+      ReverseProxy__Clusters__products-cluster__HealthCheck__Active__Timeout: 00:00:05
+      ReverseProxy__Clusters__products-cluster__HealthCheck__Active__Path: /health
+    healthcheck:
+      <<: *api-healthcheck
     depends_on:
-      - api-connection360  
-  # SERVICIO 2: Tu Microservicio de Productos (AÑADIDO AQUÍ)
-  
-  api-connection360:
-    image: fxfranco13/connection360.api:1.0.0-alphabaseinit.1
-    build:
-      context: .  # Ajusta a la carpeta de tu segundo proyecto
-      dockerfile: ./Connection360.Api/Dockerfile
-    container_name: connection360_api
-    # NOTA: No es obligatorio mapear ports si solo le va a hablar el Gateway,
-    # pero lo ponemos para que puedas probarlo desde Windows de forma independiente
-    ports:
-      - "44369:44369" 
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:44369
-      # Le indicamos a Kestrel la ruta interna del archivo publicado y su contraseña
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=36oApi*netCo.
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/aspnetapp.pfx
+      api-connection360:
+        condition: service_healthy
+      api-notification:
+        condition: service_healthy
     networks:
       - connection360-network
 
-# CREACIÓN DE LA RED DE COMUNICACIÓN INTERNA
+  # ------------------------------------------------------------------------------------------------
+  # API Core (Connection360.Api): solo accesible desde la red interna (el gateway le redirige).
+  # ------------------------------------------------------------------------------------------------
+  api-connection360:
+    image: ${REGISTRY:-fxfranco13}/connection360.api:${API_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Connection360.Api/Dockerfile
+    container_name: connection360_api
+    restart: unless-stopped
+    # Para probarla directamente desde el equipo (sin pasar por el gateway), descomenta:
+    # ports:
+    #   - "8081:8080"
+    environment:
+      <<: [*logging-env, *observability-env, *jwt-env, *kafka-env]
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__PostgresConnection: ${POSTGRES_CONNECTION:?Define POSTGRES_CONNECTION en el .env}
+      Auth0Management__Domain: ${AUTH0_DOMAIN:?Define AUTH0_DOMAIN en el .env}
+      Auth0Management__ClientId: ${AUTH0_CLIENT_ID:?Define AUTH0_CLIENT_ID en el .env}
+      Auth0Management__ClientSecret: ${AUTH0_CLIENT_SECRET:?Define AUTH0_CLIENT_SECRET en el .env}
+      OutboxPublisher__PollingIntervalSeconds: ${OUTBOX_POLLING_INTERVAL_SECONDS:-10}
+      ExternalApi__Apis__OPENSTREETMAP__BaseUrl: ${OPENSTREETMAP_BASE_URL:-https://nominatim.openstreetmap.org}
+      ExternalApi__Apis__OPENSTREETMAP__DataEndpoint: /search?q=
+      ExternalApi__Apis__OPENSTREETMAP__ApiKey: ${OPENSTREETMAP_API_KEY:-}
+      ExternalApi__Apis__OPENSTREETMAP__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+    healthcheck:
+      <<: *api-healthcheck
+    networks:
+      - connection360-network
+
+  # ------------------------------------------------------------------------------------------------
+  # API de notificaciones (Connection360Notification.Api): consumidor Kafka + SignalR + correo.
+  # ------------------------------------------------------------------------------------------------
+  api-notification:
+    image: ${REGISTRY:-fxfranco13}/connection360notification.api:${NOTIFICATION_API_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Connection360Notification.Api/Dockerfile
+    container_name: connection360_notification_api
+    restart: unless-stopped
+    # ports:
+    #   - "8082:8080"
+    environment:
+      <<: [*logging-env, *observability-env, *jwt-env, *kafka-env]
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: "8080"
+      Persistence__Provider: MongoDB
+      MongoDbSettings__ConnectionString: ${MONGO_CONNECTION:?Define MONGO_CONNECTION en el .env}
+      MongoDbSettings__DatabaseName: ${MONGO_DATABASE:?Define MONGO_DATABASE en el .env}
+      MongoDbSettings__CollectionName: ${MONGO_NOTIFICATION_COLLECTION:-notificationMessage}
+      SmtpSettings__Server: ${SMTP_SERVER:-smtp.gmail.com}
+      SmtpSettings__Port: ${SMTP_PORT:-465}
+      SmtpSettings__SenderName: ${SMTP_SENDER_NAME:-Conexion360App}
+      SmtpSettings__SenderEmail: ${SMTP_SENDER_EMAIL:?Define SMTP_SENDER_EMAIL en el .env}
+      SmtpSettings__Password: ${SMTP_PASSWORD:?Define SMTP_PASSWORD (contraseña de aplicación) en el .env}
+      SmtpSettings__RecipientEmail: ${SMTP_RECIPIENT_EMAIL:?Define SMTP_RECIPIENT_EMAIL en el .env}
+      SmtpSettings__TimeoutSeconds: ${SMTP_TIMEOUT_SECONDS:-30}
+      SmtpSettings__CheckCertificateRevocation: ${SMTP_CHECK_CERT_REVOCATION:-true}
+    healthcheck:
+      <<: *api-healthcheck
+    networks:
+      - connection360-network
+
+  # ------------------------------------------------------------------------------------------------
+  # Orchestrator: proceso de larga duración que lanza el ETL (Connection360.Etl.App, empaquetado en esta
+  # misma imagen) según el cron. Las APIs externas (equipo Windows) se alcanzan por las URL del .env.
+  # ------------------------------------------------------------------------------------------------
+  etl-orchestrator:
+    image: ${REGISTRY:-fxfranco13}/connection360.etl.orchestrator:${ETL_ORCHESTRATOR_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Connection360.Etl.Orchestrator/Dockerfile
+    container_name: connection360_etl_orchestrator
+    restart: unless-stopped
+    stop_grace_period: 30s
+    extra_hosts:
+      # Permite usar "host.docker.internal" en las URL del .env también en hosts Linux.
+      - "host.docker.internal:host-gateway"
+    environment:
+      <<: *etl-env
+      Orchestrator__CronJobs__0__Enabled: ${ETL_ENABLED:-true}
+      Orchestrator__CronJobs__0__CronExpression: ${ETL_CRON:-*/1 * * * *}
+      Orchestrator__CronJobs__0__TimeZoneId: ${ETL_TIMEZONE:-America/Bogota}
+      Orchestrator__CronJobs__0__TimeoutMinutes: ${ETL_TIMEOUT_MINUTES:-15}
+    networks:
+      - connection360-network
+
+  # ------------------------------------------------------------------------------------------------
+  # ETL ejecutable por sí solo (corrida única y termina). No arranca con "docker compose up":
+  #   docker compose run --rm etl-app
+  # ------------------------------------------------------------------------------------------------
+  etl-app:
+    image: ${REGISTRY:-fxfranco13}/connection360.etl.app:${ETL_APP_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Connection360.Etl.App/Dockerfile
+    container_name: connection360_etl_app
+    profiles: ["manual"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      <<: *etl-env
+    networks:
+      - connection360-network
+
+# Red Docker COMPARTIDA con los contenedores de PostgreSQL, MongoDB y Kafka (ya levantados aparte).
+# Si en tu otro compose la red se llama distinto, ajusta DOCKER_NETWORK en el .env.
 networks:
   connection360-network:
-    driver: bridge  
+    name: ${DOCKER_NETWORK:-connection360-network}
+    external: true

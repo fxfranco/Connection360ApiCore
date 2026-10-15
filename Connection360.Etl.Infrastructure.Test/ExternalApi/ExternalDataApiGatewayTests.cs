@@ -48,6 +48,27 @@ namespace Connection360.Etl.Infrastructure.Tests.ExternalApi
             return list;
         }
 
+        // ------------------------------------------------------------ certificado TLS (solo desarrollo)
+
+        [Fact]
+        public void Constructor_AllowInvalidServerCertificateActivo_RegistraUnaAdvertencia()
+        {
+            ExternalApiSettings settings = Settings();
+            settings.AllowInvalidServerCertificate = true;
+
+            var (_, _, logger) = Create(FakeHttpMessageHandler.ReturningJson(Json(1)), settings);
+
+            logger.Entries.Should().ContainSingle(e => e.Level == LogLevel.Warning && e.Message.Contains("AllowInvalidServerCertificate"));
+        }
+
+        [Fact]
+        public void Constructor_ConValidacionDeCertificadoPorDefecto_NoRegistraAdvertencias()
+        {
+            var (_, _, logger) = Create(FakeHttpMessageHandler.ReturningJson(Json(1)), Settings());
+
+            logger.Entries.Should().NotContain(e => e.Level == LogLevel.Warning);
+        }
+
         // ------------------------------------------------------------ sin paginación
 
         [Fact]

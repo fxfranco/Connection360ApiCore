@@ -10,7 +10,11 @@
 
         public static IServiceCollection AddGatewayCors(this IServiceCollection services, IConfiguration configuration)
         {
-            var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<String[]>() ?? [];
+            // Se descartan entradas vacías: al configurar por variables de entorno (Cors__AllowedOrigins__0, __1, ...)
+            // los espacios sin usar llegan como cadena vacía, que no es un origen válido.
+            String[] allowedOrigins = (configuration.GetSection("Cors:AllowedOrigins").Get<String[]>() ?? [])
+                .Where(origin => !String.IsNullOrWhiteSpace(origin))
+                .ToArray();
 
             services.AddCors(options =>
             {

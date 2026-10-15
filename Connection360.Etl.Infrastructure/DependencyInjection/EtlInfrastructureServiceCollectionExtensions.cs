@@ -9,6 +9,7 @@ using Connection360.Etl.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Net.Http;
 
 namespace Connection360.Etl.Infrastructure.DependencyInjection
 {
@@ -34,7 +35,7 @@ namespace Connection360.Etl.Infrastructure.DependencyInjection
             {
                 foreach (var (apiName, config) in externalApiSettings.Apis)
                 {
-                    services.AddHttpClient(apiName, client =>
+                    IHttpClientBuilder httpClientBuilder = services.AddHttpClient(apiName, client =>
                     {
                         client.BaseAddress = new Uri(config.BaseUrl);
                         client.Timeout = TimeSpan.FromSeconds(config.TimeoutSeconds);
@@ -44,6 +45,17 @@ namespace Connection360.Etl.Infrastructure.DependencyInjection
                             client.DefaultRequestHeaders.Add("X-Api-Key", config.ApiKey);
                         }
                     });
+
+                    // SOLO DESARROLLO: únicamente cuando se activa explícitamente el interruptor se
+                    // cambia el handler primario para aceptar cualquier certificado TLS. Con el valor
+                    // por defecto (false) no se toca el handler y la validación sigue igual que antes.
+                    if (externalApiSettings.AllowInvalidServerCertificate)
+                    {
+                        httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                        {
+                            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                        });
+                    }
                 }
             }
 

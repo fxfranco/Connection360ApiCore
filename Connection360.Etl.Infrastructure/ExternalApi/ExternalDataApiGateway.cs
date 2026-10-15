@@ -35,6 +35,12 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
             _httpClientFactory = httpClientFactory;
             _settings = settings.Value;
             _logger = logger;
+
+            if (_settings.AllowInvalidServerCertificate)
+            {
+                _logger.LogWarning(
+                    "ExternalApi:AllowInvalidServerCertificate está activo: NO se valida el certificado TLS de las APIs externas. Usar solo en desarrollo.");
+            }
         }
 
         /// <exception cref="ArgumentException">La API solicitada no existe en la configuración.</exception>

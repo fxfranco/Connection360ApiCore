@@ -40,7 +40,13 @@ app.UseMiddleware<RequestLoggingMiddleware>();      // 3. Auditoria de cada peti
 // Habilitar soporte WebSockets explícito en YARP / ASP.NET Core
 app.UseWebSockets();
 
-app.UseHttpsRedirection();                          // 4. Fuerza HTTPS/TLS
+// 4. Fuerza HTTPS/TLS. Por defecto SIEMPRE activo (comportamiento original). En contenedores donde el gateway
+//    debe atender también HTTP plano (o el TLS lo termina el hosting/balanceador) se desactiva con la variable
+//    de entorno HttpsRedirection__Enabled=false.
+if (app.Configuration.GetValue("HttpsRedirection:Enabled", true))
+{
+    app.UseHttpsRedirection();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

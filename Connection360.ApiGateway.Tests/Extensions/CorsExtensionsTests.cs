@@ -53,5 +53,18 @@ namespace Connection360.ApiGateway.Tests.Extensions
 
             act.Should().NotThrow();
         }
+
+        [Fact]
+        public void AddGatewayCors_IgnoraLosOrigenesVaciosQueLlegaranPorVariablesDeEntorno()
+        {
+            var services = new ServiceCollection();
+            var config = BuildConfig(new[] { "https://miapp.test", "", "   ", "https://otra.test" });
+
+            services.AddGatewayCors(config);
+            var provider = services.BuildServiceProvider();
+            var policy = provider.GetRequiredService<IOptions<CorsOptions>>().Value.GetPolicy(CorsExtensions.PolicyName);
+
+            policy!.Origins.Should().BeEquivalentTo(new[] { "https://miapp.test", "https://otra.test" });
+        }
     }
 }
