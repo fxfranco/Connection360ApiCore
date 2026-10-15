@@ -3,7 +3,7 @@
 #   Versión de cada imagen = <Version> de su .csproj, salvo que se indique --version (manual, para todas).
 #
 #   ./deploy/build-images.sh                         # construye los 5 componentes
-#   ./deploy/build-images.sh --push                  # construye y hace docker push (requiere docker login)
+#   ./deploy/build-images.sh --push                  # construye y publica en Docker Hub (requiere docker login)
 #   ./deploy/build-images.sh --registry miusuario --components api,gateway
 #   ./deploy/build-images.sh --version 1.2.0 --platform linux/amd64
 #   ./deploy/build-images.sh --dry-run               # solo muestra qué haría
@@ -39,7 +39,7 @@ tag_of() { echo "$1" | tr 'A-Z' 'a-z' | tr '+' '-'; }   # un tag de Docker no ad
 run() { echo "+ $*"; [[ $DRY -eq 1 ]] || "$@"; }
 
 VERSIONS_FILE="$ROOT/deploy/versions.env"
-[[ $DRY -eq 1 ]] || : > "$VERSIONS_FILE"
+[[ $DRY -eq 1 ]] || touch "$VERSIONS_FILE"   # se conservan las variables de los componentes no construidos
 declare -a SUMMARY=()
 
 IFS=',' read -ra LIST <<< "$COMPONENTS"
@@ -58,15 +58,17 @@ for key in "${LIST[@]}"; do
     etl_version="${VERSION_OVERRIDE:-$(csproj_version Connection360.Etl.App)}"
     args+=(--build-arg "ETL_VERSION=$etl_version")
   fi
+  # Con un builder docker-container el resultado no queda en las imágenes locales a menos que se pida:
+  # --push construye y sube en un solo paso; --load lo deja disponible en "docker images".
+  if [[ $PUSH -eq 1 ]]; then args+=(--push); else args+=(--load); fi
   args+=(.)
 
   echo; echo "=== $proj  ->  $ref:$tag"
   DOCKER_BUILDKIT=1 run "${args[@]}"
-  if [[ $PUSH -eq 1 ]]; then
-    run docker push "$ref:$tag"
-    [[ $NO_LATEST -eq 1 ]] || run docker push "$ref:latest"
+  if [[ $DRY -eq 0 ]]; then
+    sed -i "/^${VARNAME[$key]}=/d" "$VERSIONS_FILE"
+    echo "${VARNAME[$key]}=$tag" >> "$VERSIONS_FILE"
   fi
-  [[ $DRY -eq 1 ]] || echo "${VARNAME[$key]}=$tag" >> "$VERSIONS_FILE"
   SUMMARY+=("$proj|$ref:$tag")
 done
 

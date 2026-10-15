@@ -5,11 +5,11 @@
 .DESCRIPTION
   La versión de cada imagen es el <Version> de su .csproj, salvo que se indique -Version (manual, para todas).
   Cada imagen queda con dos tags: <version en minúsculas> y latest (quítalo con -NoLatest).
-  Al terminar escribe deploy/versions.env con las versiones construidas.
+  Al terminar actualiza deploy/versions.env con las versiones construidas (conserva las de los componentes no construidos).
 
 .EXAMPLE
   ./deploy/build-images.ps1                              # construye los 5 componentes
-  ./deploy/build-images.ps1 -Push                        # construye y hace docker push (requiere docker login)
+  ./deploy/build-images.ps1 -Push                        # construye y publica en Docker Hub (requiere docker login)
   ./deploy/build-images.ps1 -Registry miusuario -Components api,gateway
   ./deploy/build-images.ps1 -Version 1.2.0 -Platform linux/amd64
   ./deploy/build-images.ps1 -DryRun                      # solo muestra qué haría
@@ -76,16 +76,15 @@ foreach ($key in $Components) {
         $etlVersion = if ($Version) { $Version } else { Get-CsprojVersion 'Connection360.Etl.App' }
         $buildArgs += @('--build-arg', "ETL_VERSION=$etlVersion")
     }
+    # Con un builder de tipo docker-container (el de Docker Desktop si se creó con buildx), el resultado del
+    # build NO queda en las imágenes locales a menos que se pida: --push construye y sube en un solo paso,
+    # --load lo deja disponible en "docker images" (y para docker compose).
+    $buildArgs += $(if ($Push) { '--push' } else { '--load' })
     $buildArgs += '.'
 
     Write-Host ""
     Write-Host "=== $($c.Project)  ->  ${ref}:$tag"
     Invoke-Docker $buildArgs
-
-    if ($Push) {
-        Invoke-Docker @('push', "${ref}:$tag")
-        if (-not $NoLatest) { Invoke-Docker @('push', "${ref}:latest") }
-    }
 
     $versionLines += "$($c.Var)=$tag"
     $summary += "  $($c.Project)  ->  ${ref}:$tag"
@@ -95,6 +94,18 @@ Write-Host ""
 Write-Host "Resumen:"
 $summary | ForEach-Object { Write-Host $_ }
 if (-not $DryRun) {
-    Set-Content -Path $versionsFile -Value $versionLines -Encoding ascii
+    # Se conservan las variables de los componentes que NO se construyeron en esta corrida
+    # (p. ej. al usar -Components), y se actualizan las que sí.
+    $merged = [ordered]@{}
+    if (Test-Path $versionsFile) {
+        Get-Content $versionsFile | ForEach-Object {
+            if ($_ -match '^\s*([A-Za-z0-9_]+)=(.*)$') { $merged[$Matches[1]] = $Matches[2].Trim() }
+        }
+    }
+    foreach ($line in $versionLines) {
+        $k, $v = $line -split '=', 2
+        $merged[$k] = $v
+    }
+    Set-Content -Path $versionsFile -Value ($merged.GetEnumerator() | ForEach-Object { "$($_.Key)=$($_.Value)" }) -Encoding ascii
     Write-Host "Versiones escritas en deploy/versions.env (úsalas con: docker compose --env-file .env --env-file deploy/versions.env up -d)"
 }
