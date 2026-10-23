@@ -6,7 +6,9 @@ namespace Connection360.Etl.Domain.Interfaces
 {
     /// <summary>
     /// Puerto de dominio: detecta, por documento de transporte (HBL), si hubo cambios en los campos
-    /// ESTADO, COMENTARIO y/o FECHA COMENTARIO entre lo que ya existe en connection360write.
+    /// ESTADO, COMENTARIO y/o FECHA COMENTARIO -o en alguno de los 20 campos de "otra información"
+    /// (transportista, anticipo, fechas logísticas, días libres, demoras; ver
+    /// <see cref="ApplicationDataSheetChange.OtherInfoChanged"/>)- entre lo que ya existe en connection360write.
     /// application_data_sheet ("antes") y lo recién transformado desde las APIs externas
     /// ("después"). Un documento que NO existía previamente en la tabla se trata igual que un cambio
     /// (pasa de "nada" a su valor actual): ver <see cref="ApplicationDataSheetChange.IsNewDocument"/>.
@@ -26,7 +28,7 @@ namespace Connection360.Etl.Domain.Interfaces
     {
         /// <param name="currentSheets">Filas recién transformadas en esta ronda (después).</param>
         /// <param name="previousSnapshotsByDocument">
-        /// Id/Estado/Comentario/FechaComentario tal como están HOY en la tabla principal (antes),
+        /// Id/Estado/Comentario/FechaComentario y campos de otra información tal como están HOY en la tabla principal (antes),
         /// acotado a los documentos de esta ronda. Un documento ausente aquí es un documento NUEVO:
         /// se compara contra un snapshot vacío (Estado/Comentario en blanco), por lo que normalmente
         /// sí genera un cambio (<see cref="ApplicationDataSheetChange.IsNewDocument"/> true) - salvo
@@ -36,7 +38,7 @@ namespace Connection360.Etl.Domain.Interfaces
         /// EXISTENTE; para uno NUEVO ese Id todavía no existe al momento de esta comparación (se
         /// resuelve después del upsert, fuera de este servicio).
         /// </param>
-        /// <returns>Solo los documentos en los que se detectó un cambio de estado y/o de comentario.</returns>
+        /// <returns>Solo los documentos en los que se detectó un cambio de estado, de comentario y/o de otra información.</returns>
         IReadOnlyList<ApplicationDataSheetChange> DetectChanges(
             IReadOnlyList<ApplicationDataSheet> currentSheets,
             IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot> previousSnapshotsByDocument);

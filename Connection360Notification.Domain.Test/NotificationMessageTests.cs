@@ -24,7 +24,13 @@ namespace Connection360Notification.Domain.Tests
                 status: NotificationStatus.Read,
                 notificationDate: FechaFija.AddHours(1),
                 idNotification: 42,
-                id: "ID-FIJO");
+                id: "ID-FIJO",
+                origen: "Medellin, Colombia",
+                destino: "Miami, USA",
+                comentario: "Carga lista",
+                fechaComentario: FechaFija.Date,
+                estadoAnterior: "En transito",
+                nuevoEstado: "En puerto");
 
             sut.Id.Should().Be("ID-FIJO");
             sut.IdNotification.Should().Be(42);
@@ -36,6 +42,12 @@ namespace Connection360Notification.Domain.Tests
             sut.MessageDate.Should().Be(FechaFija);
             sut.Status.Should().Be(NotificationStatus.Read);
             sut.NotificationDate.Should().Be(FechaFija.AddHours(1));
+            sut.Origen.Should().Be("Medellin, Colombia");
+            sut.Destino.Should().Be("Miami, USA");
+            sut.Comentario.Should().Be("Carga lista");
+            sut.FechaComentario.Should().Be(FechaFija.Date);
+            sut.EstadoAnterior.Should().Be("En transito");
+            sut.NuevoEstado.Should().Be("En puerto");
         }
 
         [Fact]
@@ -48,6 +60,12 @@ namespace Connection360Notification.Domain.Tests
             var despues = DateTime.UtcNow;
             sut.DocumentNumber.Should().BeEmpty();
             sut.Title.Should().BeEmpty();
+            sut.Origen.Should().BeEmpty();
+            sut.Destino.Should().BeEmpty();
+            sut.Comentario.Should().BeEmpty();
+            sut.FechaComentario.Should().Be(default(DateTime));
+            sut.EstadoAnterior.Should().BeEmpty();
+            sut.NuevoEstado.Should().BeEmpty();
             sut.Status.Should().Be(NotificationStatus.Unread);
             sut.IdNotification.Should().Be(0);
             sut.MessageDate.Should().BeOnOrAfter(antes).And.BeOnOrBefore(despues);
@@ -248,6 +266,55 @@ namespace Connection360Notification.Domain.Tests
             doc.RootElement.TryGetProperty("EventType", out var valor).Should().BeTrue();
             valor.GetInt32().Should().Be((Int32)NotificationType.Comment);
             doc.RootElement.TryGetProperty("Type", out _).Should().BeFalse();
+        }
+
+        [Fact]
+        public void Deserializacion_ConLosNuevosCamposDelPayloadDelEtl_LosCapturaSinErrores()
+        {
+            var json = "{\"ClientId\":\"CLI-2\",\"EventType\":\"OtherInfo\",\"DocumentNumber\":\"HBL-9\",\"Title\":\"t\",\"Message\":\"Hola\","
+                + "\"MessageDate\":\"2026-10-21T15:30:05Z\",\"Origen\":\"Medellin\",\"Destino\":\"Miami\",\"Comentario\":\"Listo\","
+                + "\"FechaComentario\":\"2026-10-20T00:00:00\",\"EstadoAnterior\":\"En transito\",\"NuevoEstado\":\"En puerto\"}";
+            var opciones = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
+
+            var sut = JsonSerializer.Deserialize<NotificationMessage>(json, opciones);
+
+            sut!.EventType.Should().Be(NotificationType.OtherInfo);
+            sut.Origen.Should().Be("Medellin");
+            sut.Destino.Should().Be("Miami");
+            sut.Comentario.Should().Be("Listo");
+            sut.FechaComentario.Should().Be(new DateTime(2026, 10, 20));
+            sut.EstadoAnterior.Should().Be("En transito");
+            sut.NuevoEstado.Should().Be("En puerto");
+        }
+
+        [Fact]
+        public void Deserializacion_SinLosNuevosCampos_QuedanVacios()
+        {
+            var sut = JsonSerializer.Deserialize<NotificationMessage>("{\"ClientId\":\"CLI-2\",\"Message\":\"Hola\"}");
+
+            sut!.Origen.Should().BeEmpty();
+            sut.Destino.Should().BeEmpty();
+            sut.Comentario.Should().BeEmpty();
+            sut.FechaComentario.Should().Be(default(DateTime));
+            sut.EstadoAnterior.Should().BeEmpty();
+            sut.NuevoEstado.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Serializacion_IdaYVuelta_PreservaLosNuevosCampos()
+        {
+            var original = new NotificationMessage("CLI-1", NotificationType.Comment, "Mensaje",
+                origen: "Medellin", destino: "Miami", comentario: "Listo", fechaComentario: FechaFija.Date,
+                estadoAnterior: "A", nuevoEstado: "B");
+
+            var copia = JsonSerializer.Deserialize<NotificationMessage>(JsonSerializer.Serialize(original));
+
+            copia!.Origen.Should().Be("Medellin");
+            copia.Destino.Should().Be("Miami");
+            copia.Comentario.Should().Be("Listo");
+            copia.FechaComentario.Should().Be(FechaFija.Date);
+            copia.EstadoAnterior.Should().Be("A");
+            copia.NuevoEstado.Should().Be("B");
         }
 
         [Fact]

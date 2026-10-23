@@ -178,6 +178,81 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             DocumentParameters(execution).Should().BeEquivalentTo(new[] { "H1", "H2" });
         }
 
+        [Theory]
+        [InlineData("transportista", "Transportista")]
+        [InlineData("valor_anticipo", "ValorAnticipo")]
+        [InlineData("dias_libres", "DiasLibres")]
+        [InlineData("dias_restantes_entrega", "DiasRestantesEntrega")]
+        [InlineData("dias_demora_contenedor", "DiasDemoraContenedor")]
+        [InlineData("valor_dia_demora", "ValorDiaDemora")]
+        [InlineData("valor_total_demora", "ValorTotalDemora")]
+        public async Task GetChangeSnapshotsAsync_ConsultaLasColumnasDeOtraInformacion_ConAliasDeLaPropiedad(String columna, String alias)
+        {
+            await using var scope = new FakeSessionScope();
+            scope.Connection.ReaderResult = _ => SnapshotTable();
+            var sut = new ApplicationDataSheetRepository(scope.Session);
+
+            await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+
+            scope.Connection.Executions.Single().CommandText.Should().Contain(columna).And.Contain($"AS \"{alias}\"");
+        }
+
+        [Theory]
+        [InlineData("fecha_solicitud_anticipo", "FechaSolicitudAnticipo")]
+        [InlineData("fecha_pago_anticipo", "FechaPagoAnticipo")]
+        [InlineData("fecha_bodega_origen", "FechaBodegaOrigen")]
+        [InlineData("fecha_etd", "FechaEtd")]
+        [InlineData("fecha_atd", "FechaAtd")]
+        [InlineData("fecha_eta", "FechaEta")]
+        [InlineData("fecha_ata", "FechaAta")]
+        [InlineData("fecha_bodega_destino", "FechaBodegaDestino")]
+        [InlineData("fecha_nacionalizacion", "FechaNacionalizacion")]
+        [InlineData("fecha_despacho_destino", "FechaDespachoDestino")]
+        [InlineData("fecha_planilla", "FechaPlanilla")]
+        [InlineData("fecha_entrega_contenedor", "FechaEntregaContenedor")]
+        [InlineData("fecha_devolucion_real_contenedor", "FechaDevolucionRealContenedor")]
+        public async Task GetChangeSnapshotsAsync_LasColumnasDateSeConsultanComoTimestamp(String columna, String alias)
+        {
+            await using var scope = new FakeSessionScope();
+            scope.Connection.ReaderResult = _ => SnapshotTable();
+            var sut = new ApplicationDataSheetRepository(scope.Session);
+
+            await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+
+            // Npgsql 10 devuelve DATE como DateOnly, que Dapper no convierte a DateTime: el cast ::timestamp es obligatorio.
+            scope.Connection.Executions.Single().CommandText.Should().Contain($"{columna}::timestamp AS \"{alias}\"");
+        }
+
+        [Fact]
+        public async Task GetChangeSnapshotsAsync_MapeaLosCamposDeOtraInformacion()
+        {
+            await using var scope = new FakeSessionScope();
+            var table = new DataTable();
+            table.Columns.Add("Id", typeof(Int64));
+            table.Columns.Add("DocumentoTransporteHbl", typeof(String));
+            table.Columns.Add("Transportista", typeof(String));
+            table.Columns.Add("ValorAnticipo", typeof(Decimal));
+            table.Columns.Add("FechaEtd", typeof(DateTime));
+            table.Columns.Add("DiasLibres", typeof(Int32));
+            table.Columns.Add("FechaDevolucionRealContenedor", typeof(DateTime));
+            table.Columns.Add("ValorDiaDemora", typeof(Decimal));
+            table.Columns.Add("ValorTotalDemora", typeof(Decimal));
+            table.Rows.Add(1L, "H1", "TCC", 150.25m, new DateTime(2025, 6, 7), 7, new DateTime(2025, 6, 8), 12.5m, 99.5m);
+            scope.Connection.ReaderResult = _ => table;
+            var sut = new ApplicationDataSheetRepository(scope.Session);
+
+            var result = await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+
+            ApplicationDataSheetChangeSnapshot snap = result["H1"];
+            snap.Transportista.Should().Be("TCC");
+            snap.ValorAnticipo.Should().Be(150.25m);
+            snap.FechaEtd.Should().Be(new DateTime(2025, 6, 7));
+            snap.DiasLibres.Should().Be(7);
+            snap.FechaDevolucionRealContenedor.Should().Be(new DateTime(2025, 6, 8));
+            snap.ValorDiaDemora.Should().Be(12.5m);
+            snap.ValorTotalDemora.Should().Be(99.5m);
+        }
+
         [Fact]
         public async Task GetChangeSnapshotsAsync_MapeaLasFilasYLasIndexaPorDocumentoConComparacionOrdinal()
         {

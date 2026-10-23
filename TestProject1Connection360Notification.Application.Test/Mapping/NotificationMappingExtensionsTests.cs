@@ -14,6 +14,7 @@ namespace Connection360Notification.Application.Tests.Mapping
         [Theory]
         [InlineData(AppNotificationType.ChangeState, DomainNotificationType.ChangeState)]
         [InlineData(AppNotificationType.Comment, DomainNotificationType.Comment)]
+        [InlineData(AppNotificationType.OtherInfo, DomainNotificationType.OtherInfo)]
         public void ToDomain_TipoDeDto_MapeaAlTipoDeDominio(AppNotificationType origen, DomainNotificationType esperado)
         {
             origen.ToDomain().Should().Be(esperado);
@@ -22,6 +23,7 @@ namespace Connection360Notification.Application.Tests.Mapping
         [Theory]
         [InlineData(DomainNotificationType.ChangeState, AppNotificationType.ChangeState)]
         [InlineData(DomainNotificationType.Comment, AppNotificationType.Comment)]
+        [InlineData(DomainNotificationType.OtherInfo, AppNotificationType.OtherInfo)]
         public void ToDto_TipoDeDominio_MapeaAlTipoDeDto(DomainNotificationType origen, AppNotificationType esperado)
         {
             origen.ToDto().Should().Be(esperado);

@@ -19,6 +19,7 @@ namespace Connection360.Etl.Application.Tests.DTOs
             result.IsInitialMigrationRun.Should().BeFalse();
             result.StateChangesDetected.Should().Be(0);
             result.CommentChangesDetected.Should().Be(0);
+            result.OtherInfoChangesDetected.Should().Be(0);
             result.Success.Should().BeFalse();
             result.ErrorMessage.Should().BeNull();
             result.Duration.Should().Be(TimeSpan.Zero);
@@ -62,6 +63,7 @@ namespace Connection360.Etl.Application.Tests.DTOs
                 IsInitialMigrationRun = true,
                 StateChangesDetected = 5,
                 CommentChangesDetected = 6,
+                OtherInfoChangesDetected = 7,
                 Success = true,
                 ErrorMessage = "x",
             };
@@ -71,6 +73,7 @@ namespace Connection360.Etl.Application.Tests.DTOs
             result.IsInitialMigrationRun.Should().BeTrue();
             result.StateChangesDetected.Should().Be(5);
             result.CommentChangesDetected.Should().Be(6);
+            result.OtherInfoChangesDetected.Should().Be(7);
             result.Success.Should().BeTrue();
             result.ErrorMessage.Should().Be("x");
         }

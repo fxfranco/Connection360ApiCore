@@ -20,6 +20,7 @@ namespace Connection360.Etl.Domain.Test.Enums
         [Theory]
         [InlineData(EtlChangeEventType.ChangeState, "ChangeState")]
         [InlineData(EtlChangeEventType.Comment, "Comment")]
+        [InlineData(EtlChangeEventType.OtherInfo, "OtherInfo")]
         public void ToDbValue_ValorDefinido_RetornaTextoDeBD(EtlChangeEventType tipo, String esperado)
         {
             tipo.ToDbValue().Should().Be(esperado);

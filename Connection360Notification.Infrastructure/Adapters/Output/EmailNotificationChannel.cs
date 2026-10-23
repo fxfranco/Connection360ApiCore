@@ -20,8 +20,12 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
     /// para garantizar que la notificación siempre se envíe.
     ///
     /// CUERPO: HTML con el formato de la plantilla de Conexion360 (<see cref="ShipmentStatusEmailTemplate"/>) y el logo
-    /// incrustado. El texto plano alterno sigue siendo <see cref="NotificationMessage.Message"/>. Origen, destino, estados
-    /// y comentario son valores provisionales (constantes "...PENDIENTE") mientras el evento no los traiga.
+    /// incrustado. El texto plano alterno sigue siendo <see cref="NotificationMessage.Message"/>. Origen, destino, estados,
+    /// comentario y fecha del comentario salen de la propia notificación (<see cref="NotificationMessage.Origen"/>,
+    /// <see cref="NotificationMessage.Destino"/>, <see cref="NotificationMessage.EstadoAnterior"/>,
+    /// <see cref="NotificationMessage.NuevoEstado"/>, <see cref="NotificationMessage.Comentario"/>,
+    /// <see cref="NotificationMessage.FechaComentario"/>); según <see cref="NotificationMessage.EventType"/> la plantilla muestra
+    /// el cambio de estado, el comentario o la actualización de información general.
     ///
     /// Si la configuración está incompleta o el servidor falla, lanza la excepción: el despachador la aísla, así que
     /// el resto de los canales (p. ej. la aplicación) se entrega igual.
@@ -61,11 +65,13 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
             String html = ShipmentStatusEmailTemplate.Render(new ShipmentStatusEmailValues(
                 ClientName: recipient?.FullName,
                 DocumentNumber: notification.DocumentNumber,
-                Origin: ShipmentStatusEmailTemplate.PendingOrigin,
-                Destination: ShipmentStatusEmailTemplate.PendingDestination,
-                PreviousStatus: ShipmentStatusEmailTemplate.PendingPreviousStatus,
-                NewStatus: ShipmentStatusEmailTemplate.PendingNewStatus,
-                Comment: ShipmentStatusEmailTemplate.PendingComment,
+                EventType: notification.EventType,
+                Origin: notification.Origen,
+                Destination: notification.Destino,
+                PreviousStatus: notification.EstadoAnterior,
+                NewStatus: notification.NuevoEstado,
+                Comment: notification.Comentario,
+                CommentDate: notification.FechaComentario,
                 UpdatedAt: notification.MessageDate,
                 Conexion360Url: _settings.Conexion360Url));
 

@@ -56,6 +56,24 @@ namespace Connection360Notification.Domain
         /// </summary>
         public NotificationChannelPreferences NotificationChannel { get; private set; }
 
+        /// <summary>Origen del envío (viene en el Payload como "Origen"). Vacío si el mensaje no lo trae.</summary>
+        public String Origen { get; private set; }
+
+        /// <summary>Destino del envío (viene en el Payload como "Destino"). Vacío si el mensaje no lo trae.</summary>
+        public String Destino { get; private set; }
+
+        /// <summary>Comentario vigente del envío (viene en el Payload como "Comentario"). Vacío si el mensaje no lo trae.</summary>
+        public String Comentario { get; private set; }
+
+        /// <summary>Fecha del comentario vigente (viene en el Payload como "FechaComentario"). <c>default</c> si el mensaje no la trae.</summary>
+        public DateTime FechaComentario { get; private set; }
+
+        /// <summary>Estado anterior del envío (viene en el Payload como "EstadoAnterior"). Vacío si el mensaje no lo trae.</summary>
+        public String EstadoAnterior { get; private set; }
+
+        /// <summary>Estado vigente del envío (viene en el Payload como "NuevoEstado"). Vacío si el mensaje no lo trae.</summary>
+        public String NuevoEstado { get; private set; }
+
         // IMPORTANTE: messageDate y notificationDate son "DateTime" (no "DateTime?"), a
         // propósito. System.Text.Json solo puede usar un constructor marcado con [JsonConstructor]
         // para deserializar si CADA parámetro coincide en nombre (sin distinguir mayúsculas de
@@ -78,7 +96,13 @@ namespace Connection360Notification.Domain
             DateTime notificationDate = default,
             Int64 idNotification = 0,
             String? id = null,
-            NotificationChannelPreferences? notificationChannel = null)
+            NotificationChannelPreferences? notificationChannel = null,
+            String origen = "",
+            String destino = "",
+            String comentario = "",
+            DateTime fechaComentario = default,
+            String estadoAnterior = "",
+            String nuevoEstado = "")
         {
             if (String.IsNullOrWhiteSpace(clientId))
                 throw new ArgumentException("El cliente destino de la notificación es obligatorio.", nameof(clientId));
@@ -97,6 +121,12 @@ namespace Connection360Notification.Domain
             Status = status;
             NotificationDate = notificationDate == default ? DateTime.UtcNow : notificationDate;
             NotificationChannel = notificationChannel ?? new NotificationChannelPreferences();
+            Origen = origen ?? String.Empty;
+            Destino = destino ?? String.Empty;
+            Comentario = comentario ?? String.Empty;
+            FechaComentario = fechaComentario;
+            EstadoAnterior = estadoAnterior ?? String.Empty;
+            NuevoEstado = nuevoEstado ?? String.Empty;
         }
 
         /// <summary>Asignado por el repositorio al guardar: identificador secuencial de negocio, consistente con NotificationsListResponse.IdNotification.</summary>

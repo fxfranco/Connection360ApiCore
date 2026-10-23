@@ -49,18 +49,50 @@ namespace Connection360.Etl.Domain.Test.Services
         }
 
         [Fact]
-        public void GetCommentChangeMessage_RetornaMensajeFijo()
+        public void GetCommentChangeMessage_TituloFijo_YMensajeConElComentario()
         {
-            var (title, message) = _sut.GetCommentChangeMessage();
+            var (title, message) = _sut.GetCommentChangeMessage("Carga lista para despacho");
 
             title.Should().Be("Nuevo comentario en tu envío");
-            message.Should().Be("Se registró un nuevo comentario en el seguimiento de tu envío.");
+            message.Should().Be("Se registró nuevo comentario 'Carga lista para despacho' en el seguimiento de tu envío");
+        }
+
+        [Fact]
+        public void GetCommentChangeMessage_RecortaElComentario()
+        {
+            var (_, message) = _sut.GetCommentChangeMessage("  hola  ");
+
+            message.Should().Be("Se registró nuevo comentario 'hola' en el seguimiento de tu envío");
+        }
+
+        [Fact]
+        public void GetCommentChangeMessage_Nulo_UsaCadenaVacia()
+        {
+            var (title, message) = _sut.GetCommentChangeMessage(null!);
+
+            title.Should().Be("Nuevo comentario en tu envío");
+            message.Should().Be("Se registró nuevo comentario '' en el seguimiento de tu envío");
         }
 
         [Fact]
         public void GetCommentChangeMessage_LlamadasRepetidas_SonDeterministas()
         {
-            _sut.GetCommentChangeMessage().Should().Be(_sut.GetCommentChangeMessage());
+            _sut.GetCommentChangeMessage("b").Should().Be(_sut.GetCommentChangeMessage("b"));
+        }
+
+        [Fact]
+        public void GetOtherInfoChangeMessage_RetornaMensajeFijo()
+        {
+            var (title, message) = _sut.GetOtherInfoChangeMessage();
+
+            title.Should().Be("Actualización información de tu envío");
+            message.Should().Be("Se registró un cambio en la información general de tu envío");
+        }
+
+        [Fact]
+        public void GetOtherInfoChangeMessage_LlamadasRepetidas_SonDeterministas()
+        {
+            _sut.GetOtherInfoChangeMessage().Should().Be(_sut.GetOtherInfoChangeMessage());
         }
     }
 }

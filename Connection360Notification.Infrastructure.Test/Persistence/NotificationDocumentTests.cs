@@ -28,6 +28,18 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
         }
 
         [Fact]
+        public void ABson_ElTipoOtherInfoSeGuardaComoTextoYSeLeeDeVuelta()
+        {
+            var sut = new NotificationDocument { Id = "GUID-3", ClientId = "CLI-1", Type = NotificationType.OtherInfo, Message = "M" };
+
+            var bson = sut.ToBsonDocument();
+            var leido = BsonSerializer.Deserialize<NotificationDocument>(bson);
+
+            bson["Type"].AsString.Should().Be("OtherInfo");
+            leido.Type.Should().Be(NotificationType.OtherInfo);
+        }
+
+        [Fact]
         public void ABson_UsaIdComoClaveYEnumsComoTexto()
         {
             var sut = new NotificationDocument

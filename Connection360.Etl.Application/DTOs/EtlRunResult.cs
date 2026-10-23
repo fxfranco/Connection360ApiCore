@@ -46,6 +46,13 @@ namespace Connection360.Etl.Application.DTOs
         /// </summary>
         public Int32 CommentChangesDetected { get; set; }
 
+        /// <summary>
+        /// Cantidad de documentos en los que se detectó un cambio en alguno de los campos de "otra
+        /// información" (transportista, anticipo, fechas logísticas, días libres, demoras...); cada
+        /// uno generó un mensaje en outbox_messages con event_type "OtherInfo".
+        /// </summary>
+        public Int32 OtherInfoChangesDetected { get; set; }
+
         /// <summary>Indica si la ejecución terminó sin errores.</summary>
         public Boolean Success { get; set; }
 

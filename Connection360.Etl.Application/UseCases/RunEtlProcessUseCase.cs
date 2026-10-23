@@ -67,7 +67,9 @@ namespace Connection360.Etl.Application.UseCases
     /// acotado solo a esos documentos nuevos. Si hay cambio de ESTADO se inserta una fila en
     /// connection360write.log_status_tracking y un mensaje en connection360write.outbox_messages
     /// (event_type "ChangeState"); si hay cambio de COMENTARIO y/o FECHA COMENTARIO se inserta
-    /// únicamente el mensaje de outbox (event_type "Comment") - ver <see cref="EtlChangeNotifier"/>.
+    /// únicamente el mensaje de outbox (event_type "Comment"); y si hay cambio en alguno de los campos de OTRA INFORMACIÓN
+    /// (transportista, anticipo, fechas logísticas, días libres, demoras) igualmente solo el mensaje
+    /// de outbox (event_type "OtherInfo") - ver <see cref="EtlChangeNotifier"/>.
     /// Todo esto ocurre dentro de la MISMA transacción que el upsert principal y el avance de
     /// etl_job_control de esa ronda (<see cref="EtlTransactionHelper.RunInOwnTransactionAsync{TResult}"/>):
     /// si cualquier inserción falla, toda la ronda (carga + log + outbox + avance) se revierte junto,
@@ -252,10 +254,11 @@ namespace Connection360.Etl.Application.UseCases
 
                             result.StateChangesDetected += changes.Count(c => c.StateChanged);
                             result.CommentChangesDetected += changes.Count(c => c.CommentChanged);
+                            result.OtherInfoChangesDetected += changes.Count(c => c.OtherInfoChanged);
 
                             _logger.LogInformation(
-                                "Página {Page}: {StateChanges} cambio(s) de estado y {CommentChanges} cambio(s) de comentario detectados ({NewDocuments} documento(s) nuevo(s)).",
-                                pageNumber, changes.Count(c => c.StateChanged), changes.Count(c => c.CommentChanged), newDocuments.Count);
+                                "Página {Page}: {StateChanges} cambio(s) de estado, {CommentChanges} cambio(s) de comentario y {OtherInfoChanges} cambio(s) de otra información detectados ({NewDocuments} documento(s) nuevo(s)).",
+                                pageNumber, changes.Count(c => c.StateChanged), changes.Count(c => c.CommentChanged), changes.Count(c => c.OtherInfoChanged), newDocuments.Count);
                         }
 
                         await jobControl.RegisterPageProgressAsync(pageNumber, affected, cancellationToken);
@@ -285,8 +288,8 @@ namespace Connection360.Etl.Application.UseCases
                 result.IsInitialMigrationRun = isInitialMigration;
                 result.Success = true;
                 _logger.LogInformation(
-                    "Corrida ETL finalizada. Éxito={Success}. MigraciónInicial={IsInitialMigration}. Páginas procesadas={Pages}. Transformados={Transformed}. Cargados={Loaded}. Cambios de estado={StateChanges}. Cambios de comentario={CommentChanges}. Duración={Duration}.",
-                    result.Success, result.IsInitialMigrationRun, pageNumber, result.TransformedRecords, result.LoadedRecords, result.StateChangesDetected, result.CommentChangesDetected, result.Duration);
+                    "Corrida ETL finalizada. Éxito={Success}. MigraciónInicial={IsInitialMigration}. Páginas procesadas={Pages}. Transformados={Transformed}. Cargados={Loaded}. Cambios de estado={StateChanges}. Cambios de comentario={CommentChanges}. Cambios de otra información={OtherInfoChanges}. Duración={Duration}.",
+                    result.Success, result.IsInitialMigrationRun, pageNumber, result.TransformedRecords, result.LoadedRecords, result.StateChangesDetected, result.CommentChangesDetected, result.OtherInfoChangesDetected, result.Duration);
             }
             catch (Exception ex)
             {

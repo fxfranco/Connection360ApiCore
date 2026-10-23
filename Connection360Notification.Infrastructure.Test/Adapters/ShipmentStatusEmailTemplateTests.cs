@@ -1,28 +1,32 @@
-﻿using Connection360Notification.Infrastructure.Email;
+﻿using Connection360Notification.Domain.Enums;
+using Connection360Notification.Infrastructure.Email;
 using FluentAssertions;
 using Xunit;
 
 namespace Connection360Notification.Infrastructure.Tests.Adapters
 {
-    /// <summary>Plantilla HTML del correo de cambio de estado (tomada de "Plantilla notificación correo.docx") y su logo incrustado.</summary>
+    /// <summary>Plantilla HTML del correo (tomada de "Plantilla notificación correo.docx"), sus tres variantes según el tipo de notificación y su logo incrustado.</summary>
     public class ShipmentStatusEmailTemplateTests
     {
         private static ShipmentStatusEmailValues Valores(
             String? cliente = "Ana Perez",
             String? guia = "GUIA-123",
             String? url = "https://conexion360.space",
-            DateTime? fecha = null) =>
-            new(cliente, guia,
-                ShipmentStatusEmailTemplate.PendingOrigin,
-                ShipmentStatusEmailTemplate.PendingDestination,
-                ShipmentStatusEmailTemplate.PendingPreviousStatus,
-                ShipmentStatusEmailTemplate.PendingNewStatus,
-                ShipmentStatusEmailTemplate.PendingComment,
+            DateTime? fecha = null,
+            NotificationType tipo = NotificationType.ChangeState,
+            String? origen = "Medellin, Colombia",
+            String? destino = "Miami, USA",
+            String? estadoAnterior = "En transito",
+            String? nuevoEstado = "En puerto",
+            String? comentario = "Carga lista para despacho",
+            DateTime? fechaComentario = null) =>
+            new(cliente, guia, tipo, origen, destino, estadoAnterior, nuevoEstado, comentario,
+                fechaComentario ?? new DateTime(2026, 10, 20),
                 fecha ?? new DateTime(2026, 10, 21, 8, 5, 9, DateTimeKind.Utc),
                 url);
 
         [Fact]
-        public void Render_ConservaElTextoFijoDeLaPlantilla()
+        public void Render_CambioDeEstado_ConservaElTextoFijoDeLaPlantilla()
         {
             String html = ShipmentStatusEmailTemplate.Render(Valores());
 
@@ -32,9 +36,6 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
                 .And.Contain("Número de guía:")
                 .And.Contain("Origen:")
                 .And.Contain("Destino:")
-                .And.Contain("Estado anterior:")
-                .And.Contain("Nuevo estado:")
-                .And.Contain("Comentario:")
                 .And.Contain("Fecha y hora de actualización:")
                 .And.Contain("Puede consultar el detalle y el historial de movimientos de su envío ingresando a Conexion360.")
                 .And.Contain("Consultar mi envío:")
@@ -44,18 +45,92 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
         }
 
         [Fact]
-        public void Render_ReemplazaTodosLosCampos_YNoDejaMarcadoresSinResolver()
+        public void Render_CambioDeEstado_MuestraEstadoAnteriorYNuevoEstado_YOcultaComentarioYFechaComentario()
         {
-            String html = ShipmentStatusEmailTemplate.Render(Valores());
+            String html = ShipmentStatusEmailTemplate.Render(Valores(tipo: NotificationType.ChangeState));
+
+            html.Should().Contain("<strong>Estado anterior:</strong> En transito</li>")
+                .And.Contain("<strong>Nuevo estado:</strong> En puerto</li>")
+                .And.NotContain("<strong>Estado:</strong>")
+                .And.NotContain("Comentario:")
+                .And.NotContain("Fecha comentario:")
+                .And.NotContain("Carga lista para despacho");
+        }
+
+        [Fact]
+        public void Render_Comentario_MuestraEstadoUnico_Comentario_YFechaComentario_SinEstadoAnteriorNiNuevoEstado()
+        {
+            String html = ShipmentStatusEmailTemplate.Render(Valores(tipo: NotificationType.Comment));
+
+            html.Should().Contain("Le informamos que un comentario ha sido ingresado en <strong>Conexion360</strong>.")
+                .And.NotContain("el estado de su envío de carga internacional ha sido actualizado")
+                .And.Contain("<strong>Estado:</strong> En puerto</li>")
+                .And.NotContain("Estado anterior:")
+                .And.NotContain("Nuevo estado:")
+                .And.NotContain("En transito")
+                .And.Contain("<strong>Comentario:</strong> Carga lista para despacho</li>")
+                .And.Contain("<strong>Fecha comentario:</strong> 20/10/2026</li>");
+            html.IndexOf("Fecha comentario:", StringComparison.Ordinal).Should().BeGreaterThan(html.IndexOf("Comentario:", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Render_OtraInformacion_MuestraEstadoUnico_SinEstadoAnteriorNiNuevoEstadoNiComentario()
+        {
+            String html = ShipmentStatusEmailTemplate.Render(Valores(tipo: NotificationType.OtherInfo));
+
+            html.Should().Contain("Le informamos que la información de su envío de carga internacional ha sido actualizada en <strong>Conexion360</strong>.")
+                .And.NotContain("el estado de su envío de carga internacional ha sido actualizado")
+                .And.Contain("<strong>Estado:</strong> En puerto</li>")
+                .And.NotContain("Estado anterior:")
+                .And.NotContain("Nuevo estado:")
+                .And.NotContain("En transito")
+                .And.NotContain("Comentario:")
+                .And.NotContain("Fecha comentario:")
+                .And.NotContain("Carga lista para despacho");
+        }
+
+        [Theory]
+        [InlineData(NotificationType.ChangeState)]
+        [InlineData(NotificationType.Comment)]
+        [InlineData(NotificationType.OtherInfo)]
+        public void Render_ReemplazaTodosLosCampos_YNoDejaMarcadoresSinResolver(NotificationType tipo)
+        {
+            String html = ShipmentStatusEmailTemplate.Render(Valores(tipo: tipo));
 
             html.Should().Contain("GUIA-123")
-                .And.Contain("ORIGENPENDIENTE")
-                .And.Contain("DESTINOPENDIENTE")
-                .And.Contain("ESTADOANTERIORPENDIENTE")
-                .And.Contain("ESTADONUEVOPENDIENTE")
-                .And.Contain("COMENTARIOPENDIENTE")
+                .And.Contain("Medellin, Colombia")
+                .And.Contain("Miami, USA")
                 .And.Contain("21/10/2026 08:05:09 UTC");
             html.Should().NotContain("{{").And.NotContain("}}").And.NotContain("@");
+        }
+
+        [Fact]
+        public void Render_ConValoresEnBlanco_MuestraUnGuion()
+        {
+            String html = ShipmentStatusEmailTemplate.Render(Valores(
+                tipo: NotificationType.Comment, origen: null, destino: "", estadoAnterior: " ", nuevoEstado: null, comentario: "", fechaComentario: default(DateTime)));
+
+            html.Should().Contain("<strong>Origen:</strong> -</li>")
+                .And.Contain("<strong>Destino:</strong> -</li>")
+                .And.Contain("<strong>Estado:</strong> -</li>")
+                .And.Contain("<strong>Comentario:</strong> -</li>")
+                .And.Contain("<strong>Fecha comentario:</strong> -</li>");
+        }
+
+        [Fact]
+        public void Render_CodificaComoHtmlElComentario()
+        {
+            String html = ShipmentStatusEmailTemplate.Render(Valores(tipo: NotificationType.Comment, comentario: "<b>hola</b> {{Origen}}"));
+
+            html.Should().Contain("&lt;b&gt;hola&lt;/b&gt; {{Origen}}").And.NotContain("<b>hola</b>");
+        }
+
+        [Fact]
+        public void FormatCommentDate_SinFechaGuion_SinHoraSoloFecha_ConHoraFechaYHora()
+        {
+            ShipmentStatusEmailTemplate.FormatCommentDate(default).Should().Be("-");
+            ShipmentStatusEmailTemplate.FormatCommentDate(new DateTime(2026, 10, 20)).Should().Be("20/10/2026");
+            ShipmentStatusEmailTemplate.FormatCommentDate(new DateTime(2026, 10, 20, 14, 30, 0, DateTimeKind.Utc)).Should().Be("20/10/2026 14:30:00 UTC");
         }
 
         [Fact]

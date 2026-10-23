@@ -124,6 +124,11 @@ namespace Connection360.Etl.Domain.Test.Entities
             c.EstadoAnterior.Should().BeEmpty();
             c.NuevoEstado.Should().BeEmpty();
             c.CommentChanged.Should().BeFalse();
+            c.OtherInfoChanged.Should().BeFalse();
+            c.Origen.Should().BeEmpty();
+            c.Destino.Should().BeEmpty();
+            c.Comentario.Should().BeEmpty();
+            c.FechaComentario.Should().Be(default);
         }
 
         [Fact]
@@ -138,7 +143,12 @@ namespace Connection360.Etl.Domain.Test.Entities
                 StateChanged = true,
                 EstadoAnterior = "A",
                 NuevoEstado = "B",
-                CommentChanged = true
+                CommentChanged = true,
+                OtherInfoChanged = true,
+                Origen = "O",
+                Destino = "D",
+                Comentario = "C",
+                FechaComentario = new DateTime(2024, 3, 4)
             };
 
             c.DocumentoTransporteHbl.Should().Be("H");
@@ -149,6 +159,11 @@ namespace Connection360.Etl.Domain.Test.Entities
             c.EstadoAnterior.Should().Be("A");
             c.NuevoEstado.Should().Be("B");
             c.CommentChanged.Should().BeTrue();
+            c.OtherInfoChanged.Should().BeTrue();
+            c.Origen.Should().Be("O");
+            c.Destino.Should().Be("D");
+            c.Comentario.Should().Be("C");
+            c.FechaComentario.Should().Be(new DateTime(2024, 3, 4));
         }
     }
 
@@ -165,6 +180,65 @@ namespace Connection360.Etl.Domain.Test.Entities
             s.Comentario.Should().BeEmpty();
             s.FechaComentario.Should().Be(default);
             s.FechaComentario.Should().Be(DateTime.MinValue);
+            s.Transportista.Should().BeEmpty();
+            s.ValorAnticipo.Should().Be(0m);
+            s.ValorDiaDemora.Should().Be(0m);
+            s.ValorTotalDemora.Should().Be(0m);
+            s.DiasLibres.Should().Be(0);
+            s.DiasRestantesEntrega.Should().Be(0);
+            s.DiasDemoraContenedor.Should().Be(0);
+            s.FechaEtd.Should().Be(DateTime.MinValue);
+            s.FechaDevolucionRealContenedor.Should().BeNull();
+        }
+
+        [Fact]
+        public void Propiedades_OtraInformacion_LosConservan()
+        {
+            var f = new DateTime(2024, 5, 6);
+            var s = new ApplicationDataSheetChangeSnapshot
+            {
+                Transportista = "T",
+                FechaSolicitudAnticipo = f,
+                ValorAnticipo = 10.5m,
+                FechaPagoAnticipo = f.AddDays(1),
+                FechaBodegaOrigen = f.AddDays(2),
+                FechaEtd = f.AddDays(3),
+                FechaAtd = f.AddDays(4),
+                FechaEta = f.AddDays(5),
+                FechaAta = f.AddDays(6),
+                FechaBodegaDestino = f.AddDays(7),
+                FechaNacionalizacion = f.AddDays(8),
+                FechaDespachoDestino = f.AddDays(9),
+                FechaPlanilla = f.AddDays(10),
+                FechaEntregaContenedor = f.AddDays(11),
+                DiasLibres = 7,
+                DiasRestantesEntrega = 3,
+                FechaDevolucionRealContenedor = f.AddDays(12),
+                DiasDemoraContenedor = 2,
+                ValorDiaDemora = 11.25m,
+                ValorTotalDemora = 99.99m
+            };
+
+            s.Transportista.Should().Be("T");
+            s.FechaSolicitudAnticipo.Should().Be(f);
+            s.ValorAnticipo.Should().Be(10.5m);
+            s.FechaPagoAnticipo.Should().Be(f.AddDays(1));
+            s.FechaBodegaOrigen.Should().Be(f.AddDays(2));
+            s.FechaEtd.Should().Be(f.AddDays(3));
+            s.FechaAtd.Should().Be(f.AddDays(4));
+            s.FechaEta.Should().Be(f.AddDays(5));
+            s.FechaAta.Should().Be(f.AddDays(6));
+            s.FechaBodegaDestino.Should().Be(f.AddDays(7));
+            s.FechaNacionalizacion.Should().Be(f.AddDays(8));
+            s.FechaDespachoDestino.Should().Be(f.AddDays(9));
+            s.FechaPlanilla.Should().Be(f.AddDays(10));
+            s.FechaEntregaContenedor.Should().Be(f.AddDays(11));
+            s.DiasLibres.Should().Be(7);
+            s.DiasRestantesEntrega.Should().Be(3);
+            s.FechaDevolucionRealContenedor.Should().Be(f.AddDays(12));
+            s.DiasDemoraContenedor.Should().Be(2);
+            s.ValorDiaDemora.Should().Be(11.25m);
+            s.ValorTotalDemora.Should().Be(99.99m);
         }
 
         [Fact]

@@ -9,6 +9,9 @@
     public enum NotificationType
     {
         ChangeState,
-        Comment
+        Comment,
+
+        /// <summary>Cambio en la información general del envío (transportista, anticipo, fechas logísticas, demoras...). Se agrega al final para no alterar los valores numéricos existentes.</summary>
+        OtherInfo
     }
 }

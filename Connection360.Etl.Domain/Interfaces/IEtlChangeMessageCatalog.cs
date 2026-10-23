@@ -20,8 +20,17 @@ namespace Connection360.Etl.Domain.Interfaces
         /// <summary>
         /// Título y mensaje para notificar un cambio de comentario y/o fecha de comentario
         /// (ExternalDataFields.Comment / CommentDate). Solo se usa en connection360write.outbox_messages
-        /// (event_type "Comment"): estos cambios no se registran en log_status_tracking.
+        /// (event_type "Comment"): estos cambios no se registran en log_status_tracking. El título es
+        /// fijo y el mensaje incluye el comentario.
         /// </summary>
-        (String Title, String Message) GetCommentChangeMessage();
+        /// <param name="comentario">Comentario nuevo (ApplicationDataSheetChange.Comentario).</param>
+        (String Title, String Message) GetCommentChangeMessage(String comentario);
+
+        /// <summary>
+        /// Título y mensaje para notificar un cambio en la información general del envío (transportista,
+        /// fechas, anticipos, días libres/demora...; ver ApplicationDataSheetChange.OtherInfoChanged). Solo se
+        /// usa en connection360write.outbox_messages (event_type "OtherInfo").
+        /// </summary>
+        (String Title, String Message) GetOtherInfoChangeMessage();
     }
 }

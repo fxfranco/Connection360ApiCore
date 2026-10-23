@@ -12,5 +12,8 @@
 
         /// <summary>La notificación corresponde a un comentario.</summary>
         Comment,
+
+        /// <summary>La notificación corresponde a un cambio en la información general del envío (se agrega al final para no alterar los valores numéricos existentes).</summary>
+        OtherInfo,
     }
 }

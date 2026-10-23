@@ -26,8 +26,12 @@ namespace Connection360Notification.Infrastructure.Messaging
         // nombres de propiedad para que el objeto anidado NotificationChannel (Application, Email,
         // TextMessages) se capture igual venga en PascalCase (ETL) o en camelCase (otros productores).
         // El constructor de NotificationMessage ya enlaza sus parámetros sin distinguir mayúsculas.
-        // JsonStringEnumConverter permite que EventType llegue como texto ("ChangeState", "Comment":
-        // lo que escribe el ETL en el Payload) o como número (lo que escribe la API al publicar).
+        // JsonStringEnumConverter permite que EventType llegue como texto ("ChangeState", "Comment",
+        // "OtherInfo": lo que escribe el ETL en el Payload) o como número (lo que escribe la API al publicar).
+        // Los datos de contexto que agrega el ETL (Origen, Destino, Comentario, FechaComentario,
+        // EstadoAnterior, NuevoEstado) se enlazan con parámetros opcionales del constructor de
+        // NotificationMessage: si un productor antiguo no los envía quedan vacíos, y cualquier
+        // propiedad desconocida del Payload se ignora, así que el cambio de contrato no genera errores.
         private static readonly JsonSerializerOptions PayloadSerializerOptions = new()
         {
             PropertyNameCaseInsensitive = true,

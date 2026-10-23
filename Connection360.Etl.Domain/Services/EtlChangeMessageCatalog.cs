@@ -32,13 +32,22 @@ namespace Connection360.Etl.Domain.Services
             };
         }
 
-        public (String Title, String Message) GetCommentChangeMessage()
+        public (String Title, String Message) GetCommentChangeMessage(String comentario)
         {
-            // TODO: confirmar con negocio si el título/mensaje de un cambio de comentario debe variar
-            // según el contenido del comentario; por ahora es un único mensaje fijo para el evento.
+            var texto = (comentario ?? String.Empty).Trim();
+
+            // El título es fijo; solo el mensaje incluye el comentario.
             return (
                 Title: "Nuevo comentario en tu envío",
-                Message: "Se registró un nuevo comentario en el seguimiento de tu envío."
+                Message: $"Se registró nuevo comentario '{texto}' en el seguimiento de tu envío"
+            );
+        }
+
+        public (String Title, String Message) GetOtherInfoChangeMessage()
+        {
+            return (
+                Title: "Actualización información de tu envío",
+                Message: "Se registró un cambio en la información general de tu envío"
             );
         }
     }

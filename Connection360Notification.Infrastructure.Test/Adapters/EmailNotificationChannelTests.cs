@@ -281,11 +281,13 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
         }
 
         [Fact]
-        public async Task SendAsync_ArmaElCuerpoHtmlConLaPlantillaYLosValoresDeLaNotificacion()
+        public async Task SendAsync_CambioDeEstado_ArmaElCuerpoHtmlConLosValoresDeLaNotificacion()
         {
             _context.Set(Usuario(fullName: "Ana Perez"));
             var notificacion = new NotificationMessage("CLI-7", NotificationType.ChangeState, "m", documentNumber: "GUIA-123", title: "t",
-                messageDate: new DateTime(2026, 10, 21, 15, 30, 5, DateTimeKind.Utc), id: "N-1");
+                messageDate: new DateTime(2026, 10, 21, 15, 30, 5, DateTimeKind.Utc), id: "N-1",
+                origen: "Medellin, Colombia", destino: "Miami, USA", comentario: "No debe verse", fechaComentario: new DateTime(2026, 10, 20),
+                estadoAnterior: "En transito", nuevoEstado: "En puerto");
             var settings = Configuracion(s => s.Conexion360Url = "https://conexion360.space");
 
             await Crear(settings).SendAsync(notificacion, CancellationToken.None);
@@ -293,15 +295,55 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             String html = _enviados.Should().ContainSingle().Subject.Message.HtmlBody!;
             html.Should().Contain("Estimado/a Ana Perez,")
                 .And.Contain("GUIA-123")
-                .And.Contain("ORIGENPENDIENTE")
-                .And.Contain("DESTINOPENDIENTE")
-                .And.Contain("ESTADOANTERIORPENDIENTE")
-                .And.Contain("ESTADONUEVOPENDIENTE")
-                .And.Contain("COMENTARIOPENDIENTE")
+                .And.Contain("Medellin, Colombia")
+                .And.Contain("Miami, USA")
+                .And.Contain("<strong>Estado anterior:</strong> En transito</li>")
+                .And.Contain("<strong>Nuevo estado:</strong> En puerto</li>")
+                .And.Contain("el estado de su envío de carga internacional ha sido actualizado en")
+                .And.NotContain("Comentario:")
+                .And.NotContain("Fecha comentario:")
+                .And.NotContain("No debe verse")
                 .And.Contain("21/10/2026 15:30:05 UTC")
                 .And.Contain("href=\"https://conexion360.space\"")
                 .And.Contain("cid:logoConexion360");
-            html.Should().NotContain("{{");
+            html.Should().NotContain("{{").And.NotContain("PENDIENTE");
+        }
+
+        [Fact]
+        public async Task SendAsync_Comentario_MuestraEstadoComentarioYFechaDelComentario()
+        {
+            var notificacion = new NotificationMessage("CLI-7", NotificationType.Comment, "m", documentNumber: "GUIA-123", title: "t", id: "N-1",
+                origen: "Medellin, Colombia", destino: "Miami, USA", comentario: "Carga lista", fechaComentario: new DateTime(2026, 10, 20),
+                estadoAnterior: "En transito", nuevoEstado: "En puerto");
+
+            await Crear().SendAsync(notificacion, CancellationToken.None);
+
+            String html = _enviados.Should().ContainSingle().Subject.Message.HtmlBody!;
+            html.Should().Contain("un comentario ha sido ingresado en")
+                .And.Contain("<strong>Estado:</strong> En puerto</li>")
+                .And.NotContain("Estado anterior:")
+                .And.NotContain("Nuevo estado:")
+                .And.Contain("<strong>Comentario:</strong> Carga lista</li>")
+                .And.Contain("<strong>Fecha comentario:</strong> 20/10/2026</li>");
+        }
+
+        [Fact]
+        public async Task SendAsync_OtraInformacion_MuestraSoloElEstado()
+        {
+            var notificacion = new NotificationMessage("CLI-7", NotificationType.OtherInfo, "m", documentNumber: "GUIA-123", title: "t", id: "N-1",
+                origen: "Medellin, Colombia", destino: "Miami, USA", comentario: "No debe verse", fechaComentario: new DateTime(2026, 10, 20),
+                estadoAnterior: "En transito", nuevoEstado: "En puerto");
+
+            await Crear().SendAsync(notificacion, CancellationToken.None);
+
+            String html = _enviados.Should().ContainSingle().Subject.Message.HtmlBody!;
+            html.Should().Contain("la información de su envío de carga internacional ha sido actualizada en")
+                .And.Contain("<strong>Estado:</strong> En puerto</li>")
+                .And.NotContain("Estado anterior:")
+                .And.NotContain("Nuevo estado:")
+                .And.NotContain("Comentario:")
+                .And.NotContain("Fecha comentario:")
+                .And.NotContain("No debe verse");
         }
 
         [Fact]

@@ -143,13 +143,37 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
             // fecha_comentario es DATE en Postgres: Npgsql 10 lo devuelve por defecto como
             // System.DateOnly, que Dapper no puede convertir automáticamente a una propiedad
             // DateTime (ApplicationDataSheetChangeSnapshot.FechaComentario). El cast ::timestamp
-            // fuerza a Postgres a devolver un timestamp, que Npgsql sí mapea a DateTime.
+            // fuerza a Postgres a devolver un timestamp, que Npgsql sí mapea a DateTime. Lo mismo aplica a
+            // las demás columnas fecha_* de "otra información". Una columna NULL no se asigna (Dapper
+            // deja el valor por defecto de la propiedad: DateTime.MinValue / 0 / null), que coincide
+            // con lo que produce el Transform para un dato ausente; transportista usa COALESCE para
+            // que NULL se compare igual que la cadena vacía.
             const string query = @"
                 SELECT id AS ""Id"",
                        documento_transporte_hbl AS ""DocumentoTransporteHbl"",
                        estado AS ""Estado"",
                        comentario AS ""Comentario"",
-                       fecha_comentario::timestamp AS ""FechaComentario""
+                       fecha_comentario::timestamp AS ""FechaComentario"",
+                       COALESCE(transportista, '') AS ""Transportista"",
+                       fecha_solicitud_anticipo::timestamp AS ""FechaSolicitudAnticipo"",
+                       valor_anticipo AS ""ValorAnticipo"",
+                       fecha_pago_anticipo::timestamp AS ""FechaPagoAnticipo"",
+                       fecha_bodega_origen::timestamp AS ""FechaBodegaOrigen"",
+                       fecha_etd::timestamp AS ""FechaEtd"",
+                       fecha_atd::timestamp AS ""FechaAtd"",
+                       fecha_eta::timestamp AS ""FechaEta"",
+                       fecha_ata::timestamp AS ""FechaAta"",
+                       fecha_bodega_destino::timestamp AS ""FechaBodegaDestino"",
+                       fecha_nacionalizacion::timestamp AS ""FechaNacionalizacion"",
+                       fecha_despacho_destino::timestamp AS ""FechaDespachoDestino"",
+                       fecha_planilla::timestamp AS ""FechaPlanilla"",
+                       fecha_entrega_contenedor::timestamp AS ""FechaEntregaContenedor"",
+                       dias_libres AS ""DiasLibres"",
+                       dias_restantes_entrega AS ""DiasRestantesEntrega"",
+                       fecha_devolucion_real_contenedor::timestamp AS ""FechaDevolucionRealContenedor"",
+                       dias_demora_contenedor AS ""DiasDemoraContenedor"",
+                       valor_dia_demora AS ""ValorDiaDemora"",
+                       valor_total_demora AS ""ValorTotalDemora""
                 FROM connection360write.application_data_sheet
                 WHERE documento_transporte_hbl = ANY(@Documents);";
 

@@ -241,5 +241,238 @@ namespace Connection360.Etl.Domain.Test.Services
             first.Should().HaveCount(1);
             second.Should().HaveCount(1);
         }
+
+        // ---------------------------------------------------------------- OtherInfo
+
+        public static IEnumerable<Object[]> CamposDeOtraInformacion()
+        {
+            static Object[] Caso(String campo, Action<ApplicationDataSheet> cambio) => new Object[] { campo, cambio };
+
+            yield return Caso("Transportista", s => s.Transportista = "TCC");
+            yield return Caso("FechaSolicitudAnticipo", s => s.FechaSolicitudAnticipo = new DateTime(2024, 1, 1));
+            yield return Caso("ValorAnticipo", s => s.ValorAnticipo = 150.25m);
+            yield return Caso("FechaPagoAnticipo", s => s.FechaPagoAnticipo = new DateTime(2024, 1, 2));
+            yield return Caso("FechaBodegaOrigen", s => s.FechaBodegaOrigen = new DateTime(2024, 1, 3));
+            yield return Caso("FechaEtd", s => s.FechaEtd = new DateTime(2024, 1, 4));
+            yield return Caso("FechaAtd", s => s.FechaAtd = new DateTime(2024, 1, 5));
+            yield return Caso("FechaEta", s => s.FechaEta = new DateTime(2024, 1, 6));
+            yield return Caso("FechaAta", s => s.FechaAta = new DateTime(2024, 1, 7));
+            yield return Caso("FechaBodegaDestino", s => s.FechaBodegaDestino = new DateTime(2024, 1, 8));
+            yield return Caso("FechaNacionalizacion", s => s.FechaNacionalizacion = new DateTime(2024, 1, 9));
+            yield return Caso("FechaDespachoDestino", s => s.FechaDespachoDestino = new DateTime(2024, 1, 10));
+            yield return Caso("FechaPlanilla", s => s.FechaPlanilla = new DateTime(2024, 1, 11));
+            yield return Caso("FechaEntregaContenedor", s => s.FechaEntregaContenedor = new DateTime(2024, 1, 12));
+            yield return Caso("DiasLibres", s => s.DiasLibres = 7);
+            yield return Caso("DiasRestantesEntrega", s => s.DiasRestantesEntrega = 3);
+            yield return Caso("FechaDevolucionRealContenedor", s => s.FechaDevolucionRealContenedor = new DateTime(2024, 1, 13));
+            yield return Caso("DiasDemoraContenedor", s => s.DiasDemoraContenedor = 2);
+            yield return Caso("ValorDiaDemora", s => s.ValorDiaDemora = 12.5m);
+            yield return Caso("ValorTotalDemora", s => s.ValorTotalDemora = 99.5m);
+        }
+
+        [Theory]
+        [MemberData(nameof(CamposDeOtraInformacion))]
+        public void DetectChanges_CambiaUnCampoDeOtraInformacion_MarcaSoloOtherInfoChanged(String campo, Action<ApplicationDataSheet> cambio)
+        {
+            var sheet = Sheet("A", "Pendiente");
+            cambio(sheet);
+            var snaps = Snapshots(Snap("A", 8, "Pendiente"));
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, snaps).Should().ContainSingle(because: campo).Subject;
+
+            c.OtherInfoChanged.Should().BeTrue(campo);
+            c.StateChanged.Should().BeFalse(campo);
+            c.CommentChanged.Should().BeFalse(campo);
+            c.IsNewDocument.Should().BeFalse(campo);
+            c.IdOperacion.Should().Be(8);
+        }
+
+        [Fact]
+        public void DetectChanges_CamposDeOtraInformacionSinCambios_NoGeneraCambio()
+        {
+            var sheet = Sheet("A", "Pendiente");
+            sheet.Transportista = "TCC";
+            sheet.ValorAnticipo = 10m;
+            sheet.FechaEtd = new DateTime(2024, 2, 2);
+            sheet.DiasLibres = 5;
+            sheet.FechaDevolucionRealContenedor = new DateTime(2024, 2, 3);
+            var snap = Snap("A", 1, "Pendiente");
+            snap.Transportista = "TCC";
+            snap.ValorAnticipo = 10m;
+            snap.FechaEtd = new DateTime(2024, 2, 2);
+            snap.DiasLibres = 5;
+            snap.FechaDevolucionRealContenedor = new DateTime(2024, 2, 3);
+
+            _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(snap)).Should().BeEmpty();
+        }
+
+        [Fact]
+        public void DetectChanges_LasFechasSeComparanPorDia_LaHoraNoGeneraCambioFalso()
+        {
+            var sheet = Sheet("A", "Pendiente");
+            sheet.FechaEta = new DateTime(2024, 3, 4, 15, 30, 0);
+            sheet.FechaDevolucionRealContenedor = new DateTime(2024, 3, 5, 9, 0, 0);
+            var snap = Snap("A", 1, "Pendiente");
+            snap.FechaEta = new DateTime(2024, 3, 4); // la columna DATE no guarda la hora
+            snap.FechaDevolucionRealContenedor = new DateTime(2024, 3, 5);
+
+            _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(snap)).Should().BeEmpty();
+        }
+
+        [Fact]
+        public void DetectChanges_FechaDevolucionDeNulaAFecha_MarcaOtherInfoChanged()
+        {
+            var sheet = Sheet("A", "Pendiente");
+            sheet.FechaDevolucionRealContenedor = new DateTime(2024, 3, 5);
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(Snap("A", 1, "Pendiente"))).Should().ContainSingle().Subject;
+
+            c.OtherInfoChanged.Should().BeTrue();
+        }
+
+        [Fact]
+        public void DetectChanges_FechaDevolucionDeFechaANula_MarcaOtherInfoChanged()
+        {
+            var snap = Snap("A", 1, "Pendiente");
+            snap.FechaDevolucionRealContenedor = new DateTime(2024, 3, 5);
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { Sheet("A", "Pendiente") }, Snapshots(snap)).Should().ContainSingle().Subject;
+
+            c.OtherInfoChanged.Should().BeTrue();
+        }
+
+        [Fact]
+        public void DetectChanges_LosImportesSeComparanConDosDecimales_UnaDiferenciaMenorNoGeneraCambioFalso()
+        {
+            var sheet = Sheet("A", "Pendiente");
+            sheet.ValorAnticipo = 10.004m;   // se guarda como 10.00
+            sheet.ValorDiaDemora = 5.004m;    // se guarda como 5.00
+            sheet.ValorTotalDemora = 20.005m; // se guarda como 20.01 (away from zero)
+            var snap = Snap("A", 1, "Pendiente");
+            snap.ValorAnticipo = 10.00m;
+            snap.ValorDiaDemora = 5.00m;
+            snap.ValorTotalDemora = 20.01m;
+
+            _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(snap)).Should().BeEmpty();
+        }
+
+        [Fact]
+        public void DetectChanges_UnImporteConDiferenciaDeUnCentavo_MarcaOtherInfoChanged()
+        {
+            var sheet = Sheet("A", "Pendiente");
+            sheet.ValorAnticipo = 10.02m;
+            var snap = Snap("A", 1, "Pendiente");
+            snap.ValorAnticipo = 10.00m;
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(snap)).Should().ContainSingle().Subject;
+
+            c.OtherInfoChanged.Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData("", null)]
+        [InlineData(null, "")]
+        public void DetectChanges_TransportistaNuloOVacio_SeTrataIgual(String? actual, String? anterior)
+        {
+            var sheet = Sheet("A", "Pendiente");
+            sheet.Transportista = actual!;
+            var snap = Snap("A", 1, "Pendiente");
+            snap.Transportista = anterior!;
+
+            _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(snap)).Should().BeEmpty();
+        }
+
+        [Fact]
+        public void DetectChanges_TransportistaEsSensibleAMayusculas()
+        {
+            var sheet = Sheet("A", "Pendiente");
+            sheet.Transportista = "tcc";
+            var snap = Snap("A", 1, "Pendiente");
+            snap.Transportista = "TCC";
+
+            _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(snap)).Should().ContainSingle().Which.OtherInfoChanged.Should().BeTrue();
+        }
+
+        [Fact]
+        public void DetectChanges_CambianEstadoComentarioYOtraInformacion_MarcaLosTres()
+        {
+            var sheet = Sheet("A", "Entregado", "c2", Fecha.AddDays(1));
+            sheet.DiasLibres = 10;
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(Snap("A", 1, "Pendiente", "c1", Fecha))).Should().ContainSingle().Subject;
+
+            c.StateChanged.Should().BeTrue();
+            c.CommentChanged.Should().BeTrue();
+            c.OtherInfoChanged.Should().BeTrue();
+        }
+
+        [Fact]
+        public void DetectChanges_DocumentoNuevoConOtraInformacion_NoMarcaOtherInfoChanged()
+        {
+            // Un documento nuevo no tiene "valor anterior" contra el cual comparar: su alta solo se
+            // notifica por estado y/o comentario (aquí, ninguno de los dos => no hay cambio).
+            var sheet = Sheet("NUEVO", "", "");
+            sheet.Transportista = "TCC";
+            sheet.ValorAnticipo = 100m;
+            sheet.FechaEta = new DateTime(2024, 5, 5);
+
+            _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots()).Should().BeEmpty();
+        }
+
+        [Fact]
+        public void DetectChanges_DocumentoNuevoConEstadoYOtraInformacion_SoloMarcaElEstado()
+        {
+            var sheet = Sheet("NUEVO", "Pendiente");
+            sheet.Transportista = "TCC";
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots()).Should().ContainSingle().Subject;
+
+            c.IsNewDocument.Should().BeTrue();
+            c.StateChanged.Should().BeTrue();
+            c.OtherInfoChanged.Should().BeFalse();
+        }
+
+        // ---------------------------------------------------------------- Origen / Destino / Comentario vigentes
+
+        [Fact]
+        public void DetectChanges_IncluyeOrigenDestinoYElComentarioVigentes()
+        {
+            var sheet = Sheet("A", "Entregado", "ultimo comentario", Fecha);
+            sheet.Origen = "Medellin";
+            sheet.Destino = "Miami";
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(Snap("A", 1, "Pendiente", "ultimo comentario", Fecha))).Should().ContainSingle().Subject;
+
+            c.Origen.Should().Be("Medellin");
+            c.Destino.Should().Be("Miami");
+            c.Comentario.Should().Be("ultimo comentario");
+            c.FechaComentario.Should().Be(Fecha);
+        }
+
+        [Fact]
+        public void DetectChanges_CambioDeComentario_TraeElComentarioYLaFechaNuevos()
+        {
+            var sheet = Sheet("A", "Pendiente", "nuevo", Fecha.AddDays(2));
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(Snap("A", 1, "Pendiente", "viejo", Fecha))).Should().ContainSingle().Subject;
+
+            c.CommentChanged.Should().BeTrue();
+            c.Comentario.Should().Be("nuevo");
+            c.FechaComentario.Should().Be(Fecha.AddDays(2));
+        }
+
+        [Fact]
+        public void DetectChanges_CambioQueNoEsDeComentario_ConservaElComentarioYLaFechaExistentes()
+        {
+            var sheet = Sheet("A", "Pendiente", "existente", Fecha);
+            sheet.DiasLibres = 4;
+
+            var c = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, Snapshots(Snap("A", 1, "Pendiente", "existente", Fecha))).Should().ContainSingle().Subject;
+
+            c.CommentChanged.Should().BeFalse();
+            c.OtherInfoChanged.Should().BeTrue();
+            c.Comentario.Should().Be("existente");
+            c.FechaComentario.Should().Be(Fecha);
+        }
     }
 }

@@ -23,5 +23,31 @@ namespace Connection360.Etl.Domain.Entities
         public String Estado { get; set; } = String.Empty;
         public String Comentario { get; set; } = String.Empty;
         public DateTime FechaComentario { get; set; }
+
+        // ---- Campos de "otra información" (ver ApplicationDataSheetChange.OtherInfoChanged) ----
+        // Las columnas fecha_* son DATE en Postgres: el SELECT las convierte con ::timestamp para que
+        // Dapper/Npgsql las entreguen como DateTime (ver ApplicationDataSheetRepository). Un valor NULL
+        // queda en el valor por defecto de la propiedad (DateTime.MinValue / 0 / vacío), igual que lo
+        // que escribe el ETL cuando la API externa no trae el dato.
+        public String Transportista { get; set; } = String.Empty;
+        public DateTime FechaSolicitudAnticipo { get; set; }
+        public Decimal ValorAnticipo { get; set; }
+        public DateTime FechaPagoAnticipo { get; set; }
+        public DateTime FechaBodegaOrigen { get; set; }
+        public DateTime FechaEtd { get; set; }
+        public DateTime FechaAtd { get; set; }
+        public DateTime FechaEta { get; set; }
+        public DateTime FechaAta { get; set; }
+        public DateTime FechaBodegaDestino { get; set; }
+        public DateTime FechaNacionalizacion { get; set; }
+        public DateTime FechaDespachoDestino { get; set; }
+        public DateTime FechaPlanilla { get; set; }
+        public DateTime FechaEntregaContenedor { get; set; }
+        public Int32 DiasLibres { get; set; }
+        public Int32 DiasRestantesEntrega { get; set; }
+        public DateTime? FechaDevolucionRealContenedor { get; set; }
+        public Int32 DiasDemoraContenedor { get; set; }
+        public Decimal ValorDiaDemora { get; set; }
+        public Decimal ValorTotalDemora { get; set; }
     }
 }

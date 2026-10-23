@@ -18,7 +18,8 @@ namespace Connection360.Etl.Application.Tests.UseCases
 
         private static ApplicationDataSheetChange Change(
             String document, Boolean isNew = false, Boolean stateChanged = false, Boolean commentChanged = false,
-            Int64 idOperacion = 0, String estadoAnterior = "", String nuevoEstado = "")
+            Int64 idOperacion = 0, String estadoAnterior = "", String nuevoEstado = "", Boolean otherInfoChanged = false,
+            String origen = "", String destino = "", String comentario = "", DateTime fechaComentario = default)
             => new()
             {
                 DocumentoTransporteHbl = document,
@@ -29,6 +30,11 @@ namespace Connection360.Etl.Application.Tests.UseCases
                 IdOperacion = idOperacion,
                 EstadoAnterior = estadoAnterior,
                 NuevoEstado = nuevoEstado,
+                OtherInfoChanged = otherInfoChanged,
+                Origen = origen,
+                Destino = destino,
+                Comentario = comentario,
+                FechaComentario = fechaComentario,
             };
 
         // ---------------------------------------------------------------- migración inicial
@@ -47,6 +53,7 @@ namespace Connection360.Etl.Application.Tests.UseCases
             result.IsInitialMigrationRun.Should().BeTrue();
             result.StateChangesDetected.Should().Be(0);
             result.CommentChangesDetected.Should().Be(0);
+            result.OtherInfoChangesDetected.Should().Be(0);
             result.TransformedRecords.Should().Be(3);
             result.LoadedRecords.Should().Be(3);
             result.ExtractedRecordsByApi["BPMS"].Should().Be(2);
@@ -297,11 +304,101 @@ namespace Connection360.Etl.Application.Tests.UseCases
         }
 
         [Fact]
+        public async Task ExecuteAsync_ElPayloadDelOutboxIncluyeOrigenDestinoComentarioFechaYEstados()
+        {
+            var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
+            h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
+                .Returns(new List<ApplicationDataSheetChange>
+                {
+                    Change("HBL1", stateChanged: true, estadoAnterior: "En transito", nuevoEstado: "En puerto",
+                        origen: "Medellin", destino: "Miami", comentario: "Carga lista", fechaComentario: new DateTime(2025, 3, 4))
+                });
+
+            await h.CreateUseCase().ExecuteAsync();
+
+            EtlOutboxPayload payload = JsonSerializer.Deserialize<EtlOutboxPayload>(h.InsertedOutboxMessages.Should().ContainSingle().Subject.Payload)!;
+            payload.Origen.Should().Be("Medellin");
+            payload.Destino.Should().Be("Miami");
+            payload.Comentario.Should().Be("Carga lista");
+            payload.FechaComentario.Should().Be(new DateTime(2025, 3, 4));
+            payload.EstadoAnterior.Should().Be("En transito");
+            payload.NuevoEstado.Should().Be("En puerto");
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConCambioDeOtraInformacion_InsertaSoloOutboxSinLog()
+        {
+            var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
+            h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
+                .Returns(new List<ApplicationDataSheetChange>
+                {
+                    Change("HBL1", otherInfoChanged: true, idOperacion: 9, nuevoEstado: "En puerto", origen: "Medellin", destino: "Miami")
+                });
+
+            EtlRunResult result = await h.CreateUseCase().ExecuteAsync();
+
+            result.StateChangesDetected.Should().Be(0);
+            result.CommentChangesDetected.Should().Be(0);
+            result.OtherInfoChangesDetected.Should().Be(1);
+            h.InsertedLogRows.Should().BeEmpty();
+            h.LogRepository.Verify(r => r.InsertBatchAsync(It.IsAny<IEnumerable<LogStatusTracking>>(), It.IsAny<CancellationToken>()), Times.Never);
+
+            OutboxMessage outbox = h.InsertedOutboxMessages.Should().ContainSingle().Subject;
+            outbox.EventType.Should().Be("OtherInfo");
+            EtlOutboxPayload payload = JsonSerializer.Deserialize<EtlOutboxPayload>(outbox.Payload)!;
+            payload.EventType.Should().Be("OtherInfo");
+            payload.Title.Should().Be("Titulo-OtraInfo");
+            payload.Message.Should().Be("Mensaje-OtraInfo");
+            payload.ClientId.Should().Be("NIT-HBL1");
+            payload.NuevoEstado.Should().Be("En puerto");
+            payload.Origen.Should().Be("Medellin");
+            payload.Destino.Should().Be("Miami");
+            h.Catalog.Verify(c => c.GetStateChangeMessage(It.IsAny<String>()), Times.Never);
+            h.Catalog.Verify(c => c.GetCommentChangeMessage(It.IsAny<String>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConCambioDeEstadoComentarioYOtraInformacion_RegistraCadaMensajeYSoloUnLog()
+        {
+            var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
+            h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
+                .Returns(new List<ApplicationDataSheetChange>
+                {
+                    Change("HBL1", stateChanged: true, commentChanged: true, otherInfoChanged: true, nuevoEstado: "X")
+                });
+
+            EtlRunResult result = await h.CreateUseCase().ExecuteAsync();
+
+            result.StateChangesDetected.Should().Be(1);
+            result.CommentChangesDetected.Should().Be(1);
+            result.OtherInfoChangesDetected.Should().Be(1);
+            h.InsertedLogRows.Should().HaveCount(1);
+            h.InsertedOutboxMessages.Select(m => m.EventType).Should().Equal("ChangeState", "Comment", "OtherInfo");
+            h.InsertedOutboxMessages.Select(m => m.Id).Distinct().Should().HaveCount(3);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_CambioSoloDeOtraInformacion_ConsultaLosCanalesDelCliente()
+        {
+            var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
+            h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
+                .Returns(new List<ApplicationDataSheetChange> { Change("HBL1", otherInfoChanged: true) });
+
+            await h.CreateUseCase().ExecuteAsync();
+
+            h.ChannelsRepository.Verify(r => r.GetByCustomerIdentificationsAsync(
+                It.Is<IEnumerable<String>>(ids => ids.SequenceEqual(new[] { "NIT-HBL1" })), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
         public async Task ExecuteAsync_ConCambioDeComentario_InsertaSoloOutboxSinLog()
         {
             var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
             h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
-                .Returns(new List<ApplicationDataSheetChange> { Change("HBL1", commentChanged: true, idOperacion: 9) });
+                .Returns(new List<ApplicationDataSheetChange>
+                {
+                    Change("HBL1", commentChanged: true, idOperacion: 9, nuevoEstado: "En puerto", comentario: "Carga lista")
+                });
 
             EtlRunResult result = await h.CreateUseCase().ExecuteAsync();
 
@@ -315,7 +412,8 @@ namespace Connection360.Etl.Application.Tests.UseCases
             EtlOutboxPayload payload = JsonSerializer.Deserialize<EtlOutboxPayload>(outbox.Payload)!;
             payload.EventType.Should().Be("Comment");
             payload.Title.Should().Be("Titulo-Comentario");
-            payload.Message.Should().Be("Mensaje-Comentario");
+            payload.Message.Should().Be("Mensaje-Comentario-Carga lista");
+            h.Catalog.Verify(c => c.GetCommentChangeMessage("Carga lista"), Times.Once);
             payload.ClientId.Should().Be("NIT-HBL1");
             h.Catalog.Verify(c => c.GetStateChangeMessage(It.IsAny<String>()), Times.Never);
         }

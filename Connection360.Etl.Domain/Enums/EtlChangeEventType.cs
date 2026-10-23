@@ -15,7 +15,14 @@ namespace Connection360.Etl.Domain.Enums
         ChangeState,
 
         /// <summary>Cambio en el campo COMENTARIO y/o FECHA COMENTARIO del documento.</summary>
-        Comment
+        Comment,
+
+        /// <summary>
+        /// Cambio en la información general del envío (transportista, fechas del recorrido, anticipos,
+        /// días libres/demora, etc.; ver ApplicationDataSheetChange.OtherInfoChanged). Solo genera un
+        /// mensaje en outbox_messages (no en log_status_tracking).
+        /// </summary>
+        OtherInfo
     }
 
     /// <summary>Conversión explícita entre <see cref="EtlChangeEventType"/> y el valor persistido en event_type/payload.EventType.</summary>
@@ -30,6 +37,7 @@ namespace Connection360.Etl.Domain.Enums
         {
             EtlChangeEventType.ChangeState => "ChangeState",
             EtlChangeEventType.Comment => "Comment",
+            EtlChangeEventType.OtherInfo => "OtherInfo",
             _ => throw new ArgumentOutOfRangeException(nameof(eventType), eventType, "EtlChangeEventType sin valor de base de datos asignado.")
         };
     }

@@ -55,7 +55,7 @@ namespace Connection360.Etl.Application.UseCases
             // Canales de notificación de TODOS los clientes de la ronda en una sola consulta (no una
             // por cambio), dentro de la misma transacción. Un cliente sin configuración (o que no
             // aparece) usa CustomerNotificationChannelSettings.None = todo en false.
-            List<String> clientIds = changes.Where(c => c.StateChanged || c.CommentChanged).Select(c => c.NitCliente).Distinct(StringComparer.Ordinal).ToList();
+            List<String> clientIds = changes.Where(c => c.StateChanged || c.CommentChanged || c.OtherInfoChanged).Select(c => c.NitCliente).Distinct(StringComparer.Ordinal).ToList();
             IReadOnlyDictionary<String, CustomerNotificationChannelSettings> channelsByClient = clientIds.Count == 0
                 ? new Dictionary<String, CustomerNotificationChannelSettings>(StringComparer.Ordinal)
                 : await _channelsRepository.GetByCustomerIdentificationsAsync(clientIds, cancellationToken);
@@ -89,8 +89,18 @@ namespace Connection360.Etl.Application.UseCases
                 // fila en log_status_tracking.
                 if (change.CommentChanged)
                 {
-                    var (title, message) = _messageCatalog.GetCommentChangeMessage();
+                    var (title, message) = _messageCatalog.GetCommentChangeMessage(change.Comentario);
                     outboxMessages.Add(BuildOutboxMessage(change, EtlChangeEventType.Comment, title, message, now, channelsByClient));
+                }
+
+                // Cambio de OTRA INFORMACIÓN (transportista, anticipo, fechas logísticas, días libres,
+                // demoras...): igual que el comentario, únicamente notificación (outbox). Un mismo
+                // documento puede generar a la vez los tres mensajes (estado, comentario y otra
+                // información); cada uno se registra por separado.
+                if (change.OtherInfoChanged)
+                {
+                    var (title, message) = _messageCatalog.GetOtherInfoChangeMessage();
+                    outboxMessages.Add(BuildOutboxMessage(change, EtlChangeEventType.OtherInfo, title, message, now, channelsByClient));
                 }
             }
 
@@ -121,6 +131,12 @@ namespace Connection360.Etl.Application.UseCases
                 Title = title,
                 Message = message,
                 MessageDate = now,
+                Origen = change.Origen,
+                Destino = change.Destino,
+                Comentario = change.Comentario,
+                FechaComentario = change.FechaComentario,
+                EstadoAnterior = change.EstadoAnterior,
+                NuevoEstado = change.NuevoEstado,
                 NotificationChannel = new EtlNotificationChannelPayload
                 {
                     Application = channels.Application,

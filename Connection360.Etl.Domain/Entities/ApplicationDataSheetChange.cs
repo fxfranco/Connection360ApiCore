@@ -6,8 +6,8 @@ namespace Connection360.Etl.Domain.Entities
     /// Cambio detectado para un documento de transporte entre su valor anterior en
     /// connection360write.application_data_sheet y el que trajo la corrida actual de las APIs
     /// externas (ver Connection360.Etl.Domain.Interfaces.IApplicationDataSheetChangeDetector). Solo
-    /// existe una instancia por documento cuando hubo AL MENOS un cambio relevante (estado y/o
-    /// comentario/fecha de comentario); si no hubo cambios, el documento no aparece en el resultado.
+    /// existe una instancia por documento cuando hubo AL MENOS un cambio relevante (estado,
+    /// comentario/fecha de comentario y/o "otra información" -ver <see cref="OtherInfoChanged"/>-); si no hubo cambios, el documento no aparece en el resultado.
     /// </summary>
     public sealed class ApplicationDataSheetChange
     {
@@ -45,5 +45,33 @@ namespace Connection360.Etl.Domain.Entities
 
         /// <summary>true si COMENTARIO y/o FECHA COMENTARIO cambiaron respecto al valor almacenado.</summary>
         public Boolean CommentChanged { get; set; }
+
+        /// <summary>
+        /// true si cambió al menos uno de los campos de "otra información" del envío: TRANSPORTISTA,
+        /// FECHA SOLICITUD ANTICIPO, VALOR ANTICIPO, FECHA PAGO ANTICIPO, FECHA BODEGA ORIGEN, FECHA ETD,
+        /// FECHA ATD, FECHA ETA, FECHA ATA, FECHA BODEGA DESTINO, FECHA NACIONALIZACION, FECHA DESPACHO
+        /// DESTINO, FECHA PLANILLA, FECHA ENTREGA CONTENEDOR, DIAS LIBRES, DIAS RESTANTES ENTREGA, FECHA
+        /// DEVOLUCION REAL CONTENEDOR, DIAS DEMORA CONTENEDOR y VALOR TOTAL DEMORA. Un documento NUEVO
+        /// no se marca por este motivo (su aparición ya se notifica por estado/comentario).
+        /// </summary>
+        public Boolean OtherInfoChanged { get; set; }
+
+        /// <summary>Origen del envío (valor actual), para el payload de outbox_messages.</summary>
+        public String Origen { get; set; } = String.Empty;
+
+        /// <summary>Destino del envío (valor actual), para el payload de outbox_messages.</summary>
+        public String Destino { get; set; } = String.Empty;
+
+        /// <summary>
+        /// Comentario del envío: si <see cref="CommentChanged"/> es true es el comentario NUEVO; si no,
+        /// es el que ya estaba (que coincide con el actual, porque no cambió).
+        /// </summary>
+        public String Comentario { get; set; } = String.Empty;
+
+        /// <summary>
+        /// Fecha del comentario: la NUEVA si <see cref="CommentChanged"/> es true; si no, la que ya estaba
+        /// (<see cref="DateTime.MinValue"/> cuando el envío no tiene fecha de comentario).
+        /// </summary>
+        public DateTime FechaComentario { get; set; }
     }
 }

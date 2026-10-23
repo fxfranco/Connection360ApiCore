@@ -250,12 +250,42 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
             recibida.NotificationChannel.TextMessages.Should().BeTrue();
         }
 
+        [Fact]
+        public async Task ExecuteAsync_ConLosNuevosCamposDelPayloadDelEtl_LosEnlazaSinErrores()
+        {
+            NotificationMessage? recibida = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => recibida = n)
+                .Returns(Task.CompletedTask);
+            // Payload del ETL con los datos de contexto (Origen, Destino, Comentario, FechaComentario, EstadoAnterior, NuevoEstado).
+            const String payload = "{\"ClientId\":\"900123\",\"EventType\":\"OtherInfo\",\"DocumentNumber\":\"HBL-1\",\"Title\":\"Actualización información de tu envío\","
+                + "\"Message\":\"Se registró un cambio en la información general de tu envío\",\"MessageDate\":\"2024-05-06T07:08:09Z\","
+                + "\"Origen\":\"Medellin\",\"Destino\":\"Miami\",\"Comentario\":\"Carga lista\",\"FechaComentario\":\"2024-05-05T00:00:00\","
+                + "\"EstadoAnterior\":\"En transito\",\"NuevoEstado\":\"En puerto\","
+                + "\"NotificationChannel\":{\"Application\":true,\"Email\":true,\"TextMessages\":false}}";
+            ConfigurarConsumo(() => Resultado(payload));
+
+            await EjecutarHastaTerminar();
+
+            recibida.Should().NotBeNull();
+            recibida!.EventType.Should().Be(NotificationType.OtherInfo);
+            recibida.Origen.Should().Be("Medellin");
+            recibida.Destino.Should().Be("Miami");
+            recibida.Comentario.Should().Be("Carga lista");
+            recibida.FechaComentario.Should().Be(new DateTime(2024, 5, 5));
+            recibida.EstadoAnterior.Should().Be("En transito");
+            recibida.NuevoEstado.Should().Be("En puerto");
+        }
+
         [Theory]
         [InlineData("\"Comment\"", NotificationType.Comment)]
         [InlineData("\"ChangeState\"", NotificationType.ChangeState)]
         [InlineData("\"comment\"", NotificationType.Comment)]
         [InlineData("1", NotificationType.Comment)]
         [InlineData("0", NotificationType.ChangeState)]
+        [InlineData("\"OtherInfo\"", NotificationType.OtherInfo)]
+        [InlineData("2", NotificationType.OtherInfo)]
         public async Task ExecuteAsync_EnlazaElEventTypeDelPayloadComoTextoONumero(String valorJson, NotificationType esperado)
         {
             NotificationMessage? recibida = null;
