@@ -35,6 +35,7 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
         public Mock<INotificationChannel> SmsChannelMock { get; } = CreateChannelMock(NotificationChannelType.TextMessages);
 
         public Mock<INotificationRepository> NotificationRepositoryMock { get; } = new();
+        public Mock<IBasicUserDataRepository> BasicUserDataRepositoryMock { get; } = new();
         public Mock<IKafkaProducerService> KafkaProducerMock { get; } = new();
 
         /// <summary>Tipos de IHostedService que registraba la aplicación real antes de que la factory los retirara.</summary>
@@ -53,6 +54,7 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
             }
             ConfigureChannelMocks();
             NotificationRepositoryMock.Reset();
+            BasicUserDataRepositoryMock.Reset();
             KafkaProducerMock.Reset();
         }
 
@@ -130,6 +132,7 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
 
                 // Puertos de salida de infraestructura (MongoDB y Kafka) simulados: nunca hay conexiones reales.
                 ReplaceWithMock(services, NotificationRepositoryMock.Object);
+                ReplaceWithMock(services, BasicUserDataRepositoryMock.Object);
                 ReplaceWithMock(services, KafkaProducerMock.Object);
                 if (MockNotificationChannels)
                 {

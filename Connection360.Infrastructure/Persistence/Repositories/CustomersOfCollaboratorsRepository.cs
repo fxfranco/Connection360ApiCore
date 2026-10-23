@@ -14,6 +14,24 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             _session = session;
         }
 
+        public async Task<Boolean> ExistsAsync(Int64 idCustomer, Int64 idCollaborator, CancellationToken cancellationToken = default)
+        {
+            await _session.EnsureConnectionOpenAsync(cancellationToken);
+            const string query = @"
+            SELECT EXISTS (
+                SELECT 1 FROM connection360write.customers_of_collaborators
+                WHERE id_customer = @IdCustomer AND id_collaborator = @IdCollaborator);";
+
+            var command = new CommandDefinition(
+                query,
+                new { IdCustomer = idCustomer, IdCollaborator = idCollaborator },
+                transaction: _session.Transaction,
+                cancellationToken: cancellationToken
+            );
+
+            return await _session.Connection.ExecuteScalarAsync<Boolean>(command);
+        }
+
         public async Task<Int64> CrearAsync(Int64 idCustomer, Int64 idCollaborator, CancellationToken cancellationToken = default)
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);

@@ -254,6 +254,74 @@ namespace Connection360.Api.Tests.Controllers
             _userManagementMock.VerifyNoOtherCalls();
         }
 
+        [Theory]
+        [InlineData("")]
+        [InlineData("CLIENT")]
+        [InlineData("ANALISTAOPE")]
+        public async Task GetRolesListSettings_SinSerAdmin_Retorna403(String rolesCsv)
+        {
+            SettingsController sut = BuildSut(Split(rolesCsv));
+
+            IActionResult result = await sut.GetRolesListSettings(CancellationToken.None);
+
+            AssertForbidden(result);
+            _userManagementMock.VerifyNoOtherCalls();
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("CLIENT")]
+        [InlineData("ANALISTASAC")]
+        public async Task UpdateUserStatusSettings_SinSerAdmin_Retorna403(String rolesCsv)
+        {
+            SettingsController sut = BuildSut(Split(rolesCsv));
+
+            IActionResult result = await sut.UpdateUserStatusSettings("u1", new UsersManagementStatusRequest { IsActive = false }, CancellationToken.None);
+
+            AssertForbidden(result);
+            _userManagementMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task GetRolesListSettings_ConAdmin_RetornaElListadoDeRoles()
+        {
+            var roles = new List<Auth0RoleDto> { new() { Id = "rol_1", Name = "ADMIN", Description = "Administrador" } };
+            _userManagementMock.Setup(u => u.GetRolesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(roles);
+            SettingsController sut = BuildSut("ADMIN");
+
+            IActionResult result = await sut.GetRolesListSettings(CancellationToken.None);
+
+            result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeEquivalentTo(roles);
+        }
+
+        [Fact]
+        public async Task UpdateUserStatusSettings_ConAdminEInactivar_PideBloquearAlCasoDeUso()
+        {
+            _userManagementMock.Setup(u => u.SetUserStatusAsync("u1", false)).ReturnsAsync(true);
+            SettingsController sut = BuildSut("ADMIN");
+
+            IActionResult result = await sut.UpdateUserStatusSettings("u1", new UsersManagementStatusRequest { IsActive = false }, CancellationToken.None);
+
+            result.Should().BeOfType<NoContentResult>();
+            _userManagementMock.Verify(u => u.SetUserStatusAsync("u1", false), Times.Once);
+        }
+
+        [Fact]
+        public void LosNuevosEndpointsDeUsuarios_SoloPermitenAlRolAdminYSusRutasSonLasEsperadas()
+        {
+            foreach ((String action, String route) in new[] { (nameof(SettingsController.GetRolesListSettings), "listroles"), (nameof(SettingsController.UpdateUserStatusSettings), "updateuserstatus/{userId}") })
+            {
+                System.Reflection.MethodInfo method = typeof(SettingsController).GetMethod(action)!;
+
+                method.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), inherit: true)
+                    .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+                    .Should().ContainSingle().Which.Roles.Should().Be("ADMIN");
+                method.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute), inherit: true)
+                    .Cast<Microsoft.AspNetCore.Mvc.Routing.HttpMethodAttribute>()
+                    .Should().ContainSingle().Which.Template.Should().Be(route);
+            }
+        }
+
         [Fact]
         public async Task GetMasterSettings_ConVariosRolesIncluidoAdmin_UsaElPrimeroDelEnumYPermite()
         {

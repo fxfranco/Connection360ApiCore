@@ -26,5 +26,20 @@
 
         /// <summary><c>true</c> si el usuario se encuentra bloqueado.</summary>
         public Boolean? IsBlocked { get; set; }
+
+        /// <summary>Identificador (en Auth0) del nuevo rol del usuario; si se omite, el rol no cambia.</summary>
+        public String? RoleId { get; set; }
+
+        /// <summary>Nueva empresa (<c>user_metadata.company</c>).</summary>
+        public String? Company { get; set; }
+
+        /// <summary>Nuevo documento de identificación (<c>user_metadata.document</c>).</summary>
+        public String? Document { get; set; }
+
+        /// <summary>Nuevo nombre completo (<c>user_metadata.fullName</c>).</summary>
+        public String? FullName { get; set; }
+
+        /// <summary>Nuevo teléfono (<c>user_metadata.phone.number</c>).</summary>
+        public String? Phone { get; set; }
     }
 }

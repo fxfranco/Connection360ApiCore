@@ -1,4 +1,5 @@
 ﻿using Connection360.Application.Ports.Persistence;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 
 namespace Connection360.Application.UseCases.Persistence
@@ -15,6 +16,12 @@ namespace Connection360.Application.UseCases.Persistence
         {
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
             ICustomerRepository customerRepository = _unitOfWork.GetRepository<ICustomerRepository>();
+
+            // 1. No se permiten clientes con la misma identificación
+            if (await customerRepository.GetCustomerByIdAsync(clientId, cancellationToken) != null)
+            {
+                throw new DuplicateRecordException($"Ya existe un cliente con la identificación '{clientId}'.");
+            }
 
             try
             {

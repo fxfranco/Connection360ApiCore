@@ -3,6 +3,7 @@ using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.UseCases.Persistence;
 using Connection360.Domain.Entities.Persistence;
 using Connection360.Domain.Enums;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 using FluentAssertions;
 using Moq;
@@ -129,6 +130,50 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
 
             await act.Should().ThrowAsync<ArgumentException>();
+        }
+
+        [Fact]
+        public async Task CreateCustomerNotificationSettings_SiElClienteYaTieneCanales_LanzaDuplicateRecordExceptionYNoCreaNada()
+        {
+            var request = new CustomerNotificationsSettingsResponse
+            {
+                NotificationChannels = new NotificationChannelsResponse { ClientId = "123" },
+                NotificationEvents = new NotificationEventsResponse { ClientId = "123" }
+            };
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("123", It.IsAny<CancellationToken>())).ReturnsAsync(5);
+            _channelsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CustomerNotificationChannels(1, 5, true, true, false));
+
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
+
+            await act.Should().ThrowAsync<DuplicateRecordException>().WithMessage("*canales*123*");
+            _channelsRepositoryMock.Verify(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>()), Times.Never);
+            _eventsRepositoryMock.Verify(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateCustomerNotificationSettings_SiElClienteYaTieneEventos_LanzaDuplicateRecordExceptionYNoCreaNada()
+        {
+            var request = new CustomerNotificationsSettingsResponse
+            {
+                NotificationChannels = new NotificationChannelsResponse { ClientId = "123" },
+                NotificationEvents = new NotificationEventsResponse { ClientId = "123" }
+            };
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("123", It.IsAny<CancellationToken>())).ReturnsAsync(5);
+            _channelsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync((CustomerNotificationChannels?)null);
+            _eventsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CustomerNotificationEvents(1, 5, true, false, true, false, true));
+
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(request, UserRoleApplication.CLIENT, CancellationToken.None);
+
+            await act.Should().ThrowAsync<DuplicateRecordException>().WithMessage("*eventos*123*");
+            _channelsRepositoryMock.Verify(r => r.CrearAsync(It.IsAny<CustomerNotificationChannels>(), It.IsAny<CancellationToken>()), Times.Never);
+            _eventsRepositoryMock.Verify(r => r.CrearAsync(It.IsAny<CustomerNotificationEvents>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

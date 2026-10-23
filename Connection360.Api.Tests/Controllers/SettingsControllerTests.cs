@@ -153,6 +153,25 @@ namespace Connection360.Api.Tests.Controllers
         }
 
         [Fact]
+        public async Task GetUsersByIdSettings_ConservaLosDatosDeUserMetadataYElRol()
+        {
+            var expected = new Auth0UserDto
+            {
+                UserId = "u1", Company = "Acme", Document = "900123", FullName = "Ana Perez", Phone = "+573113232323", RoleId = "rol_1", RoleName = "ADMIN"
+            };
+            _userManagementMock.Setup(u => u.GetUsersByIdAsync("u1")).ReturnsAsync(expected);
+
+            IActionResult result = await _sut.GetUsersByIdSettings("u1", CancellationToken.None);
+
+            var dto = result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeOfType<Auth0UserDto>().Subject;
+            dto.Company.Should().Be("Acme");
+            dto.Document.Should().Be("900123");
+            dto.FullName.Should().Be("Ana Perez");
+            dto.Phone.Should().Be("+573113232323");
+            dto.RoleName.Should().Be("ADMIN");
+        }
+
+        [Fact]
         public async Task GetUsersByIdSettings_SiLanzaExcepcion_RetornaProblemDetails500()
         {
             _userManagementMock.Setup(u => u.GetUsersByIdAsync("u1")).ThrowsAsync(new InvalidOperationException("fallo"));
@@ -178,6 +197,94 @@ namespace Connection360.Api.Tests.Controllers
             _userManagementMock.Setup(u => u.UpdateUserAsync("u1", It.IsAny<Auth0UserDto>())).ReturnsAsync(false);
 
             IActionResult result = await _sut.UpdateUsersByIdSettings("u1", new Auth0UserDto(), CancellationToken.None);
+
+            result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task UpdateUsersByIdSettings_ConCorreoTelefonoYRol_LosEnviaAlCasoDeUso()
+        {
+            var update = new Auth0UserDto { Email = "nuevo@correo.com", PhoneNumber = "+573113232323", RoleId = "rol_2" };
+            _userManagementMock.Setup(u => u.UpdateUserAsync("u1", It.IsAny<Auth0UserDto>())).ReturnsAsync(true);
+
+            IActionResult result = await _sut.UpdateUsersByIdSettings("u1", update, CancellationToken.None);
+
+            result.Should().BeOfType<NoContentResult>();
+            _userManagementMock.Verify(u => u.UpdateUserAsync("u1", It.Is<Auth0UserDto>(d => d.Email == "nuevo@correo.com" && d.PhoneNumber == "+573113232323" && d.RoleId == "rol_2")), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateUsersByIdSettings_SiAuth0Rechaza_RetornaProblemDetails500ConElMensaje()
+        {
+            _userManagementMock.Setup(u => u.UpdateUserAsync("u1", It.IsAny<Auth0UserDto>())).ThrowsAsync(new InvalidOperationException("rol inexistente"));
+
+            IActionResult result = await _sut.UpdateUsersByIdSettings("u1", new Auth0UserDto { RoleId = "rol_x" }, CancellationToken.None);
+
+            var problem = result.Should().BeOfType<ObjectResult>().Subject;
+            problem.StatusCode.Should().Be(500);
+            problem.Value.Should().BeOfType<ProblemDetails>().Which.Detail.Should().Be("rol inexistente");
+        }
+
+        [Fact]
+        public async Task GetRolesListSettings_ConRoles_RetornaOkConElListado()
+        {
+            var roles = new List<Auth0RoleDto> { new() { Id = "rol_1", Name = "ADMIN" }, new() { Id = "rol_2", Name = "CLIENT" } };
+            _userManagementMock.Setup(u => u.GetRolesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(roles);
+
+            IActionResult result = await _sut.GetRolesListSettings(CancellationToken.None);
+
+            result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(roles);
+        }
+
+        [Fact]
+        public async Task GetRolesListSettings_SiElCasoDeUsoDevuelveNull_RetornaProblemDetails500()
+        {
+            _userManagementMock.Setup(u => u.GetRolesAsync(It.IsAny<CancellationToken>())).ReturnsAsync((IList<Auth0RoleDto>)null!);
+
+            IActionResult result = await _sut.GetRolesListSettings(CancellationToken.None);
+
+            result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task GetRolesListSettings_SiLanzaExcepcion_RetornaProblemDetails500()
+        {
+            _userManagementMock.Setup(u => u.GetRolesAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("fallo Auth0"));
+
+            IActionResult result = await _sut.GetRolesListSettings(CancellationToken.None);
+
+            result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task UpdateUserStatusSettings_ConExito_RetornaNoContentYPasaElEstado(Boolean isActive)
+        {
+            _userManagementMock.Setup(u => u.SetUserStatusAsync("u1", isActive)).ReturnsAsync(true);
+
+            IActionResult result = await _sut.UpdateUserStatusSettings("u1", new UsersManagementStatusRequest { IsActive = isActive }, CancellationToken.None);
+
+            result.Should().BeOfType<NoContentResult>();
+            _userManagementMock.Verify(u => u.SetUserStatusAsync("u1", isActive), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateUserStatusSettings_SiFalla_RetornaProblemDetails500()
+        {
+            _userManagementMock.Setup(u => u.SetUserStatusAsync("u1", It.IsAny<Boolean>())).ReturnsAsync(false);
+
+            IActionResult result = await _sut.UpdateUserStatusSettings("u1", new UsersManagementStatusRequest { IsActive = true }, CancellationToken.None);
+
+            result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task UpdateUserStatusSettings_SiLanzaExcepcion_RetornaProblemDetails500()
+        {
+            _userManagementMock.Setup(u => u.SetUserStatusAsync(It.IsAny<String>(), It.IsAny<Boolean>())).ThrowsAsync(new InvalidOperationException("fallo Auth0"));
+
+            IActionResult result = await _sut.UpdateUserStatusSettings("u1", new UsersManagementStatusRequest(), CancellationToken.None);
 
             result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(500);
         }

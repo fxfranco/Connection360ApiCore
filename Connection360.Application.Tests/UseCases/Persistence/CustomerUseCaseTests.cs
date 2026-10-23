@@ -1,4 +1,5 @@
 using Connection360.Application.UseCases.Persistence;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 using FluentAssertions;
 using Moq;
@@ -83,6 +84,32 @@ namespace Connection360.Application.Tests.UseCases.Persistence
 
             await act.Should().ThrowAsync<InvalidOperationException>();
             _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CrearAsync_ConIdentificacionYaExistente_LanzaDuplicateRecordExceptionSinCrearNiAbrirTransaccion()
+        {
+            _repositoryMock.Setup(r => r.GetCustomerByIdAsync("900123456", It.IsAny<CancellationToken>())).ReturnsAsync(7L);
+
+            Func<Task> act = () => _useCase.CrearAsync("900123456", CancellationToken.None);
+
+            (await act.Should().ThrowAsync<DuplicateRecordException>()).Which.Message.Should().Contain("900123456");
+            _repositoryMock.Verify(r => r.CrearAsync(It.IsAny<String>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CrearAsync_ConIdentificacionNueva_ConsultaSiExisteAntesDeCrear()
+        {
+            _repositoryMock.Setup(r => r.GetCustomerByIdAsync("900999", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
+            _repositoryMock.Setup(r => r.CrearAsync("900999", It.IsAny<CancellationToken>())).ReturnsAsync(12);
+
+            Int64 result = await _useCase.CrearAsync("900999", CancellationToken.None);
+
+            result.Should().Be(12);
+            _repositoryMock.Verify(r => r.GetCustomerByIdAsync("900999", It.IsAny<CancellationToken>()), Times.Once);
+            _repositoryMock.Verify(r => r.CrearAsync("900999", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

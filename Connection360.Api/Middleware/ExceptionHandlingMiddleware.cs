@@ -1,4 +1,5 @@
 ﻿using Connection360.Api.Models;
+using Connection360.Domain.Exceptions;
 
 namespace Connection360.Api.Middleware
 {
@@ -25,6 +26,7 @@ namespace Connection360.Api.Middleware
 
                 var (status, message) = ex switch
                 {
+                    DuplicateRecordException => (StatusCodes.Status409Conflict, "El registro ya existe"),
                     KeyNotFoundException => (StatusCodes.Status404NotFound, "Recurso no encontrado"),
                     UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "No autorizado"),
                     ArgumentException => (StatusCodes.Status400BadRequest, "Solicitud inválida"),

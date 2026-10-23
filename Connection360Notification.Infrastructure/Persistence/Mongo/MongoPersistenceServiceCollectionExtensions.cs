@@ -31,6 +31,10 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
             services.AddScoped<INotificationRepository, MongoNotificationRepository>();
             services.AddHostedService<MongoIndexInitializer>();
 
+            // Datos básicos de usuarios sincronizados desde Auth0 (colección basicUserData)
+            services.AddScoped<IBasicUserDataRepository, MongoBasicUserDataRepository>();
+            services.AddHostedService<BasicUserDataIndexInitializer>();
+
             return services;
         }
     }

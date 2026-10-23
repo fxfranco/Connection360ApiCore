@@ -3,6 +3,7 @@ using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.UseCases.Persistence;
 using Connection360.Domain.Entities.Persistence;
 using Connection360.Domain.Enums;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 using FluentAssertions;
 using Moq;
@@ -164,6 +165,24 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             Func<Task> act = () => _sut.CreateCustomerNotificationSettings(new CustomerNotificationsSettingsResponse(), UserRoleApplication.ADMIN);
 
             await act.Should().ThrowAsync<ArgumentException>();
+        }
+
+        [Theory]
+        [MemberData(nameof(RolesColaborador))]
+        public async Task Create_ConColaboradorQueYaTieneCanales_LanzaDuplicateRecordExceptionYNoCreaNada(UserRoleApplication role)
+        {
+            ColaboradorExiste();
+            _channels.Setup(r => r.GetByCollaboratorIdAsync(7, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new CollaboratorNotificationChannels(3, 7, true, false, true));
+
+            Func<Task> act = () => _sut.CreateCustomerNotificationSettings(Request(), role);
+
+            await act.Should().ThrowAsync<DuplicateRecordException>().WithMessage("*COL-1*");
+            _channels.Verify(r => r.CrearAsync(It.IsAny<CollaboratorNotificationChannels>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWork.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWork.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+            NoSeTocaLaRamaDeClientes();
         }
 
         [Fact]

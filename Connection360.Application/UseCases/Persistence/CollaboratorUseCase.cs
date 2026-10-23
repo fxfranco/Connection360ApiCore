@@ -1,4 +1,5 @@
 ﻿using Connection360.Application.Ports.Persistence;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 
 namespace Connection360.Application.UseCases.Persistence
@@ -16,6 +17,12 @@ namespace Connection360.Application.UseCases.Persistence
         {
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
             ICollaboratorRepository collaboratorRepository = _unitOfWork.GetRepository<ICollaboratorRepository>();
+
+            // 1. No se permiten colaboradores con la misma identificación
+            if (await collaboratorRepository.GetCollaboratorByIdAsync(collaboratorId, cancellationToken) != null)
+            {
+                throw new DuplicateRecordException($"Ya existe un colaborador con la identificación '{collaboratorId}'.");
+            }
 
             try
             {
@@ -49,6 +56,12 @@ namespace Connection360.Application.UseCases.Persistence
             }
 
             ICustomersOfCollaboratorsRepository customersOfCollaboratorsRepository = _unitOfWork.GetRepository<ICustomersOfCollaboratorsRepository>();
+
+            // No se permite repetir la relación cliente - colaborador
+            if (await customersOfCollaboratorsRepository.ExistsAsync(customerIdDb, collaboratorIdDb, cancellationToken))
+            {
+                throw new DuplicateRecordException($"El colaborador '{collaboratorId}' ya está asociado al cliente '{customerId}'.");
+            }
 
             try
             {

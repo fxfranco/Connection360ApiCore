@@ -3,6 +3,7 @@ using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.Ports.Persistence;
 using Connection360.Domain.Entities.Persistence;
 using Connection360.Domain.Enums;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 
 namespace Connection360.Application.UseCases.Persistence
@@ -124,6 +125,9 @@ namespace Connection360.Application.UseCases.Persistence
                     throw new ArgumentException("No existe un cliente identificado.", nameof(clientId));
                 }
 
+                // Un cliente solo puede tener un registro de canales y uno de eventos
+                await this.EnsureCustomerNotificationSettingsDoNotExist(customerId, clientId, cancellationToken);
+
                 await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
                 Int64 createdChannels = await this.CreateCustomerNotificationChannels(customerNotificationsSettings.NotificationChannels, customerId, cancellationToken);
@@ -149,6 +153,21 @@ namespace Connection360.Application.UseCases.Persistence
             }
 
             return customerNotificationsSettings;
+        }
+
+        private async Task EnsureCustomerNotificationSettingsDoNotExist(Int64 customerId, String clientId, CancellationToken cancellationToken = default)
+        {
+            ICustomerNotificationChannelsRepository customerNotificationChannelsRepository = _unitOfWork.GetRepository<ICustomerNotificationChannelsRepository>();
+            if (await customerNotificationChannelsRepository.GetByCustomerIdAsync(customerId, cancellationToken) != null)
+            {
+                throw new DuplicateRecordException($"Ya existen canales de notificación para el cliente '{clientId}'.");
+            }
+
+            ICustomerNotificationEventRepository customerNotificationEventRepository = _unitOfWork.GetRepository<ICustomerNotificationEventRepository>();
+            if (await customerNotificationEventRepository.GetByCustomerIdAsync(customerId, cancellationToken) != null)
+            {
+                throw new DuplicateRecordException($"Ya existen eventos de notificación para el cliente '{clientId}'.");
+            }
         }
 
         private async Task<Int64> CreateCustomerNotificationEvents(NotificationEventsResponse dto, Int64 idCustomer, CancellationToken cancellationToken = default)
@@ -287,9 +306,16 @@ namespace Connection360.Application.UseCases.Persistence
                     throw new ArgumentException("No existe un colaborador identificado.", nameof(collaboratorIdentification));
                 }
 
+                ICollaboratorNotificationChannelsRepository channelsRepository = _unitOfWork.GetRepository<ICollaboratorNotificationChannelsRepository>();
+
+                // Un colaborador solo puede tener un registro de canales
+                if (await channelsRepository.GetByCollaboratorIdAsync(collaboratorId, cancellationToken) != null)
+                {
+                    throw new DuplicateRecordException($"Ya existen canales de notificación para el colaborador '{collaboratorIdentification}'.");
+                }
+
                 await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-                ICollaboratorNotificationChannelsRepository channelsRepository = _unitOfWork.GetRepository<ICollaboratorNotificationChannelsRepository>();
                 NotificationChannelsResponse dto = settings.NotificationChannels!;
                 Int64 created = await channelsRepository.CrearAsync(new CollaboratorNotificationChannels(0, collaboratorId, dto.Application, dto.Email, dto.TextMessages), cancellationToken);
                 if (created <= 0)

@@ -31,6 +31,10 @@ namespace Connection360.Infrastructure.DependencyInjection
             // pueda cambiarse en caliente, sin recompilar ni reiniciar la aplicación.
             services.Configure<OutboxPublisherSettings>(configuration.GetSection(OutboxPublisherSettings.SectionName));
 
+            // Periodicidad (y demás parámetros) del Auth0UserSyncWorker: también con IOptionsMonitor para
+            // poder cambiarla en caliente desde el appsettings.
+            services.Configure<Auth0UserSyncSettings>(configuration.GetSection(Auth0UserSyncSettings.SectionName));
+
             // Cargar la sección directamente
             var externalApiSettings = configuration.GetSection(ExternalApiSettings.SectionName).Get<ExternalApiSettings>();
 
@@ -78,6 +82,9 @@ namespace Connection360.Infrastructure.DependencyInjection
 
             // 3. Worker Background Service para Consumo de Kafka
             services.AddHostedService<OutboxPublisherWorker>();
+
+            // 4. Worker que sincroniza los usuarios de Auth0 hacia Connection360Notification.Api (vía Kafka)
+            services.AddHostedService<Auth0UserSyncWorker>();
 
             return services;
         }

@@ -26,6 +26,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             sut.Password.Should().BeEmpty();
             sut.RecipientEmail.Should().BeEmpty();
             sut.UserName.Should().BeEmpty();
+            sut.Conexion360Url.Should().BeEmpty();
         }
 
         [Fact]
@@ -39,6 +40,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
                 ["SmtpSettings:SenderEmail"] = "tucorreo@gmail.com",
                 ["SmtpSettings:Password"] = "clave",
                 ["SmtpSettings:RecipientEmail"] = "destino@ejemplo.com",
+                ["SmtpSettings:Conexion360Url"] = "https://conexion360.space",
                 ["SmtpSettings:TimeoutSeconds"] = "10",
                 ["SmtpSettings:CheckCertificateRevocation"] = "false"
             }).Build();
@@ -51,6 +53,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             sut.SenderEmail.Should().Be("tucorreo@gmail.com");
             sut.Password.Should().Be("clave");
             sut.RecipientEmail.Should().Be("destino@ejemplo.com");
+            sut.Conexion360Url.Should().Be("https://conexion360.space");
             sut.TimeoutSeconds.Should().Be(10);
             sut.CheckCertificateRevocation.Should().BeFalse();
         }

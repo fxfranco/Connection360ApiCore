@@ -1,21 +1,27 @@
 ﻿using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Application.Services;
 using Connection360Notification.Domain;
 using Connection360Notification.Domain.Enums;
 using Connection360Notification.Infrastructure.Email;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Net.Mail;
 
 namespace Connection360Notification.Infrastructure.Adapters.Output
 {
     /// <summary>
     /// Canal de correo electrónico. Arma el correo a partir de la notificación — asunto =
-    /// <see cref="NotificationMessage.Title"/>, cuerpo = <see cref="NotificationMessage.Message"/> — y lo entrega
-    /// con <see cref="IEmailSender"/> (MailKit/SMTP, configurado en la sección "SmtpSettings").
+    /// <see cref="NotificationMessage.Title"/> — y lo entrega con <see cref="IEmailSender"/> (MailKit/SMTP, configurado
+    /// en la sección "SmtpSettings").
     ///
-    /// DESTINATARIO TEMPORAL: el Payload solo trae el ClientId (no su correo) y aún no existe un directorio de
-    /// contactos, así que por ahora se envía SIEMPRE a <see cref="SmtpSettings.RecipientEmail"/>. Cuando exista el
-    /// directorio, basta con resolver aquí el correo del <see cref="NotificationMessage.ClientId"/> (idealmente tras
-    /// un puerto de salida nuevo) en lugar de leerlo de la configuración.
+    /// DESTINATARIO: ProcessIncomingNotificationUseCase deja en <see cref="INotificationRecipientContext"/> los datos del
+    /// cliente (colección basicUserData, donde Document = ClientId). Si ese cliente tiene un Email válido, el correo se
+    /// envía a esa dirección; si no existe, no tiene correo o no es válido, se usa <see cref="SmtpSettings.RecipientEmail"/>
+    /// para garantizar que la notificación siempre se envíe.
+    ///
+    /// CUERPO: HTML con el formato de la plantilla de Conexion360 (<see cref="ShipmentStatusEmailTemplate"/>) y el logo
+    /// incrustado. El texto plano alterno sigue siendo <see cref="NotificationMessage.Message"/>. Origen, destino, estados
+    /// y comentario son valores provisionales (constantes "...PENDIENTE") mientras el evento no los traiga.
     ///
     /// Si la configuración está incompleta o el servidor falla, lanza la excepción: el despachador la aísla, así que
     /// el resto de los canales (p. ej. la aplicación) se entrega igual.
@@ -27,12 +33,18 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
 
         private readonly IEmailSender _emailSender;
         private readonly SmtpSettings _settings;
+        private readonly INotificationRecipientContext _recipientContext;
         private readonly ILogger<EmailNotificationChannel> _logger;
 
-        public EmailNotificationChannel(IEmailSender emailSender, IOptions<SmtpSettings> settings, ILogger<EmailNotificationChannel> logger)
+        public EmailNotificationChannel(
+            IEmailSender emailSender,
+            IOptions<SmtpSettings> settings,
+            INotificationRecipientContext recipientContext,
+            ILogger<EmailNotificationChannel> logger)
         {
             _emailSender = emailSender;
             _settings = settings.Value;
+            _recipientContext = recipientContext;
             _logger = logger;
         }
 
@@ -41,29 +53,68 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
         public async Task SendAsync(NotificationMessage notification, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(notification);
-            EnsureConfigured();
+
+            BasicUserData? recipient = _recipientContext.Recipient;
+            String? clientEmail = ResolveClientEmail(recipient, notification);
+            EnsureConfigured(requireFallbackRecipient: clientEmail == null);
+
+            String html = ShipmentStatusEmailTemplate.Render(new ShipmentStatusEmailValues(
+                ClientName: recipient?.FullName,
+                DocumentNumber: notification.DocumentNumber,
+                Origin: ShipmentStatusEmailTemplate.PendingOrigin,
+                Destination: ShipmentStatusEmailTemplate.PendingDestination,
+                PreviousStatus: ShipmentStatusEmailTemplate.PendingPreviousStatus,
+                NewStatus: ShipmentStatusEmailTemplate.PendingNewStatus,
+                Comment: ShipmentStatusEmailTemplate.PendingComment,
+                UpdatedAt: notification.MessageDate,
+                Conexion360Url: _settings.Conexion360Url));
 
             var email = new EmailMessage(
-                To: _settings.RecipientEmail,
+                To: clientEmail ?? _settings.RecipientEmail,
                 Subject: String.IsNullOrWhiteSpace(notification.Title) ? DefaultSubject : notification.Title,
-                Body: notification.Message);
+                Body: notification.Message,
+                HtmlBody: html,
+                InlineImage: new EmailInlineImage(ShipmentStatusEmailTemplate.LogoContentId, ShipmentStatusEmailTemplate.GetLogo(), ShipmentStatusEmailTemplate.LogoMediaType));
 
             await _emailSender.SendAsync(email, cancellationToken);
 
-            // No se registra el destinatario ni el contenido (datos personales).
+            // No se registra el destinatario ni el contenido (datos personales); solo de dónde salió la dirección.
             _logger.LogInformation(
-                "Correo de la notificación {NotificationId} enviado para el cliente {ClientId}.",
-                notification.Id, notification.ClientId);
+                "Correo de la notificación {NotificationId} enviado para el cliente {ClientId} (destinatario: {RecipientSource}).",
+                notification.Id, notification.ClientId, clientEmail != null ? "correo del cliente" : "RecipientEmail de la configuración");
         }
 
-        private void EnsureConfigured()
+        /// <summary>
+        /// Correo del cliente si lo tiene y es una dirección válida; <c>null</c> si no hay destinatario, no tiene correo o
+        /// no es válido (en este último caso se deja una advertencia, sin el valor, y se usa el correo de respaldo).
+        /// </summary>
+        private String? ResolveClientEmail(BasicUserData? recipient, NotificationMessage notification)
+        {
+            if (recipient == null || String.IsNullOrWhiteSpace(recipient.Email))
+            {
+                return null;
+            }
+
+            String candidate = recipient.Email.Trim();
+            if (MailAddress.TryCreate(candidate, out MailAddress? address) && String.Equals(address.Address, candidate, StringComparison.OrdinalIgnoreCase))
+            {
+                return candidate;
+            }
+
+            _logger.LogWarning(
+                "El correo registrado para el cliente {ClientId} no es válido; la notificación {NotificationId} se envía al correo de respaldo.",
+                notification.ClientId, notification.Id);
+            return null;
+        }
+
+        private void EnsureConfigured(Boolean requireFallbackRecipient)
         {
             var faltantes = new List<String>();
             if (String.IsNullOrWhiteSpace(_settings.Server)) faltantes.Add(nameof(SmtpSettings.Server));
             if (_settings.Port <= 0) faltantes.Add(nameof(SmtpSettings.Port));
             if (String.IsNullOrWhiteSpace(_settings.SenderEmail)) faltantes.Add(nameof(SmtpSettings.SenderEmail));
             if (String.IsNullOrWhiteSpace(_settings.Password)) faltantes.Add(nameof(SmtpSettings.Password));
-            if (String.IsNullOrWhiteSpace(_settings.RecipientEmail)) faltantes.Add(nameof(SmtpSettings.RecipientEmail));
+            if (requireFallbackRecipient && String.IsNullOrWhiteSpace(_settings.RecipientEmail)) faltantes.Add(nameof(SmtpSettings.RecipientEmail));
 
             if (faltantes.Count > 0)
                 throw new InvalidOperationException(

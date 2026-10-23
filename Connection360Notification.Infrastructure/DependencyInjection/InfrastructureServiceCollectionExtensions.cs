@@ -1,5 +1,7 @@
 ﻿using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Application.Services;
 using Connection360Notification.Domain.Ports.Outbound;
+using Connection360Notification.Domain.Settings;
 using Connection360Notification.Infrastructure.Adapters.Input;
 using Connection360Notification.Infrastructure.Adapters.Output;
 using Connection360Notification.Infrastructure.Email;
@@ -56,12 +58,19 @@ namespace Connection360Notification.Infrastructure.DependencyInjection
             // Para agregar un canal nuevo: implementar INotificationChannel y registrarlo aquí.
             services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
             services.AddSingleton<IEmailSender, MailKitEmailSender>();
+            // Datos del destinatario de la notificación en curso (los llena ProcessIncomingNotificationUseCase y los lee el
+            // canal de correo). Es "scoped": una instancia por mensaje procesado.
+            services.AddScoped<INotificationRecipientContext, NotificationRecipientContext>();
             services.AddScoped<INotificationChannel, SignalRNotificationChannel>();
             services.AddScoped<INotificationChannel, EmailNotificationChannel>();
             services.AddScoped<INotificationChannel, SmsNotificationChannel>();
 
             // 3. Worker Background Service para Consumo de Kafka
             services.AddHostedService<KafkaConsumerHostedService>();
+
+            // 4. Worker de sincronización de usuarios Auth0 -> colección basicUserData (topic notification-users)
+            services.Configure<BasicUserSyncSettings>(configuration.GetSection(BasicUserSyncSettings.SectionName));
+            services.AddHostedService<BasicUserDataConsumerHostedService>();
 
             return services;
         }

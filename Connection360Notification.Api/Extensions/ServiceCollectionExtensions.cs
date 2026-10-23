@@ -19,6 +19,9 @@ namespace Connection360Notification.Api.Extensions
             services.AddScoped<IGetNotificationsUseCase, GetNotificationsUseCase>();
             services.AddScoped<IProcessIncomingNotificationUseCase, ProcessIncomingNotificationUseCase>();
 
+            // Sincronización de usuarios básicos (id, identificación, email, teléfono) provenientes de Auth0
+            services.AddScoped<ISyncBasicUsersUseCase, SyncBasicUsersUseCase>();
+
             // Envío por canales (Strategy + Registry). Las implementaciones de INotificationChannel
             // las registra Infrastructure (AddInfrastructure).
             services.AddScoped<INotificationChannelRegistry, NotificationChannelRegistry>();

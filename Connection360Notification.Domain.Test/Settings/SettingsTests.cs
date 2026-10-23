@@ -45,5 +45,37 @@ namespace Connection360Notification.Domain.Tests.Settings
             sut.GroupId.Should().Be("g");
             sut.Topic.Should().Be("t");
         }
+
+        [Fact]
+        public void BasicUserSyncSettings_PorDefecto_UsaLosValoresDeLaSincronizacionDeUsuarios()
+        {
+            var sut = new BasicUserSyncSettings();
+
+            sut.Topic.Should().Be("notification-users");
+            sut.GroupId.Should().BeEmpty();
+            sut.CollectionName.Should().Be("basicUserData");
+            sut.ErrorBackoffMilliseconds.Should().Be(1000);
+        }
+
+        [Fact]
+        public void BasicUserSyncSettings_Constantes_TienenLosValoresEsperados()
+        {
+            BasicUserSyncSettings.SectionName.Should().Be("BasicUserSync");
+            BasicUserSyncSettings.DefaultTopic.Should().Be("notification-users");
+            BasicUserSyncSettings.DefaultCollectionName.Should().Be("basicUserData");
+            BasicUserSyncSettings.DefaultGroupId.Should().Be("connection360-notification-users");
+            BasicUserSyncSettings.DefaultErrorBackoffMilliseconds.Should().Be(1000);
+        }
+
+        [Fact]
+        public void BasicUserSyncSettings_AsignaTodasLasPropiedades()
+        {
+            var sut = new BasicUserSyncSettings { Topic = "t", GroupId = "g", CollectionName = "c", ErrorBackoffMilliseconds = 5 };
+
+            sut.Topic.Should().Be("t");
+            sut.GroupId.Should().Be("g");
+            sut.CollectionName.Should().Be("c");
+            sut.ErrorBackoffMilliseconds.Should().Be(5);
+        }
     }
 }

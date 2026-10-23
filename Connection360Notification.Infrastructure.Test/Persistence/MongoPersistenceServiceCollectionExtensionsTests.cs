@@ -46,6 +46,31 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
         }
 
         [Fact]
+        public void AddMongoPersistence_RegistraElRepositorioYElInicializadorDeIndicesDeUsuariosBasicos()
+        {
+            var services = new ServiceCollection();
+
+            services.AddMongoPersistence(Config());
+
+            services.Should().Contain(sd => sd.ServiceType == typeof(IBasicUserDataRepository) && sd.ImplementationType == typeof(MongoBasicUserDataRepository) && sd.Lifetime == ServiceLifetime.Scoped);
+            services.Should().Contain(sd => sd.ServiceType == typeof(IHostedService) && sd.ImplementationType == typeof(BasicUserDataIndexInitializer));
+        }
+
+        [Fact]
+        public void AddMongoPersistence_ResuelveElRepositorioDeUsuariosBasicosConLaColeccionConfigurada()
+        {
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.Configure<BasicUserSyncSettings>(o => o.CollectionName = "mis_usuarios");
+            services.AddMongoPersistence(Config(ConfigMongo));
+
+            using var provider = services.BuildServiceProvider();
+            using var scope = provider.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<IBasicUserDataRepository>().Should().BeOfType<MongoBasicUserDataRepository>();
+        }
+
+        [Fact]
         public void AddMongoPersistence_EnlazaLaSeccionMongoDbSettings()
         {
             var services = new ServiceCollection();

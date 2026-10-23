@@ -201,6 +201,14 @@ services:
       Auth0Management__ClientId: ${AUTH0_CLIENT_ID:?Define AUTH0_CLIENT_ID en el .env}
       Auth0Management__ClientSecret: ${AUTH0_CLIENT_SECRET:?Define AUTH0_CLIENT_SECRET en el .env}
       OutboxPublisher__PollingIntervalSeconds: ${OUTBOX_POLLING_INTERVAL_SECONDS:-10}
+      # Sincronización de usuarios de Auth0 hacia Connection360Notification.Api (tópico de Kafka -> colección basicUserData).
+      # Se envían el id, el correo y, de user_metadata, document, fullName y phone.number.
+      # Corre una vez al arrancar y luego cada USER_SYNC_INTERVAL_MINUTES. El tópico debe ser el mismo que consume la API de notificaciones.
+      Auth0UserSync__Enabled: ${USER_SYNC_ENABLED:-true}
+      Auth0UserSync__Topic: ${USER_SYNC_TOPIC:-notification-users}
+      Auth0UserSync__PollingIntervalMinutes: ${USER_SYNC_INTERVAL_MINUTES:-60}
+      Auth0UserSync__BatchSize: ${USER_SYNC_BATCH_SIZE:-200}
+      Auth0UserSync__StartupRetryDelaySeconds: ${USER_SYNC_STARTUP_RETRY_SECONDS:-30}
       ExternalApi__Apis__OPENSTREETMAP__BaseUrl: ${OPENSTREETMAP_BASE_URL:-https://nominatim.openstreetmap.org}
       ExternalApi__Apis__OPENSTREETMAP__DataEndpoint: /search?q=
       ExternalApi__Apis__OPENSTREETMAP__ApiKey: ${OPENSTREETMAP_API_KEY:-}
@@ -230,12 +238,18 @@ services:
       MongoDbSettings__ConnectionString: ${MONGO_CONNECTION:?Define MONGO_CONNECTION en el .env}
       MongoDbSettings__DatabaseName: ${MONGO_DATABASE:?Define MONGO_DATABASE en el .env}
       MongoDbSettings__CollectionName: ${MONGO_NOTIFICATION_COLLECTION:-notificationMessage}
+      # Usuarios de Auth0 sincronizados desde Connection360.Api (tópico USER_SYNC_TOPIC -> colección basicUserData).
+      BasicUserSync__Topic: ${USER_SYNC_TOPIC:-notification-users}
+      # Vacío = "<KAFKA_GROUP_ID>-users" (debe ser distinto del grupo de notificaciones).
+      BasicUserSync__GroupId: ${USER_SYNC_GROUP_ID:-}
+      BasicUserSync__CollectionName: ${MONGO_BASIC_USER_COLLECTION:-basicUserData}
       SmtpSettings__Server: ${SMTP_SERVER:-smtp.gmail.com}
       SmtpSettings__Port: ${SMTP_PORT:-465}
       SmtpSettings__SenderName: ${SMTP_SENDER_NAME:-Conexion360App}
       SmtpSettings__SenderEmail: ${SMTP_SENDER_EMAIL:?Define SMTP_SENDER_EMAIL en el .env}
       SmtpSettings__Password: ${SMTP_PASSWORD:?Define SMTP_PASSWORD (contraseña de aplicación) en el .env}
       SmtpSettings__RecipientEmail: ${SMTP_RECIPIENT_EMAIL:?Define SMTP_RECIPIENT_EMAIL en el .env}
+      SmtpSettings__Conexion360Url: ${SMTP_CONEXION360_URL:-https://conexion360.space}
       SmtpSettings__TimeoutSeconds: ${SMTP_TIMEOUT_SECONDS:-30}
       SmtpSettings__CheckCertificateRevocation: ${SMTP_CHECK_CERT_REVOCATION:-true}
     healthcheck:

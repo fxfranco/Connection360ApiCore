@@ -57,5 +57,61 @@ namespace Connection360.Infrastructure.Tests.Adapters
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
+
+        [Fact]
+        public async Task UpdateUserAsync_ConCorreoTelefonoYRolPeroSinConfiguracionDeAuth0_PropagaLaExcepcion()
+        {
+            var dto = new Auth0UserDto { Email = "nuevo@correo.com", PhoneNumber = "+573113232323", RoleId = "rol_2" };
+
+            Func<Task> act = () => BuildWithoutConfiguration().UpdateUserAsync("auth0|1", dto);
+
+            await act.Should().ThrowAsync<ArgumentException>();
+        }
+
+        [Fact]
+        public async Task UpdateUserAsync_ConCamposDeMetadataPeroSinConfiguracionDeAuth0_PropagaLaExcepcion()
+        {
+            var dto = new Auth0UserDto { Company = "Acme SAS", Document = "900123456", FullName = "Carlos Franco", Phone = "3113232323" };
+
+            Func<Task> act = () => BuildWithoutConfiguration().UpdateUserAsync("auth0|1", dto);
+
+            await act.Should().ThrowAsync<ArgumentException>();
+        }
+
+        [Fact]
+        public async Task GetRolesAsync_SinConfiguracionDeAuth0_PropagaLaExcepcion()
+        {
+            Func<Task> act = () => BuildWithoutConfiguration().GetRolesAsync();
+
+            await act.Should().ThrowAsync<ArgumentException>();
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SetUserBlockedAsync_SinConfiguracionDeAuth0_PropagaLaExcepcion(Boolean isBlocked)
+        {
+            Func<Task> act = () => BuildWithoutConfiguration().SetUserBlockedAsync("auth0|1", isBlocked);
+
+            await act.Should().ThrowAsync<ArgumentException>();
+        }
+
+        [Fact]
+        public async Task GetBasicUsersAsync_SinConfiguracionDeAuth0_PropagaLaExcepcion()
+        {
+            Func<Task> act = () => BuildWithoutConfiguration().GetBasicUsersAsync();
+
+            await act.Should().ThrowAsync<ArgumentException>();
+        }
+
+        [Fact]
+        public void Constructor_AceptaUnLoggerOpcional()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<String, String?>()).Build();
+
+            IAuth0UserService service = new Auth0UserService(config, Microsoft.Extensions.Logging.Abstractions.NullLogger<Auth0UserService>.Instance);
+
+            service.Should().NotBeNull();
+        }
     }
 }

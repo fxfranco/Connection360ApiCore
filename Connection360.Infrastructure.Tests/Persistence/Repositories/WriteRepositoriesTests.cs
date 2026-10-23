@@ -112,6 +112,23 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
             command.Parameters["IdCollaborator"].Should().Be(4L);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CustomersOfCollaboratorsRepository_ExistsAsync_ConsultaLaRelacionYRetornaElResultado(Boolean existe)
+        {
+            _connection.ScalarResult = existe;
+
+            Boolean result = await new CustomersOfCollaboratorsRepository(_session).ExistsAsync(3, 4);
+
+            result.Should().Be(existe);
+            RecordedCommand command = _connection.Commands.Single();
+            command.CommandText.Should().Contain("SELECT EXISTS").And.Contain("customers_of_collaborators")
+                .And.Contain("id_customer = @IdCustomer").And.Contain("id_collaborator = @IdCollaborator");
+            command.Parameters["IdCustomer"].Should().Be(3L);
+            command.Parameters["IdCollaborator"].Should().Be(4L);
+        }
+
         [Fact]
         public async Task CustomersOfCollaboratorsRepository_ListCustomersByCollaboratorAsync_MapeaLasFilas()
         {

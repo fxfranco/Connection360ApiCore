@@ -1,4 +1,6 @@
 ﻿using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Application.Services;
+using Connection360Notification.Domain;
 using Connection360Notification.Domain.Enums;
 using Connection360Notification.Domain.Ports.Outbound;
 using Connection360Notification.Domain.Settings;
@@ -79,6 +81,79 @@ namespace Connection360Notification.Infrastructure.Tests.DependencyInjection
 
             services.Should().Contain(sd => sd.ServiceType == typeof(IHostedService) && sd.ImplementationType == typeof(KafkaConsumerHostedService));
             services.Should().Contain(sd => sd.ServiceType == typeof(IHostedService) && sd.ImplementationType == typeof(MongoIndexInitializer));
+            services.Should().Contain(sd => sd.ServiceType == typeof(IHostedService) && sd.ImplementationType == typeof(BasicUserDataConsumerHostedService));
+            services.Should().Contain(sd => sd.ServiceType == typeof(IHostedService) && sd.ImplementationType == typeof(BasicUserDataIndexInitializer));
+        }
+
+        [Fact]
+        public void AddInfrastructure_EnlazaLaSeccionBasicUserSyncConSusValoresPorDefecto()
+        {
+            using var provider = Construir(Config(ConfigBase));
+
+            var settings = provider.GetRequiredService<IOptions<BasicUserSyncSettings>>().Value;
+
+            settings.Topic.Should().Be("notification-users");
+            settings.CollectionName.Should().Be("basicUserData");
+            settings.GroupId.Should().BeEmpty();
+            settings.ErrorBackoffMilliseconds.Should().Be(BasicUserSyncSettings.DefaultErrorBackoffMilliseconds);
+        }
+
+        [Fact]
+        public void AddInfrastructure_EnlazaLaSeccionBasicUserSyncDesdeLaConfiguracion()
+        {
+            var valores = ConfigBase.Concat(new[]
+            {
+                ("BasicUserSync:Topic", "usuarios"),
+                ("BasicUserSync:GroupId", "grupo-usuarios"),
+                ("BasicUserSync:CollectionName", "mis_usuarios"),
+                ("BasicUserSync:ErrorBackoffMilliseconds", "250")
+            }).ToArray();
+            using var provider = Construir(Config(valores));
+
+            var settings = provider.GetRequiredService<IOptions<BasicUserSyncSettings>>().Value;
+
+            settings.Topic.Should().Be("usuarios");
+            settings.GroupId.Should().Be("grupo-usuarios");
+            settings.CollectionName.Should().Be("mis_usuarios");
+            settings.ErrorBackoffMilliseconds.Should().Be(250);
+        }
+
+        [Fact]
+        public void AddInfrastructure_ConContenedorReal_ResuelveElRepositorioDeUsuariosBasicos()
+        {
+            using var provider = Construir(Config(ConfigBase));
+            using var scope = provider.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<IBasicUserDataRepository>().Should().BeOfType<MongoBasicUserDataRepository>();
+        }
+
+        [Fact]
+        public void AddInfrastructure_RegistraElContextoDelDestinatarioComoScoped_YCadaAmbitoTieneElSuyo()
+        {
+            using var provider = Construir(Config(ConfigBase));
+            using var scopeUno = provider.CreateScope();
+            using var scopeDos = provider.CreateScope();
+
+            var uno = scopeUno.ServiceProvider.GetRequiredService<INotificationRecipientContext>();
+            var dos = scopeDos.ServiceProvider.GetRequiredService<INotificationRecipientContext>();
+
+            uno.Should().BeOfType<NotificationRecipientContext>();
+            uno.Should().BeSameAs(scopeUno.ServiceProvider.GetRequiredService<INotificationRecipientContext>());
+            uno.Should().NotBeSameAs(dos);
+        }
+
+        [Fact]
+        public void AddInfrastructure_ElCanalDeCorreoYElContextoCompartenElMismoAmbito()
+        {
+            using var provider = Construir(Config(ConfigBase));
+            using var scope = provider.CreateScope();
+            var usuario = new BasicUserData("auth0|1", "900123", "Ana", "300", "ana@correo.com");
+
+            scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>().Set(usuario);
+            var canal = scope.ServiceProvider.GetServices<INotificationChannel>().OfType<EmailNotificationChannel>().Single();
+
+            canal.Should().NotBeNull();
+            scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>().Recipient.Should().Be(usuario);
         }
 
         [Fact]
@@ -169,6 +244,8 @@ namespace Connection360Notification.Infrastructure.Tests.DependencyInjection
 
             hospedados.Should().Contain(h => h is KafkaConsumerHostedService);
             hospedados.Should().Contain(h => h is MongoIndexInitializer);
+            hospedados.Should().Contain(h => h is BasicUserDataConsumerHostedService);
+            hospedados.Should().Contain(h => h is BasicUserDataIndexInitializer);
             hospedados.OfType<IDisposable>().ToList().ForEach(h => h.Dispose());
         }
     }

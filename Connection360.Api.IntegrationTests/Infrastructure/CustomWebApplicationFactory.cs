@@ -52,6 +52,10 @@ namespace Connection360.Api.IntegrationTests.Infrastructure
         {
             builder.UseEnvironment("Development");
 
+            // El Auth0UserSyncWorker (hospedado) consultaría Auth0 real y publicaría en Kafka al arrancar: se
+            // deshabilita para que las pruebas de integración no dependan de servicios externos.
+            builder.UseSetting("Auth0UserSync:Enabled", "false");
+
             builder.ConfigureTestServices(services =>
             {
                 // --- Autenticación de prueba, controlable por headers (ver TestAuthHandler) ---

@@ -9,5 +9,7 @@ namespace Connection360.Application.Ports
         public Task<Boolean> UpdateUserAsync(String userId, Auth0UserDto userUpdate);
         public Task<Auth0UserDto> GetUsersByIdAsync(String userId);
         public Task<Boolean> DeleteUserAsync(String userId);
+        public Task<IList<Auth0RoleDto>> GetRolesAsync(CancellationToken cancellationToken = default);
+        public Task<Boolean> SetUserStatusAsync(String userId, Boolean isActive);
     }
 }

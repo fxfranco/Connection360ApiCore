@@ -31,10 +31,17 @@
         public String UserName { get; set; } = String.Empty;
 
         /// <summary>
-        /// Correo destinatario FIJO de todas las notificaciones. Es temporal: mientras no exista un directorio con
-        /// el correo de cada cliente (ClientId), el canal de correo envía siempre a esta dirección.
+        /// Correo destinatario de respaldo. El canal de correo envía al Email del cliente (colección basicUserData, donde
+        /// Document = ClientId); solo cuando el cliente no existe, no tiene correo o este no es válido se usa esta dirección,
+        /// para garantizar que la notificación siempre se envíe.
         /// </summary>
         public String RecipientEmail { get; set; } = String.Empty;
+
+        /// <summary>
+        /// URL de Conexion360 que se muestra como "Consultar mi envío" en el correo de cambio de estado (por ejemplo
+        /// https://app.conexion360.com). Si está vacía o no es una URL http/https, el correo se envía sin enlace.
+        /// </summary>
+        public String Conexion360Url { get; set; } = String.Empty;
 
         /// <summary>Tiempo máximo, en segundos, para conectar/enviar. Evita bloquear el procesamiento si el servidor no responde.</summary>
         public Int32 TimeoutSeconds { get; set; } = 30;

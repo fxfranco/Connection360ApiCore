@@ -49,6 +49,9 @@ namespace Connection360Notification.Api.Tests.Extensions
             services.AddSingleton(Mock.Of<INotificationRepository>());
             services.AddSingleton(Mock.Of<INotificationChannel>());
             services.AddSingleton(Mock.Of<IKafkaProducerService>());
+            // Dependencias de salida de ProcessIncomingNotificationUseCase y SyncBasicUsersUseCase (las registra Infrastructure).
+            services.AddSingleton(Mock.Of<IBasicUserDataRepository>());
+            services.AddScoped(_ => Mock.Of<INotificationRecipientContext>());
             register(services);
             return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
         }
@@ -68,7 +71,8 @@ namespace Connection360Notification.Api.Tests.Extensions
             AssertDescriptor<IProcessIncomingNotificationUseCase, ProcessIncomingNotificationUseCase>(services);
             AssertDescriptor<INotificationChannelRegistry, NotificationChannelRegistry>(services);
             AssertDescriptor<INotificationDispatcher, NotificationDispatcher>(services);
-            services.Should().HaveCount(5);
+            AssertDescriptor<ISyncBasicUsersUseCase, SyncBasicUsersUseCase>(services);
+            services.Should().HaveCount(6);
         }
 
         [Fact]
@@ -80,6 +84,7 @@ namespace Connection360Notification.Api.Tests.Extensions
             scope.ServiceProvider.GetRequiredService<INotificationUseCase>().Should().BeOfType<NotificationUseCase>();
             scope.ServiceProvider.GetRequiredService<IGetNotificationsUseCase>().Should().BeOfType<GetNotificationsUseCase>();
             scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>().Should().BeOfType<ProcessIncomingNotificationUseCase>();
+            scope.ServiceProvider.GetRequiredService<ISyncBasicUsersUseCase>().Should().BeOfType<SyncBasicUsersUseCase>();
         }
 
         [Fact]

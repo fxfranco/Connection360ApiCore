@@ -1,5 +1,6 @@
 using Connection360.Api.Middleware;
 using Connection360.Api.Models;
+using Connection360.Domain.Exceptions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -68,6 +69,20 @@ namespace Connection360.Api.Tests.Middleware
             await middleware.InvokeAsync(context);
 
             context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ConDuplicateRecordException_Retorna409ConElDetalle()
+        {
+            var (middleware, context) = Build(_ => throw new DuplicateRecordException("Ya existe un cliente con la identificación '123'."));
+
+            await middleware.InvokeAsync(context);
+
+            context.Response.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+            var response = await ReadResponse(context);
+            response.Status.Should().Be(StatusCodes.Status409Conflict);
+            response.Message.Should().Be("El registro ya existe");
+            response.Error.Should().Be("Ya existe un cliente con la identificación '123'.");
         }
 
         [Fact]

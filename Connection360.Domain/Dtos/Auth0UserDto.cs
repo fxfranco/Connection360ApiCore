@@ -34,5 +34,31 @@ namespace Connection360.Domain.Dtos
 
         /// <summary>Apodo (nickname) del usuario en Auth0.</summary>
         public String? Nickname { get; set; }
+
+        /// <summary>
+        /// Identificador (en Auth0) del rol asignado al usuario. Al consultar se llena con el rol
+        /// actual; al actualizar, si se envía un valor distinto del actual, el usuario pasa a tener
+        /// solo ese rol. Los identificadores disponibles se obtienen de <c>GET settings/listroles</c>.
+        /// </summary>
+        public String? RoleId { get; set; }
+
+        /// <summary>Nombre del rol asignado al usuario en Auth0 (solo informativo; se ignora al actualizar).</summary>
+        public String? RoleName { get; set; }
+
+        /// <summary>Empresa del usuario (<c>user_metadata.company</c>). Al actualizar, si se informa y cambia, se guarda en <c>user_metadata</c>.</summary>
+        public String? Company { get; set; }
+
+        /// <summary>Documento de identificación (NIT/cédula) del usuario (<c>user_metadata.document</c>). Al actualizar, si se informa y cambia, se guarda en <c>user_metadata</c>.</summary>
+        public String? Document { get; set; }
+
+        /// <summary>Nombre completo del usuario (<c>user_metadata.fullName</c>). Al actualizar, si se informa y cambia, se guarda en <c>user_metadata</c>.</summary>
+        public String? FullName { get; set; }
+
+        /// <summary>
+        /// Teléfono del usuario tomado de <c>user_metadata.phone.number</c> (distinto de <see cref="PhoneNumber"/>, que es el
+        /// atributo <c>phone_number</c> de Auth0). Al actualizar, si se informa y cambia, se guarda en <c>user_metadata.phone.number</c>
+        /// conservando las demás propiedades de <c>phone</c>.
+        /// </summary>
+        public String? Phone { get; set; }
     };
 }

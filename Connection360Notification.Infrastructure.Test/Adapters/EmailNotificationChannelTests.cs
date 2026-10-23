@@ -1,4 +1,5 @@
 ﻿using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Application.Services;
 using Connection360Notification.Domain;
 using Connection360Notification.Domain.Enums;
 using Connection360Notification.Infrastructure.Adapters.Output;
@@ -24,6 +25,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
 
         private readonly ListLogger<EmailNotificationChannel> _logger = new();
         private readonly Mock<IEmailSender> _sender = new();
+        private readonly NotificationRecipientContext _context = new();
         private readonly List<(EmailMessage Message, CancellationToken Token)> _enviados = new();
 
         public EmailNotificationChannelTests()
@@ -49,7 +51,10 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
         }
 
         private EmailNotificationChannel Crear(SmtpSettings? settings = null) =>
-            new(_sender.Object, Options.Create(settings ?? Configuracion()), _logger);
+            new(_sender.Object, Options.Create(settings ?? Configuracion()), _context, _logger);
+
+        private static BasicUserData Usuario(String email = "cliente@correo.com", String fullName = "Ana Perez") =>
+            new("auth0|1", "CLI-7", fullName, "3001112233", email);
 
         private static NotificationMessage Notificacion(String? title = "Titulo visible", String message = "Contenido confidencial") =>
             new("CLI-7", NotificationType.Comment, message, title: title, id: "N-1");
@@ -182,6 +187,169 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             Func<Task> act = () => Crear(settings).SendAsync(Notificacion(), CancellationToken.None);
 
             (await act.Should().ThrowAsync<InvalidOperationException>()).Which.Message.Should().NotContain("super-secreta");
+        }
+
+        [Fact]
+        public async Task SendAsync_SiElClienteTieneCorreo_EnviaAEsaDireccionEnVezDeLaConfigurada()
+        {
+            _context.Set(Usuario("cliente@correo.com"));
+
+            await Crear().SendAsync(Notificacion(), CancellationToken.None);
+
+            _enviados.Should().ContainSingle().Which.Message.To.Should().Be("cliente@correo.com");
+        }
+
+        [Fact]
+        public async Task SendAsync_RecortaLosEspaciosDelCorreoDelCliente()
+        {
+            _context.Set(Usuario("  cliente@correo.com  "));
+
+            await Crear().SendAsync(Notificacion(), CancellationToken.None);
+
+            _enviados.Should().ContainSingle().Which.Message.To.Should().Be("cliente@correo.com");
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task SendAsync_SiElClienteNoTieneCorreo_UsaElDeLaConfiguracion(String email)
+        {
+            _context.Set(Usuario(email));
+
+            await Crear().SendAsync(Notificacion(), CancellationToken.None);
+
+            _enviados.Should().ContainSingle().Which.Message.To.Should().Be("destino@ejemplo.com");
+            _logger.Entries.Should().NotContain(e => e.Level == LogLevel.Warning);
+        }
+
+        [Fact]
+        public async Task SendAsync_SiNoHayDestinatarioEnElContexto_UsaElDeLaConfiguracion()
+        {
+            await Crear().SendAsync(Notificacion(), CancellationToken.None);
+
+            _enviados.Should().ContainSingle().Which.Message.To.Should().Be("destino@ejemplo.com");
+        }
+
+        [Theory]
+        [InlineData("no-es-un-correo")]
+        [InlineData("a@")]
+        [InlineData("Ana Perez <ana@correo.com>")]
+        [InlineData("uno@correo.com, dos@correo.com")]
+        public async Task SendAsync_SiElCorreoDelClienteNoEsValido_UsaElDeLaConfiguracionYAdvierteSinMostrarlo(String invalido)
+        {
+            _context.Set(Usuario(invalido));
+
+            await Crear().SendAsync(Notificacion(), CancellationToken.None);
+
+            _enviados.Should().ContainSingle().Which.Message.To.Should().Be("destino@ejemplo.com");
+            var advertencia = _logger.Entries.Should().ContainSingle(e => e.Level == LogLevel.Warning).Subject;
+            advertencia.Message.Should().Contain("CLI-7").And.NotContain(invalido);
+        }
+
+        [Fact]
+        public async Task SendAsync_SiElClienteTieneCorreo_NoExigeElCorreoDeRespaldoEnLaConfiguracion()
+        {
+            _context.Set(Usuario("cliente@correo.com"));
+            var settings = Configuracion(s => s.RecipientEmail = "");
+
+            await Crear(settings).SendAsync(Notificacion(), CancellationToken.None);
+
+            _enviados.Should().ContainSingle().Which.Message.To.Should().Be("cliente@correo.com");
+        }
+
+        [Fact]
+        public async Task SendAsync_SinCorreoDelClienteNiDeRespaldo_Lanza()
+        {
+            _context.Set(Usuario(""));
+            var settings = Configuracion(s => s.RecipientEmail = "");
+
+            Func<Task> act = () => Crear(settings).SendAsync(Notificacion(), CancellationToken.None);
+
+            (await act.Should().ThrowAsync<InvalidOperationException>()).Which.Message.Should().Contain(nameof(SmtpSettings.RecipientEmail));
+            _enviados.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task SendAsync_AunConCorreoDelCliente_ExigeElRestoDeLaConfiguracionSmtp()
+        {
+            _context.Set(Usuario("cliente@correo.com"));
+            var settings = Configuracion(s => s.Password = "");
+
+            Func<Task> act = () => Crear(settings).SendAsync(Notificacion(), CancellationToken.None);
+
+            (await act.Should().ThrowAsync<InvalidOperationException>()).Which.Message.Should().Contain(nameof(SmtpSettings.Password));
+        }
+
+        [Fact]
+        public async Task SendAsync_ArmaElCuerpoHtmlConLaPlantillaYLosValoresDeLaNotificacion()
+        {
+            _context.Set(Usuario(fullName: "Ana Perez"));
+            var notificacion = new NotificationMessage("CLI-7", NotificationType.ChangeState, "m", documentNumber: "GUIA-123", title: "t",
+                messageDate: new DateTime(2026, 10, 21, 15, 30, 5, DateTimeKind.Utc), id: "N-1");
+            var settings = Configuracion(s => s.Conexion360Url = "https://conexion360.space");
+
+            await Crear(settings).SendAsync(notificacion, CancellationToken.None);
+
+            String html = _enviados.Should().ContainSingle().Subject.Message.HtmlBody!;
+            html.Should().Contain("Estimado/a Ana Perez,")
+                .And.Contain("GUIA-123")
+                .And.Contain("ORIGENPENDIENTE")
+                .And.Contain("DESTINOPENDIENTE")
+                .And.Contain("ESTADOANTERIORPENDIENTE")
+                .And.Contain("ESTADONUEVOPENDIENTE")
+                .And.Contain("COMENTARIOPENDIENTE")
+                .And.Contain("21/10/2026 15:30:05 UTC")
+                .And.Contain("href=\"https://conexion360.space\"")
+                .And.Contain("cid:logoConexion360");
+            html.Should().NotContain("{{");
+        }
+
+        [Fact]
+        public async Task SendAsync_SinDestinatario_SaludaComoClienteYUsaElNumeroDeGuiaDeLaNotificacion()
+        {
+            var notificacion = new NotificationMessage("CLI-7", NotificationType.Comment, "m", documentNumber: "GUIA-9", title: "t", id: "N-1");
+
+            await Crear().SendAsync(notificacion, CancellationToken.None);
+
+            String html = _enviados.Should().ContainSingle().Subject.Message.HtmlBody!;
+            html.Should().Contain("Estimado/a cliente,").And.Contain("GUIA-9");
+        }
+
+        [Fact]
+        public async Task SendAsync_IncluyeElLogoIncrustadoYElTextoPlano()
+        {
+            await Crear().SendAsync(Notificacion("Titulo", "Texto plano alterno"), CancellationToken.None);
+
+            EmailMessage correo = _enviados.Should().ContainSingle().Subject.Message;
+            correo.Body.Should().Be("Texto plano alterno");
+            correo.InlineImage.Should().NotBeNull();
+            correo.InlineImage!.ContentId.Should().Be(ShipmentStatusEmailTemplate.LogoContentId);
+            correo.InlineImage.MediaType.Should().Be("image/png");
+            correo.InlineImage.Content.Take(8).Should().Equal(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A);
+        }
+
+        [Fact]
+        public async Task SendAsync_CodificaComoHtmlElNombreYElNumeroDeGuia()
+        {
+            _context.Set(Usuario(fullName: "<script>alert(1)</script>"));
+            var notificacion = new NotificationMessage("CLI-7", NotificationType.Comment, "m", documentNumber: "<b>X</b>", title: "t", id: "N-1");
+
+            await Crear().SendAsync(notificacion, CancellationToken.None);
+
+            String html = _enviados.Should().ContainSingle().Subject.Message.HtmlBody!;
+            html.Should().NotContain("<script>").And.NotContain("<b>X</b>");
+            html.Should().Contain("&lt;script&gt;").And.Contain("&lt;b&gt;X&lt;/b&gt;");
+        }
+
+        [Fact]
+        public async Task SendAsync_RegistraDeDondeSalioElDestinatarioSinMostrarlo()
+        {
+            _context.Set(Usuario("cliente@correo.com"));
+
+            await Crear().SendAsync(Notificacion(), CancellationToken.None);
+
+            var entrada = _logger.Entries.Should().ContainSingle().Subject;
+            entrada.Message.Should().Contain("correo del cliente").And.NotContain("cliente@correo.com");
         }
     }
 }

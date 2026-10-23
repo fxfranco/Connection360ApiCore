@@ -72,10 +72,12 @@ namespace Connection360.Api.Controllers
         /// <returns>La configuración de notificaciones creada, envuelta en la respuesta estándar de la API.</returns>
         /// <response code="200">Configuración de notificaciones creada correctamente.</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
+        /// <response code="409">El cliente o colaborador ya tiene configuración de notificaciones.</response>
         [HttpPost("createnotifications", Name = nameof(CreateNotificationsSettings))]
         [Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
         [ProducesResponseType(typeof(CustomerNotificationsSettingsResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CreateNotificationsSettings([FromBody] CustomerNotificationsSettingsResponse customerNotificationsSettings, CancellationToken cancellationToken)
         {
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
@@ -137,11 +139,13 @@ namespace Connection360.Api.Controllers
         /// <response code="200">Reservado para compatibilidad; este endpoint responde 201 al crear el recurso.</response>
         /// <response code="201">Configuración maestra creada correctamente.</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
+        /// <response code="409">Ya existe una configuración maestra; solo se permite un registro.</response>
         [HttpPost("createmaster", Name = nameof(CreateMasterSettings))]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(MasterSettingsResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(MasterSettingsResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CreateMasterSettings([FromBody] CreateMasterSettingsDto createMasterSettingsDto, CancellationToken cancellationToken)
         {
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
@@ -185,7 +189,6 @@ namespace Connection360.Api.Controllers
         /// <response code="500">Error inesperado al listar los usuarios.</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("listusers")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(PagedResult<IList<Auth0UserDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
@@ -239,7 +242,6 @@ namespace Connection360.Api.Controllers
         /// <response code="500">Error inesperado al consultar el usuario (incluye el caso en que no se encuentra).</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpGet("getuser")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(typeof(Auth0UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
@@ -268,7 +270,11 @@ namespace Connection360.Api.Controllers
 
         }
 
-        /// <summary>Actualiza los datos de un usuario administrable (Auth0).</summary>
+        /// <summary>
+        /// Actualiza los datos de un usuario administrable (Auth0): correo, teléfono, nombre, apodo,
+        /// estado de bloqueo y rol. Solo se aplican los campos que realmente cambian; si se envía
+        /// <c>roleId</c> distinto del rol actual, el usuario pasa a tener únicamente ese rol.
+        /// </summary>
         /// <param name="userId">Identificador del usuario en Auth0 a actualizar.</param>
         /// <param name="UsersUpdate">Nuevos datos del usuario.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
@@ -277,7 +283,6 @@ namespace Connection360.Api.Controllers
         /// <response code="500">Error inesperado al actualizar el usuario.</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpPatch("updateuser/{userId}")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
@@ -304,6 +309,77 @@ namespace Connection360.Api.Controllers
             }
         }
 
+        /// <summary>Lista los roles definidos en Auth0 con su identificador, para poder asignarlos a un usuario.</summary>
+        /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+        /// <returns>El listado de roles (id, nombre y descripción), envuelto en la respuesta estándar de la API.</returns>
+        /// <response code="200">Roles obtenidos correctamente.</response>
+        /// <response code="500">Error inesperado al listar los roles.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
+        [HttpGet("listroles")]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(typeof(IList<Auth0RoleDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetRolesListSettings(CancellationToken cancellationToken)
+        {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
+            try
+            {
+                IList<Auth0RoleDto> result = await _getUserManagementUseCase.GetRolesAsync(cancellationToken);
+                return result != null ? Ok(result) : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al listar roles en el servidor");
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message,
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al listar roles en el servidor");
+            }
+        }
+
+        /// <summary>
+        /// Activa o inactiva un usuario administrable (Auth0). Inactivar equivale a bloquearlo (deja
+        /// de poder iniciar sesión); activar lo desbloquea.
+        /// </summary>
+        /// <param name="userId">Identificador del usuario en Auth0.</param>
+        /// <param name="statusRequest">Estado deseado: <c>isActive</c> = <c>true</c> activa, <c>false</c> inactiva.</param>
+        /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+        /// <returns>Sin contenido.</returns>
+        /// <response code="204">Estado del usuario actualizado correctamente.</response>
+        /// <response code="500">Error inesperado al cambiar el estado del usuario.</response>
+        /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
+        [HttpPatch("updateuserstatus/{userId}")]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateUserStatusSettings([FromRoute] String userId, [FromBody] UsersManagementStatusRequest statusRequest, CancellationToken cancellationToken)
+        {
+            UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
+            if (role != UserRoleApplication.ADMIN)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+            }
+            try
+            {
+                Boolean result = await _getUserManagementUseCase.SetUserStatusAsync(userId, statusRequest.IsActive);
+                return result ? NoContent() : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al cambiar el estado del usuario en el servidor");
+            }
+            catch (Exception ex)
+            {
+                return Problem(detail: ex.Message,
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Error al cambiar el estado del usuario en el servidor");
+            }
+        }
+
         /// <summary>Elimina un usuario administrable (Auth0).</summary>
         /// <param name="userId">Identificador del usuario en Auth0 a eliminar.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
@@ -312,7 +388,6 @@ namespace Connection360.Api.Controllers
         /// <response code="500">Error inesperado al eliminar el usuario.</response>
         /// <response code="403">No tiene un rol asignado, acceso denegado.</response>
         [HttpDelete("deleteuser/{userId}")]
-        //[AllowAnonymous]
         [Authorize(Roles = "ADMIN")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
@@ -346,8 +421,11 @@ namespace Connection360.Api.Controllers
         /// <param name="clientId">Identificador del cliente a aprovisionar.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El identificador del recurso creado.</returns>
+        /// <response code="409">Ya existe un cliente con esa identificación.</response>
         [HttpGet("createcustomerdb", Name = nameof(CreateCustomerDataBase))]
-        [AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult> CreateCustomerDataBase(String clientId, CancellationToken cancellationToken)
         {
             var resultado = await _customerUseCase.CrearAsync(clientId, cancellationToken);
@@ -361,8 +439,11 @@ namespace Connection360.Api.Controllers
         /// <param name="clientId">Identificador del colaborador a aprovisionar.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El identificador del recurso creado.</returns>
+        /// <response code="409">Ya existe un colaborador con esa identificación.</response>
         [HttpGet("createcollaboratordb", Name = nameof(CreateCollaboratorDataBase))]
-        [AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult> CreateCollaboratorDataBase(String clientId, CancellationToken cancellationToken)
         {
             var resultado = await _collaboratorUseCase.CreateAsync(clientId, cancellationToken);
@@ -377,8 +458,11 @@ namespace Connection360.Api.Controllers
         /// <param name="collaborator">Identificador del colaborador a asociar.</param>
         /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
         /// <returns>El identificador del recurso creado.</returns>
+        /// <response code="409">El colaborador ya está asociado a ese cliente.</response>
         [HttpGet("createcustomercollaboratordb", Name = nameof(CreateCustomerCollaboratorDataBase))]
-        [AllowAnonymous]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult> CreateCustomerCollaboratorDataBase(String clientId, String collaborator, CancellationToken cancellationToken)
         {
             var resultado = await _collaboratorUseCase.CreateCustomerCollaboratorAsync(clientId, collaborator, cancellationToken);
@@ -395,7 +479,6 @@ namespace Connection360.Api.Controllers
         /// <returns>El resultado de la operación.</returns>
         /// <response code="204">Reservado para compatibilidad; en caso de éxito este endpoint responde 200 con el resultado.</response>
         [HttpPost("generatenotificationOutboxTest")]
-        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<ActionResult> GeneratenotificationOutbox(CreateOutboxMessagesDto outboxMessages, CancellationToken cancellationToken)
         {

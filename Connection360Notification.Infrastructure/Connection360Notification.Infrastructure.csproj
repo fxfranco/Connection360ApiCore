@@ -26,6 +26,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- Plantilla HTML del correo de cambio de estado y logo (copia de Documents/logoConexion360.png), incrustados en el
+		     ensamblado para que viajen en la imagen de Docker sin depender de rutas de archivos. -->
+		<EmbeddedResource Include="Email\Templates\ShipmentStatusEmail.html" LogicalName="ShipmentStatusEmail.html" />
+		<EmbeddedResource Include="Email\Assets\logoConexion360.png" LogicalName="logoConexion360.png" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\Connection360Notification.Application\Connection360Notification.Application.csproj" />
 		<ProjectReference Include="..\Connection360Notification.Domain\Connection360Notification.Domain.csproj" />
 		<ProjectReference Include="..\Connection360.Observability.Domain\Connection360.Observability.Domain.csproj" />

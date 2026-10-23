@@ -34,5 +34,19 @@ namespace Connection360.Application.UseCases
         {
             return await _auth0UserService.GetUsersByIdAsync(userId);
         }
+
+        public async Task<IList<Auth0RoleDto>> GetRolesAsync(CancellationToken cancellationToken = default)
+        {
+            return await _auth0UserService.GetRolesAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Activa o inactiva un usuario. En Auth0 "inactivo" equivale a "bloqueado", por eso
+        /// <paramref name="isActive"/> se invierte al llamar al servicio.
+        /// </summary>
+        public async Task<Boolean> SetUserStatusAsync(String userId, Boolean isActive)
+        {
+            return await _auth0UserService.SetUserBlockedAsync(userId, isBlocked: !isActive);
+        }
     }
 }

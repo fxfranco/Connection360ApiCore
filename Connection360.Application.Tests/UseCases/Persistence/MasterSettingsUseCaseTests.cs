@@ -2,6 +2,7 @@ using Connection360.Application.DTOs;
 using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.UseCases.Persistence;
 using Connection360.Domain.Entities.Persistence;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 using FluentAssertions;
 using Moq;
@@ -44,6 +45,34 @@ namespace Connection360.Application.Tests.UseCases.Persistence
 
             await act.Should().ThrowAsync<InvalidOperationException>();
             _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateAsync_SiYaExisteUnaConfiguracion_LanzaDuplicateRecordExceptionSinCrearNiAbrirTransaccion()
+        {
+            var dto = new CreateMasterSettingsDto(true, false, true, "COP", "es-CO", "America/Bogota", 30);
+            _repositoryMock.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new MasterSettings());
+
+            Func<Task> act = () => _useCase.CreateAsync(dto, CancellationToken.None);
+
+            await act.Should().ThrowAsync<DuplicateRecordException>().WithMessage("*solo se permite un registro*");
+            _repositoryMock.Verify(r => r.CrearAsync(It.IsAny<MasterSettings>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateAsync_SiNoExisteConfiguracion_ConsultaAntesDeCrear()
+        {
+            var dto = new CreateMasterSettingsDto(true, false, true, "COP", "es-CO", "America/Bogota", 30);
+            _repositoryMock.Setup(r => r.GetAsync(It.IsAny<CancellationToken>())).ReturnsAsync((MasterSettings)null!);
+            _repositoryMock.Setup(r => r.CrearAsync(It.IsAny<MasterSettings>(), It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+            MasterSettingsResponseDto result = await _useCase.CreateAsync(dto, CancellationToken.None);
+
+            result.IdMasterSettings.Should().Be(1);
+            _repositoryMock.Verify(r => r.GetAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _repositoryMock.Verify(r => r.CrearAsync(It.IsAny<MasterSettings>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

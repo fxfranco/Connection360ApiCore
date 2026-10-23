@@ -2,6 +2,7 @@
 using Connection360.Application.DTOs.Persistence;
 using Connection360.Application.Ports.Persistence;
 using Connection360.Domain.Entities.Persistence;
+using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 
 namespace Connection360.Application.UseCases.Persistence
@@ -19,6 +20,12 @@ namespace Connection360.Application.UseCases.Persistence
         {
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
             IMasterSettingsRepository masterSettingsRepository = _unitOfWork.GetRepository<IMasterSettingsRepository>();
+
+            // Solo puede existir una configuración maestra: si ya hay una, se debe actualizar en lugar de crear otra
+            if (await masterSettingsRepository.GetAsync(cancellationToken) != null)
+            {
+                throw new DuplicateRecordException("Ya existe una configuración maestra; solo se permite un registro. Utilice la actualización para modificarla.");
+            }
 
             // 1. Dominio valida las reglas de negocio
             var newmasterSettings = new MasterSettings(0, dto.AutomaticTrackingUpdate, dto.RequireDocumentUpload, dto.PublicMonitoring, dto.CurrencyType, dto.Language, dto.TimeZone, dto.DataRetentionDays);
