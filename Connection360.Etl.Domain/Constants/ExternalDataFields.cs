@@ -170,6 +170,13 @@
         /// <summary>Comentario</summary>
         public const String Comment = "COMENTARIO";
 
+        /// <summary>
+        /// Usuario que realizó el cambio. Lo devuelven las APIs externas; NO se persiste en
+        /// application_data_sheet: solo se usa, cuando se detecta un cambio, para el campo
+        /// UsuarioCambio de log_status_tracking.
+        /// </summary>
+        public const String ChangeUser = "changeuser";
+
         /// <summary>ID Log de la base de datos de logs de cambios de estado</summary>
         public const String IdLog = "ID";
 

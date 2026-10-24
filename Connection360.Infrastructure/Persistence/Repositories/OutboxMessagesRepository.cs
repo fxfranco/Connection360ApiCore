@@ -1,5 +1,6 @@
 ﻿using Connection360.Domain.Dtos;
 using Connection360.Domain.Ports.Persistence;
+using Connection360.Domain.Time;
 using Dapper;
 using System.Text.Json;
 
@@ -21,7 +22,9 @@ namespace Connection360.Infrastructure.Persistence.Repositories
                 Id = Guid.NewGuid(),
                 EventType = outboxMessagesRequest.EventType,
                 Payload = JsonSerializer.Serialize(outboxMessagesRequest),
-                CreatedAt = DateTime.UtcNow
+                // created_at es timestamptz: Npgsql exige Kind=Utc, así que la hora de Colombia se marca
+                // como Utc (NowAsUtcKind) para que se guarde tal cual y no se vuelva a desplazar.
+                CreatedAt = ColombiaClock.NowAsUtcKind
             };
 
             const string query = @"
@@ -68,7 +71,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
 
             var command = new CommandDefinition(
                 query,
-                 new { Now = DateTime.UtcNow, Id = id },
+                 new { Now = ColombiaClock.NowAsUtcKind, Id = id },
                 transaction: _session.Transaction,
                 cancellationToken: cancellationToken
             );

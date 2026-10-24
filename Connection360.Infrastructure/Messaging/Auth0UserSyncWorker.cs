@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Interfaces;
+using Connection360.Domain.Time;
 using Connection360.Observability.Domain.Telemetry;
 using Connection360Notification.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
@@ -109,7 +110,7 @@ namespace Connection360.Infrastructure.Messaging
                 return true;
             }
 
-            _logger.LogInformation("Iniciando Auth0UserSyncWorker {Date}", DateTime.Now);
+            _logger.LogInformation("Iniciando Auth0UserSyncWorker {Date}", ColombiaClock.Now);
 
             // Un span por ciclo; si nadie escucha trazas (observabilidad desactivada) es null.
             using Activity? span = Connection360Telemetry.Source.StartActivity("auth0.users.sync", ActivityKind.Producer);

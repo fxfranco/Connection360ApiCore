@@ -196,5 +196,12 @@ namespace Connection360.Etl.Domain.Entities
 
         /// <summary>Fecha del último cambio de estado registrado (ver <see cref="Comentario"/>).</summary>
         public DateTime FechaComentario { get; set; }
+
+        /// <summary>
+        /// Usuario que realizó el cambio, tal como lo devuelven las APIs externas (campo "changeuser").
+        /// NO se persiste en application_data_sheet (el upsert no lo referencia): solo viaja hasta el
+        /// detector de cambios para completar log_status_tracking.usuario_cambio.
+        /// </summary>
+        public String ChangeUser { get; set; } = String.Empty;
     }
 }

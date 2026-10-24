@@ -159,6 +159,22 @@ namespace Connection360.Etl.Domain.Test.Services
         }
 
         [Fact]
+        public void Map_ConChangeUser_LoCapturaEnLaHoja()
+        {
+            var s = _sut.Map(Ds(Record((F.DocumentNumber, "HBL-3"), (F.ChangeUser, "jperez")))).Single();
+
+            s.ChangeUser.Should().Be("jperez");
+        }
+
+        [Fact]
+        public void Map_SinChangeUser_QuedaVacio()
+        {
+            var s = _sut.Map(Ds(Record((F.DocumentNumber, "HBL-4")))).Single();
+
+            s.ChangeUser.Should().BeEmpty();
+        }
+
+        [Fact]
         public void Map_SoloDocumento_UsaValoresPorDefectoYOpcionalesNulos()
         {
             var s = _sut.Map(Ds(Record((F.DocumentNumber, "HBL-2")))).Single();

@@ -3,6 +3,7 @@ using Connection360.Application.DTOs;
 using Connection360.Application.DTOs.Persistence;
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Enums;
+using Connection360.Domain.Time;
 using FluentAssertions;
 using Xunit;
 
@@ -247,9 +248,9 @@ namespace Connection360.Application.Tests.DTOs
         [Fact]
         public void CreateOutboxMessagesDto_SinFecha_DebeUsarLaFechaActual()
         {
-            DateTime before = DateTime.Now;
+            DateTime before = ColombiaClock.Now;
             var dto = new CreateOutboxMessagesDto("c", "e", "d", "t", "m");
-            DateTime after = DateTime.Now;
+            DateTime after = ColombiaClock.Now;
 
             dto.MessageDate.Should().NotBeNull();
             dto.MessageDate!.Value.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);

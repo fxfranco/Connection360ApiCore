@@ -1,4 +1,5 @@
 ﻿using Connection360.Etl.Domain.Enums;
+using Connection360.Etl.Domain.Time;
 using Connection360.Etl.Infrastructure.Persistence.Repositories;
 using Connection360.Etl.Infrastructure.Tests.TestHelpers;
 using FluentAssertions;
@@ -63,7 +64,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             await using var scope = new FakeSessionScope();
             scope.Connection.ScalarResult = _ => 77L;
             var sut = new EtlJobControlRepository(scope.Session);
-            DateTime before = DateTime.UtcNow;
+            DateTime before = ColombiaClock.Now;
 
             Int64 id = await sut.StartRunAsync(job, pageSize);
 
@@ -73,7 +74,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             execution.Parameters["JobName"].Should().Be(dbName);
             execution.Parameters["Status"].Should().Be("PROCESSING");
             execution.Parameters["PageSize"].Should().Be(pageSize);
-            ((DateTime)execution.Parameters["UpdatedAt"]!).Should().BeOnOrAfter(before).And.BeOnOrBefore(DateTime.UtcNow);
+            ((DateTime)execution.Parameters["UpdatedAt"]!).Should().BeOnOrAfter(before).And.BeOnOrBefore(ColombiaClock.Now);
         }
 
         [Fact]
@@ -132,6 +133,8 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             deleted.Should().Be(8);
             FakeExecution execution = scope.Connection.Executions.Single();
             execution.CommandText.Should().Contain("DELETE FROM connection360write.etl_job_control");
+            // El corte se calcula con la hora de Colombia, porque updated_at (timestamp) se guarda en esa hora.
+            execution.CommandText.Should().Contain("CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota'");
             execution.Parameters["JobName"].Should().Be("application_data_sheet");
             execution.Parameters["OlderThanDays"].Should().Be(30);
         }

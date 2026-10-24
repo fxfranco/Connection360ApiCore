@@ -98,6 +98,9 @@ namespace Connection360.Etl.Domain.Services
                     //Comentarios que después debe validar si se registra en otra tabla.
                     Comentario = record[ExternalDataFields.Comment],
                     FechaComentario = record[ExternalDataFields.CommentDate].ToDateTimeOrMin(),
+
+                    // Usuario del cambio (no se persiste en application_data_sheet; solo se usa si hay cambios).
+                    ChangeUser = record[ExternalDataFields.ChangeUser],
                 };
 
                 //if (latestLogByDocument.TryGetValue(documentNumber, out var latestLog))

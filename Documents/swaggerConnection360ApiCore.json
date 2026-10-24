@@ -40,6 +40,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -84,6 +94,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResumenClienteResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -140,6 +160,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClientSummaryResponsePagedResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -227,6 +257,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -280,6 +320,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClientSummaryResponsePagedResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -367,6 +417,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -413,6 +473,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -454,6 +524,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -463,12 +543,12 @@
         "tags": [
           "Settings"
         ],
-        "summary": "Obtiene la configuración de notificaciones (canales y eventos) de un cliente.",
+        "summary": "Obtiene la configuración de notificaciones. Para el rol CLIENT devuelve canales y eventos del cliente;\r\npara ADMIN, ANALISTAOPE y ANALISTASAC devuelve únicamente los canales del colaborador.",
         "parameters": [
           {
             "name": "idClient",
             "in": "query",
-            "description": "Identificador del cliente.",
+            "description": "Identificador del cliente, o identificación del colaborador según el rol.",
             "schema": {
               "type": "string"
             }
@@ -484,6 +564,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -494,6 +584,7 @@
           "Settings"
         ],
         "summary": "Crea la configuración de notificaciones (canales y eventos) de un cliente.",
+        "operationId": "CreateNotificationsSettings",
         "requestBody": {
           "description": "Configuración de canales y eventos de notificación a crear.",
           "content": {
@@ -521,6 +612,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CustomerNotificationsSettingsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El cliente o colaborador ya tiene configuración de notificaciones.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -560,6 +671,16 @@
           },
           "204": {
             "description": "Configuración de notificaciones actualizada correctamente."
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -580,6 +701,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -590,6 +721,7 @@
           "Settings"
         ],
         "summary": "Crea la configuración maestra (global) del sistema.",
+        "operationId": "CreateMasterSettings",
         "requestBody": {
           "description": "Datos de la configuración maestra a crear.",
           "content": {
@@ -630,6 +762,26 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya existe una configuración maestra; solo se permite un registro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -666,6 +818,16 @@
           },
           "204": {
             "description": "Configuración maestra actualizada correctamente."
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -716,6 +878,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -756,6 +928,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -765,7 +947,7 @@
         "tags": [
           "Settings"
         ],
-        "summary": "Actualiza los datos de un usuario administrable (Auth0).",
+        "summary": "Actualiza los datos de un usuario administrable (Auth0): correo, teléfono, nombre, apodo,\r\nestado de bloqueo y rol. Solo se aplican los campos que realmente cambian; si se envía\r\n`roleId` distinto del rol actual, el usuario pasa a tener únicamente ese rol.",
         "parameters": [
           {
             "name": "userId",
@@ -810,6 +992,123 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/listroles": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Lista los roles definidos en Auth0 con su identificador, para poder asignarlos a un usuario.",
+        "responses": {
+          "200": {
+            "description": "Roles obtenidos correctamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Auth0RoleDto"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error inesperado al listar los roles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/updateuserstatus/{userId}": {
+      "patch": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Activa o inactiva un usuario administrable (Auth0). Inactivar equivale a bloquearlo (deja\r\nde poder iniciar sesión); activar lo desbloquea.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Identificador del usuario en Auth0.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Estado deseado: `isActive` = `true` activa, `false` inactiva.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsersManagementStatusRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsersManagementStatusRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsersManagementStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Estado del usuario actualizado correctamente."
+          },
+          "500": {
+            "description": "Error inesperado al cambiar el estado del usuario.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -844,6 +1143,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "No tiene un rol asignado, acceso denegado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -854,6 +1163,7 @@
           "Settings"
         ],
         "summary": "Utilidad de aprovisionamiento: crea la base de datos/esquema de un nuevo cliente.\r\nEndpoint anónimo pensado para uso interno/administrativo, no para el flujo normal de la aplicación.",
+        "operationId": "CreateCustomerDataBase",
         "parameters": [
           {
             "name": "clientId",
@@ -865,8 +1175,18 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "description": "Created"
+          },
+          "409": {
+            "description": "Ya existe un cliente con esa identificación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -877,6 +1197,7 @@
           "Settings"
         ],
         "summary": "Utilidad de aprovisionamiento: crea la base de datos/esquema de un nuevo colaborador.\r\nEndpoint anónimo pensado para uso interno/administrativo, no para el flujo normal de la aplicación.",
+        "operationId": "CreateCollaboratorDataBase",
         "parameters": [
           {
             "name": "clientId",
@@ -888,8 +1209,18 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "201": {
+            "description": "Created"
+          },
+          "409": {
+            "description": "Ya existe un colaborador con esa identificación.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -900,6 +1231,7 @@
           "Settings"
         ],
         "summary": "Utilidad de aprovisionamiento: asocia un colaborador existente a un cliente existente.\r\nEndpoint anónimo pensado para uso interno/administrativo, no para el flujo normal de la aplicación.",
+        "operationId": "CreateCustomerCollaboratorDataBase",
         "parameters": [
           {
             "name": "clientId",
@@ -919,8 +1251,117 @@
           }
         ],
         "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "409": {
+            "description": "El colaborador ya está asociado a ese cliente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/listcustomersdb": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Lista las identificaciones de todos los clientes almacenados en connection360write.customers.",
+        "responses": {
           "200": {
-            "description": "OK"
+            "description": "Listado obtenido correctamente (vacío si no hay clientes).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerDtoResult"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El usuario no tiene el rol ADMIN.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/listcollaboratorsdb": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Lista las identificaciones de todos los colaboradores almacenados en connection360write.collaborators.",
+        "responses": {
+          "200": {
+            "description": "Listado obtenido correctamente (vacío si no hay colaboradores).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CollaboratorDtoResult"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El usuario no tiene el rol ADMIN.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/listcustomercollaboratordb": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Lista las relaciones cliente - colaborador de connection360write.customers_of_collaborators, con la\r\nidentificación de cada lado (identificacionCustomer e identificacionCollaborator).",
+        "responses": {
+          "200": {
+            "description": "Listado obtenido correctamente (vacío si no hay relaciones).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerCollaboratorRelationDtoResult"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "El usuario no tiene el rol ADMIN.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -961,6 +1402,24 @@
   },
   "components": {
     "schemas": {
+      "Auth0RoleDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "Auth0UserDto": {
         "type": "object",
         "properties": {
@@ -996,6 +1455,30 @@
             "nullable": true
           },
           "nickname": {
+            "type": "string",
+            "nullable": true
+          },
+          "roleId": {
+            "type": "string",
+            "nullable": true
+          },
+          "roleName": {
+            "type": "string",
+            "nullable": true
+          },
+          "company": {
+            "type": "string",
+            "nullable": true
+          },
+          "document": {
+            "type": "string",
+            "nullable": true
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
             "type": "string",
             "nullable": true
           }
@@ -1122,6 +1605,16 @@
         "additionalProperties": false,
         "description": "Resultado paginado producido internamente por los controladores antes de que\r\nConnection360.Api.Filters.ApiResponseFilter lo transforme en la respuesta final:\r\nel filtro mueve Connection360.Api.Models.PagedResult`1.Items a `ApiResponse<T>.DataResponse` y el resto de\r\npropiedades a `ApiResponse<T>.Meta`. No es, por lo tanto, la forma final del JSON\r\nque recibe el cliente de la API."
       },
+      "CollaboratorDtoResult": {
+        "type": "object",
+        "properties": {
+          "identificacion": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ContainerShipmentsResponse": {
         "type": "object",
         "properties": {
@@ -1225,6 +1718,30 @@
           "messageDate": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomerCollaboratorRelationDtoResult": {
+        "type": "object",
+        "properties": {
+          "identificacionCustomer": {
+            "type": "string",
+            "nullable": true
+          },
+          "identificacionCollaborator": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomerDtoResult": {
+        "type": "object",
+        "properties": {
+          "identificacion": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -1880,6 +2397,15 @@
           "destinationLongitudCoordinates": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsersManagementStatusRequest": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

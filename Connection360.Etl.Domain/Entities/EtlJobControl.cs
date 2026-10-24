@@ -28,7 +28,7 @@ namespace Connection360.Etl.Domain.Entities
         /// <summary>Total de registros procesados/cargados hasta el momento (se va acumulando página a página).</summary>
         public Int32? TotalRecordsProcessed { get; set; }
 
-        /// <summary>Momento (UTC) de la última actualización de este registro.</summary>
+        /// <summary>Momento (hora de Colombia, UTC-5) de la última actualización de este registro.</summary>
         public DateTime UpdatedAt { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using Connection360.Etl.Domain.Entities;
 using Connection360.Etl.Domain.Enums;
 using Connection360.Etl.Domain.Interfaces;
 using Connection360.Etl.Domain.Ports.Persistence;
+using Connection360.Etl.Domain.Time;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,6 +26,9 @@ namespace Connection360.Etl.Application.UseCases
     /// </summary>
     internal sealed class EtlChangeNotifier
     {
+        /// <summary>Longitud máxima de log_status_tracking.usuario_cambio (VARCHAR(50)).</summary>
+        private const Int32 MaxChangeUserLength = 50;
+
         private readonly ILogStatusTrackingRepository _logRepository;
         private readonly IOutboxMessageRepository _outboxRepository;
         private readonly ICustomerNotificationChannelsRepository _channelsRepository;
@@ -50,7 +54,9 @@ namespace Connection360.Etl.Application.UseCases
             if (changes is null || changes.Count == 0)
                 return;
 
-            DateTime now = DateTime.UtcNow;
+            // Hora de Colombia (UTC-5): es la que quedan en log_status_tracking.fecha_cambio, en el
+            // payload (MessageDate) y en outbox_messages.created_at. Se usa UN solo instante por ronda.
+            DateTime now = ColombiaClock.Now;
 
             // Canales de notificación de TODOS los clientes de la ronda en una sola consulta (no una
             // por cambio), dentro de la misma transacción. Un cliente sin configuración (o que no
@@ -76,7 +82,7 @@ namespace Connection360.Etl.Application.UseCases
                         IdOperacion = change.IdOperacion,
                         DocumentoTransporteHbl = change.DocumentoTransporteHbl,
                         FechaCambio = now,
-                        UsuarioCambio = _systemUser,
+                        UsuarioCambio = ResolveChangeUser(change),
                         Mensaje = message,
                         EstadoAnterior = change.EstadoAnterior,
                         NuevoEstado = change.NuevoEstado,
@@ -150,8 +156,25 @@ namespace Connection360.Etl.Application.UseCases
                 Id = Guid.NewGuid(),
                 EventType = eventTypeValue,
                 Payload = JsonSerializer.Serialize(payload),
-                CreatedAt = now,
+                // outbox_messages.created_at es timestamptz: Npgsql solo acepta Kind=Utc, así que la hora
+                // de Colombia se marca como Utc para que no se vuelva a desplazar al guardarla.
+                CreatedAt = DateTime.SpecifyKind(now, DateTimeKind.Utc),
             };
+        }
+
+        /// <summary>
+        /// Usuario que se registra en log_status_tracking.usuario_cambio: el "changeuser" que devolvieron
+        /// las APIs externas si trae datos; si viene vacío, el usuario de sistema configurado en appsettings.
+        /// La columna es VARCHAR(50), por lo que el valor se recorta a esa longitud.
+        /// </summary>
+        private String ResolveChangeUser(ApplicationDataSheetChange change)
+        {
+            String changeUser = change.ChangeUser?.Trim() ?? String.Empty;
+
+            if (changeUser.Length == 0)
+                return _systemUser;
+
+            return changeUser.Length > MaxChangeUserLength ? changeUser.Substring(0, MaxChangeUserLength) : changeUser;
         }
     }
 }

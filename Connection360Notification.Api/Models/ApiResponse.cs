@@ -1,4 +1,6 @@
-﻿namespace Connection360Notification.Api.Models
+﻿using Connection360Notification.Domain.Time;
+
+namespace Connection360Notification.Api.Models
 {
     /// <summary>
     /// Envoltorio estándar de todas las respuestas de la API. Todas las respuestas que devuelven
@@ -11,8 +13,8 @@
     /// <typeparam name="T">Tipo de los datos contenidos en <see cref="DataResponse"/>.</typeparam>
     public class ApiResponse<T>
     {
-        /// <summary>Fecha y hora (UTC) en que se generó la respuesta.</summary>
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        /// <summary>Fecha y hora (hora de Colombia, UTC-5) en que se generó la respuesta.</summary>
+        public DateTime Timestamp { get; set; } = ColombiaClock.Now;
 
         /// <summary>Código de estado HTTP de la respuesta.</summary>
         public Int32 Status { get; set; }

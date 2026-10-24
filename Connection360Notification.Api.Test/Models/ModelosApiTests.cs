@@ -1,5 +1,6 @@
 ﻿using Connection360Notification.Api.Common;
 using Connection360Notification.Api.Models;
+using Connection360Notification.Domain.Time;
 using FluentAssertions;
 using System.Text.Json;
 using Xunit;
@@ -11,7 +12,7 @@ namespace Connection360Notification.Api.Tests.Models
         [Fact]
         public void ApiResponse_PorDefecto_TieneValoresInicialesEsperados()
         {
-            DateTime before = DateTime.UtcNow.AddSeconds(-5);
+            DateTime before = ColombiaClock.Now.AddSeconds(-5);
 
             var response = new ApiResponse<String>();
 
@@ -22,7 +23,7 @@ namespace Connection360Notification.Api.Tests.Models
             response.Meta.Should().BeNull();
             response.Path.Should().BeNull();
             response.Timestamp.Should().BeAfter(before);
-            response.Timestamp.Should().BeOnOrBefore(DateTime.UtcNow.AddSeconds(5));
+            response.Timestamp.Should().BeOnOrBefore(ColombiaClock.Now.AddSeconds(5));
         }
 
         [Fact]

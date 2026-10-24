@@ -21,7 +21,7 @@ namespace Connection360.Etl.Domain.Entities
         /// <summary>Contenido del evento en formato JSON, ya serializado.</summary>
         public String Payload { get; set; } = String.Empty;
 
-        /// <summary>Momento (UTC) en que se encoló el mensaje.</summary>
+        /// <summary>Momento (hora de Colombia, UTC-5; Kind=Utc solo como marca para la columna timestamptz) en que se encoló el mensaje.</summary>
         public DateTime CreatedAt { get; set; }
     }
 }

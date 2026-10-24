@@ -1,5 +1,6 @@
 ﻿using Connection360.Etl.Domain.Enums;
 using Connection360.Etl.Domain.Ports.Persistence;
+using Connection360.Etl.Domain.Time;
 using Dapper;
 using System;
 using System.Threading;
@@ -60,7 +61,7 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
                     JobName = jobName.ToDbValue(),
                     Status = EtlJobStatus.Processing.ToDbValue(),
                     PageSize = pageSize,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = ColombiaClock.Now
                 },
                 transaction: _session.Transaction,
                 cancellationToken: cancellationToken);
@@ -86,7 +87,7 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
                     Id = jobControlId,
                     LastProcessedPage = lastProcessedPage,
                     RecordsProcessedInPage = recordsProcessedInPage,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = ColombiaClock.Now
                 },
                 transaction: _session.Transaction,
                 cancellationToken: cancellationToken);
@@ -106,7 +107,7 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
 
             var command = new CommandDefinition(
                 query,
-                new { Id = jobControlId, Status = EtlJobStatus.Completed.ToDbValue(), UpdatedAt = DateTime.UtcNow },
+                new { Id = jobControlId, Status = EtlJobStatus.Completed.ToDbValue(), UpdatedAt = ColombiaClock.Now },
                 transaction: _session.Transaction,
                 cancellationToken: cancellationToken);
 
@@ -125,7 +126,7 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
 
             var command = new CommandDefinition(
                 query,
-                new { Id = jobControlId, Status = EtlJobStatus.Failed.ToDbValue(), UpdatedAt = DateTime.UtcNow },
+                new { Id = jobControlId, Status = EtlJobStatus.Failed.ToDbValue(), UpdatedAt = ColombiaClock.Now },
                 transaction: _session.Transaction,
                 cancellationToken: cancellationToken);
 
@@ -139,7 +140,7 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
             const string query = @"
                 DELETE FROM connection360write.etl_job_control
                 WHERE job_name = @JobName
-                  AND updated_at < (CURRENT_TIMESTAMP - (INTERVAL '1 day' * @OlderThanDays));";
+                  AND updated_at < ((CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota') - (INTERVAL '1 day' * @OlderThanDays));";
 
             var command = new CommandDefinition(
                 query,

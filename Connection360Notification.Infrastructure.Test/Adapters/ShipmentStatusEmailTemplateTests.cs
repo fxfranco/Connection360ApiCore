@@ -31,15 +31,15 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             String html = ShipmentStatusEmailTemplate.Render(Valores());
 
             html.Should().Contain("Estimado/a Ana Perez,")
-                .And.Contain("Le informamos que el estado de su envío de carga internacional ha sido actualizado en <strong>Conexion360</strong>.")
+                .And.Contain("Le informamos que el estado de su envío de carga internacional ha sido actualizado en <strong>Conexión360</strong>.")
                 .And.Contain("Información del envío:")
                 .And.Contain("Número de guía:")
                 .And.Contain("Origen:")
                 .And.Contain("Destino:")
                 .And.Contain("Fecha y hora de actualización:")
-                .And.Contain("Puede consultar el detalle y el historial de movimientos de su envío ingresando a Conexion360.")
+                .And.Contain("Puede consultar el detalle y el historial de movimientos de su envío ingresando a Conexión360.")
                 .And.Contain("Consultar mi envío:")
-                .And.Contain("Esta notificación fue generada automáticamente por Conexion360 con el propósito de mantenerlo informado sobre el avance de su envío.")
+                .And.Contain("Esta notificación fue generada automáticamente por Conexión360 con el propósito de mantenerlo informado sobre el avance de su envío.")
                 .And.Contain("Cordialmente,")
                 .And.Contain("Equipo Operativo");
         }
@@ -62,7 +62,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
         {
             String html = ShipmentStatusEmailTemplate.Render(Valores(tipo: NotificationType.Comment));
 
-            html.Should().Contain("Le informamos que un comentario ha sido ingresado en <strong>Conexion360</strong>.")
+            html.Should().Contain("Le informamos que un comentario ha sido ingresado en <strong>Conexión360</strong>.")
                 .And.NotContain("el estado de su envío de carga internacional ha sido actualizado")
                 .And.Contain("<strong>Estado:</strong> En puerto</li>")
                 .And.NotContain("Estado anterior:")
@@ -78,7 +78,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
         {
             String html = ShipmentStatusEmailTemplate.Render(Valores(tipo: NotificationType.OtherInfo));
 
-            html.Should().Contain("Le informamos que la información de su envío de carga internacional ha sido actualizada en <strong>Conexion360</strong>.")
+            html.Should().Contain("Le informamos que la información de su envío de carga internacional ha sido actualizada en <strong>Conexión360</strong>.")
                 .And.NotContain("el estado de su envío de carga internacional ha sido actualizado")
                 .And.Contain("<strong>Estado:</strong> En puerto</li>")
                 .And.NotContain("Estado anterior:")

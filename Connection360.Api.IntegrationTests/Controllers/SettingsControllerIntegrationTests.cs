@@ -310,5 +310,70 @@ namespace Connection360.Api.IntegrationTests.Controllers
             _factory.UserManagementUseCaseMock.Verify(u => u.UpdateUserAsync("auth0|1",
                 It.Is<Connection360.Domain.Dtos.Auth0UserDto>(d => d.RoleId == "rol_2" && d.Email == "nuevo@correo.com" && d.PhoneNumber == "+573113232323")), Times.Once);
         }
+
+
+        [Fact]
+        public async Task ListCustomersAllDataBase_ConRolAdmin_Retorna200ConLasIdentificaciones()
+        {
+            _factory.CustomerUseCaseMock.Setup(u => u.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Connection360.Domain.Dtos.CustomerDtoResult> { new() { Identificacion = "900111" }, new() { Identificacion = "900222" } });
+
+            HttpResponseMessage response = await _client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/settings/listcustomersdb", roles: "ADMIN"));
+            String body = await response.Content.ReadAsStringAsync();
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            body.Should().Contain("\"identificacion\":\"900111\"").And.Contain("\"identificacion\":\"900222\"");
+        }
+
+        [Fact]
+        public async Task ListCollaboratorDataBase_ConRolAdmin_Retorna200ConLasIdentificaciones()
+        {
+            _factory.CollaboratorUseCaseMock.Setup(u => u.ListAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Connection360.Domain.Dtos.CollaboratorDtoResult> { new() { Identificacion = "COL-1" } });
+
+            HttpResponseMessage response = await _client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/settings/listcollaboratorsdb", roles: "ADMIN"));
+            String body = await response.Content.ReadAsStringAsync();
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            body.Should().Contain("\"identificacion\":\"COL-1\"");
+        }
+
+        [Fact]
+        public async Task ListCustomerCollaboratorDataBase_ConRolAdmin_Retorna200ConLosAlias()
+        {
+            _factory.CollaboratorUseCaseMock.Setup(u => u.ListCustomerCollaboratorAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Connection360.Domain.Dtos.CustomerCollaboratorRelationDtoResult>
+                {
+                    new() { IdentificacionCustomer = "CUS-1", IdentificacionCollaborator = "COL-1" }
+                });
+
+            HttpResponseMessage response = await _client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/settings/listcustomercollaboratordb", roles: "ADMIN"));
+            String body = await response.Content.ReadAsStringAsync();
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            body.Should().Contain("\"identificacionCustomer\":\"CUS-1\"").And.Contain("\"identificacionCollaborator\":\"COL-1\"");
+        }
+
+        [Theory]
+        [InlineData("/api/v1/settings/listcustomersdb")]
+        [InlineData("/api/v1/settings/listcollaboratorsdb")]
+        [InlineData("/api/v1/settings/listcustomercollaboratordb")]
+        public async Task EndpointsDeListadoDeBaseDeDatos_SinAutenticacion_Retorna401(String url)
+        {
+            HttpResponseMessage response = await _client.GetAsync(url);
+
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        [Theory]
+        [InlineData("/api/v1/settings/listcustomersdb", "CLIENT")]
+        [InlineData("/api/v1/settings/listcollaboratorsdb", "ANALISTAOPE")]
+        [InlineData("/api/v1/settings/listcustomercollaboratordb", "ANALISTASAC")]
+        public async Task EndpointsDeListadoDeBaseDeDatos_ConRolDistintoDeAdmin_Retorna403(String url, String roles)
+        {
+            HttpResponseMessage response = await _client.SendAsync(AuthorizedRequest(HttpMethod.Get, url, roles));
+
+            response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        }
     }
 }

@@ -146,5 +146,48 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
             _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
+
+        [Fact]
+        public async Task ListAsync_DelegaAlRepositorioYRetornaLosColaboradores_SinAbrirTransaccion()
+        {
+            var collaborators = new List<Connection360.Domain.Dtos.CollaboratorDtoResult>
+            {
+                new() { Identificacion = "COL-1" },
+                new() { Identificacion = "COL-2" }
+            };
+            _collaboratorRepositoryMock.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(collaborators);
+
+            List<Connection360.Domain.Dtos.CollaboratorDtoResult> result = await _sut.ListAsync(CancellationToken.None);
+
+            result.Should().BeSameAs(collaborators);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ListCustomerCollaboratorAsync_DelegaAlRepositorioDeRelacionesYRetornaElListado_SinAbrirTransaccion()
+        {
+            var relations = new List<Connection360.Domain.Dtos.CustomerCollaboratorRelationDtoResult>
+            {
+                new() { IdentificacionCustomer = "CUS-1", IdentificacionCollaborator = "COL-1" }
+            };
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.ListAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(relations);
+
+            List<Connection360.Domain.Dtos.CustomerCollaboratorRelationDtoResult> result = await _sut.ListCustomerCollaboratorAsync(CancellationToken.None);
+
+            result.Should().BeSameAs(relations);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ListCustomerCollaboratorAsync_SiElRepositorioFalla_PropagaLaExcepcion()
+        {
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.ListAllAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException());
+
+            Func<Task> act = () => _sut.ListCustomerCollaboratorAsync(CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
     }
 }

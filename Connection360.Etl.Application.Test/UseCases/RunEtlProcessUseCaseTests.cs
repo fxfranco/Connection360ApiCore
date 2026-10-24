@@ -4,6 +4,7 @@ using Connection360.Etl.Domain.Constants;
 using Connection360.Etl.Domain.Entities;
 using Connection360.Etl.Domain.Enums;
 using Connection360.Etl.Domain.Ports.Persistence;
+using Connection360.Etl.Domain.Time;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -19,7 +20,7 @@ namespace Connection360.Etl.Application.Tests.UseCases
         private static ApplicationDataSheetChange Change(
             String document, Boolean isNew = false, Boolean stateChanged = false, Boolean commentChanged = false,
             Int64 idOperacion = 0, String estadoAnterior = "", String nuevoEstado = "", Boolean otherInfoChanged = false,
-            String origen = "", String destino = "", String comentario = "", DateTime fechaComentario = default)
+            String origen = "", String destino = "", String comentario = "", DateTime fechaComentario = default, String changeUser = "")
             => new()
             {
                 DocumentoTransporteHbl = document,
@@ -35,6 +36,7 @@ namespace Connection360.Etl.Application.Tests.UseCases
                 Destino = destino,
                 Comentario = comentario,
                 FechaComentario = fechaComentario,
+                ChangeUser = changeUser,
             };
 
         // ---------------------------------------------------------------- migración inicial
@@ -287,12 +289,16 @@ namespace Connection360.Etl.Application.Tests.UseCases
             log.Mensaje.Should().Be("Mensaje-ENTREGADO");
             log.EstadoAnterior.Should().Be("EN TRANSITO");
             log.NuevoEstado.Should().Be("ENTREGADO");
-            log.FechaCambio.Kind.Should().Be(DateTimeKind.Utc);
+            // fecha_cambio es timestamp (sin zona): hora de Colombia como hora de pared (Kind Unspecified).
+            log.FechaCambio.Kind.Should().Be(DateTimeKind.Unspecified);
+            log.FechaCambio.Should().BeOnOrBefore(ColombiaClock.Now).And.BeAfter(ColombiaClock.Now.AddMinutes(-5));
 
             OutboxMessage outbox = h.InsertedOutboxMessages.Should().ContainSingle().Subject;
             outbox.EventType.Should().Be("ChangeState");
             outbox.Id.Should().NotBe(Guid.Empty);
-            outbox.CreatedAt.Should().Be(log.FechaCambio);
+            // created_at es timestamptz: la misma hora de Colombia, marcada como Utc (Npgsql solo acepta Utc).
+            outbox.CreatedAt.Kind.Should().Be(DateTimeKind.Utc);
+            outbox.CreatedAt.Ticks.Should().Be(log.FechaCambio.Ticks);
 
             EtlOutboxPayload payload = JsonSerializer.Deserialize<EtlOutboxPayload>(outbox.Payload)!;
             payload.ClientId.Should().Be("NIT-HBL1");
@@ -301,6 +307,54 @@ namespace Connection360.Etl.Application.Tests.UseCases
             payload.Title.Should().Be("Titulo-ENTREGADO");
             payload.Message.Should().Be("Mensaje-ENTREGADO");
             payload.MessageDate.Should().Be(outbox.CreatedAt);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConCambioDeEstadoYChangeUser_UsaElChangeUserEnLugarDelUsuarioDeSistema()
+        {
+            var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
+            h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
+                .Returns(new List<ApplicationDataSheetChange>
+                {
+                    Change("HBL1", stateChanged: true, idOperacion: 55, estadoAnterior: "A", nuevoEstado: "B", changeUser: "  jperez  ")
+                });
+
+            EtlRunResult result = await h.CreateUseCase(systemUser: "ROBOT").ExecuteAsync();
+
+            result.Success.Should().BeTrue();
+            h.InsertedLogRows.Should().ContainSingle().Which.UsuarioCambio.Should().Be("jperez");
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task ExecuteAsync_ConCambioDeEstadoYChangeUserVacio_UsaElUsuarioDeSistema(String changeUser)
+        {
+            var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
+            h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
+                .Returns(new List<ApplicationDataSheetChange>
+                {
+                    Change("HBL1", stateChanged: true, idOperacion: 55, estadoAnterior: "A", nuevoEstado: "B", changeUser: changeUser)
+                });
+
+            await h.CreateUseCase(systemUser: "ROBOT").ExecuteAsync();
+
+            h.InsertedLogRows.Should().ContainSingle().Which.UsuarioCambio.Should().Be("ROBOT");
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConChangeUserMasLargoQueLaColumna_LoRecortaA50Caracteres()
+        {
+            var h = new RunEtlHarness(true).WithPages("BPMS", DataSets.WithDocuments("HBL1"));
+            h.Detector.Setup(d => d.DetectChanges(It.IsAny<IReadOnlyList<ApplicationDataSheet>>(), It.IsAny<IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot>>()))
+                .Returns(new List<ApplicationDataSheetChange>
+                {
+                    Change("HBL1", stateChanged: true, idOperacion: 55, estadoAnterior: "A", nuevoEstado: "B", changeUser: new String('x', 80))
+                });
+
+            await h.CreateUseCase(systemUser: "ROBOT").ExecuteAsync();
+
+            h.InsertedLogRows.Should().ContainSingle().Which.UsuarioCambio.Should().Be(new String('x', 50));
         }
 
         [Fact]

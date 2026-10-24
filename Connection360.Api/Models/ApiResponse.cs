@@ -1,4 +1,6 @@
-﻿namespace Connection360.Api.Models
+﻿using Connection360.Domain.Time;
+
+namespace Connection360.Api.Models
 {
     /// <summary>
     /// Envoltorio (envelope) estándar de todas las respuestas HTTP de la API. Lo aplica
@@ -11,8 +13,8 @@
     /// <typeparam name="T">Tipo del dato de negocio devuelto en <see cref="DataResponse"/>.</typeparam>
     public class ApiResponse<T>
     {
-        /// <summary>Fecha y hora (UTC) en la que se generó la respuesta.</summary>
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        /// <summary>Fecha y hora (hora de Colombia, UTC-5) en la que se generó la respuesta.</summary>
+        public DateTime Timestamp { get; set; } = ColombiaClock.Now;
 
         /// <summary>Código de estado HTTP de la respuesta (200, 201, 400, 404, etc.).</summary>
         public Int32 Status { get; set; }

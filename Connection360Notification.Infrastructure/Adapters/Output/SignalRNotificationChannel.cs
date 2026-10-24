@@ -1,6 +1,7 @@
 ﻿using Connection360Notification.Application.Ports.Output;
 using Connection360Notification.Domain;
 using Connection360Notification.Domain.Enums;
+using Connection360Notification.Domain.Time;
 using Connection360Notification.Infrastructure.Adapters.Input;
 using Microsoft.AspNetCore.SignalR;
 
@@ -34,7 +35,7 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
             {
                 Message = message,
                 Data = data,
-                Timestamp = DateTime.UtcNow
+                Timestamp = ColombiaClock.Now
             }, cancellationToken);
         }
 

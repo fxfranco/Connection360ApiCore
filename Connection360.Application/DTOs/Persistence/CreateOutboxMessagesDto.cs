@@ -1,4 +1,6 @@
-﻿namespace Connection360.Application.DTOs.Persistence
+﻿using Connection360.Domain.Time;
+
+namespace Connection360.Application.DTOs.Persistence
 {
     /// <summary>
     /// Mensaje a encolar en el patrón Outbox para su posterior publicación (por ejemplo, a Kafka).
@@ -12,7 +14,7 @@
     /// <param name="MessageDate">Fecha del mensaje; si no se especifica, se usa la fecha y hora actuales.</param>
     public record CreateOutboxMessagesDto(String ClientId, String EventType, String DocumentNumber, String Title, String Message, DateTime? MessageDate = null) 
     {
-        /// <summary>Fecha del mensaje; si no se especifica al construir el registro, se usa la fecha y hora actuales.</summary>
-        public DateTime? MessageDate { get; init; } = MessageDate ?? DateTime.Now;
+        /// <summary>Fecha del mensaje; si no se especifica al construir el registro, se usa la fecha y hora actuales de Colombia.</summary>
+        public DateTime? MessageDate { get; init; } = MessageDate ?? ColombiaClock.Now;
     };
 }

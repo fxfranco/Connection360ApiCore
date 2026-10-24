@@ -1,4 +1,5 @@
 ﻿using Connection360.Api.Models;
+using Connection360.Domain.Time;
 using FluentAssertions;
 using Xunit;
 
@@ -9,12 +10,12 @@ namespace Connection360.Api.Tests.Models
         [Fact]
         public void ApiResponse_PorDefecto_TimestampEsRecienteYDemasCamposNulos()
         {
-            DateTime before = DateTime.UtcNow.AddSeconds(-5);
+            DateTime before = ColombiaClock.Now.AddSeconds(-5);
 
             var response = new ApiResponse<String>();
 
             response.Timestamp.Should().BeOnOrAfter(before);
-            response.Timestamp.Should().BeOnOrBefore(DateTime.UtcNow.AddSeconds(5));
+            response.Timestamp.Should().BeOnOrBefore(ColombiaClock.Now.AddSeconds(5));
             response.Status.Should().Be(0);
             response.Error.Should().BeNull();
             response.Message.Should().BeNull();

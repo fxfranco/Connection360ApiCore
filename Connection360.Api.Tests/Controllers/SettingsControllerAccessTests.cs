@@ -521,5 +521,60 @@ namespace Connection360.Api.Tests.Controllers
 
             await act.Should().ThrowAsync<InvalidOperationException>();
         }
+
+
+        [Fact]
+        public void LosEndpointsDeListadoDeBaseDeDatos_SoloPermitenAlRolAdminYSusRutasSonLasEsperadas()
+        {
+            foreach ((String action, String route) in new[]
+            {
+                (nameof(SettingsController.ListCustomersAllDataBase), "listcustomersdb"),
+                (nameof(SettingsController.ListCollaboratorDataBase), "listcollaboratorsdb"),
+                (nameof(SettingsController.ListCustomerCollaboratorDataBase), "listcustomercollaboratordb")
+            })
+            {
+                System.Reflection.MethodInfo method = typeof(SettingsController).GetMethod(action)!;
+
+                method.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), inherit: true)
+                    .Cast<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()
+                    .Should().ContainSingle().Which.Roles.Should().Be("ADMIN");
+                method.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.HttpGetAttribute), inherit: true)
+                    .Cast<Microsoft.AspNetCore.Mvc.HttpGetAttribute>()
+                    .Should().ContainSingle().Which.Template.Should().Be(route);
+            }
+        }
+
+        [Fact]
+        public async Task ListCustomersAllDataBase_PropagaLaExcepcionDelUseCase()
+        {
+            _customerUseCaseMock.Setup(u => u.ListAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("db"));
+            SettingsController sut = BuildSut("ADMIN");
+
+            Func<Task> act = () => sut.ListCustomersAllDataBase(CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
+
+        [Fact]
+        public async Task ListCollaboratorDataBase_PropagaLaExcepcionDelUseCase()
+        {
+            _collaboratorUseCaseMock.Setup(u => u.ListAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("db"));
+            SettingsController sut = BuildSut("ADMIN");
+
+            Func<Task> act = () => sut.ListCollaboratorDataBase(CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
+
+        [Fact]
+        public async Task ListCustomerCollaboratorDataBase_PropagaLaExcepcionDelUseCase()
+        {
+            _collaboratorUseCaseMock.Setup(u => u.ListCustomerCollaboratorAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("db"));
+            SettingsController sut = BuildSut("ADMIN");
+
+            Func<Task> act = () => sut.ListCustomerCollaboratorDataBase(CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
     }
 }

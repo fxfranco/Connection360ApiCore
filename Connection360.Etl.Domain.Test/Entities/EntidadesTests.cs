@@ -19,7 +19,7 @@ namespace Connection360.Etl.Domain.Test.Entities
                 s.TipoOperacion, s.Modalidad, s.Incoterm, s.Proveedor, s.Cliente, s.NitCliente, s.Origen,
                 s.Destino, s.DescripcionMercancia, s.Estado, s.TipoCarga, s.Transportista, s.TipoDocumento,
                 s.NombreDocumento, s.DocumentoTransporteHbl, s.FacturaProveedor, s.FacturaTcc, s.NumeroFactura,
-                s.DescripcionGasto, s.Comentario
+                s.DescripcionGasto, s.Comentario, s.ChangeUser
             })
             {
                 texto.Should().Be(String.Empty);
@@ -95,7 +95,8 @@ namespace Connection360.Etl.Domain.Test.Entities
                 IvaUsd = 10m,
                 TotalFacturaUsd = 11m,
                 Comentario = "COM",
-                FechaComentario = fecha
+                FechaComentario = fecha,
+                ChangeUser = "usuario.api"
             };
 
             s.Id.Should().Be(10);
@@ -105,6 +106,7 @@ namespace Connection360.Etl.Domain.Test.Entities
             s.PesoKg.Should().Be(1.5m);
             s.TotalFacturaUsd.Should().Be(11m);
             s.FechaComentario.Should().Be(fecha);
+            s.ChangeUser.Should().Be("usuario.api");
             s.DocumentoTransporteHbl.Should().Be("HBL1");
         }
     }
@@ -129,6 +131,7 @@ namespace Connection360.Etl.Domain.Test.Entities
             c.Destino.Should().BeEmpty();
             c.Comentario.Should().BeEmpty();
             c.FechaComentario.Should().Be(default);
+            c.ChangeUser.Should().BeEmpty();
         }
 
         [Fact]
@@ -148,7 +151,8 @@ namespace Connection360.Etl.Domain.Test.Entities
                 Origen = "O",
                 Destino = "D",
                 Comentario = "C",
-                FechaComentario = new DateTime(2024, 3, 4)
+                FechaComentario = new DateTime(2024, 3, 4),
+                ChangeUser = "jperez"
             };
 
             c.DocumentoTransporteHbl.Should().Be("H");
@@ -164,6 +168,7 @@ namespace Connection360.Etl.Domain.Test.Entities
             c.Destino.Should().Be("D");
             c.Comentario.Should().Be("C");
             c.FechaComentario.Should().Be(new DateTime(2024, 3, 4));
+            c.ChangeUser.Should().Be("jperez");
         }
     }
 

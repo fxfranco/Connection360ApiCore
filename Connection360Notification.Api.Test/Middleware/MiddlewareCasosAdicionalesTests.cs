@@ -1,5 +1,6 @@
 ﻿using Connection360Notification.Api.Middleware;
 using Connection360Notification.Api.Models;
+using Connection360Notification.Domain.Time;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -121,11 +122,11 @@ namespace Connection360Notification.Api.Tests.Middleware
         {
             var middleware = new ExceptionHandlingMiddleware(_ => throw new Exception("x"), Mock.Of<ILogger<ExceptionHandlingMiddleware>>());
             DefaultHttpContext context = NewContext();
-            DateTime before = DateTime.UtcNow.AddMinutes(-1);
+            DateTime before = ColombiaClock.Now.AddMinutes(-1);
 
             await middleware.InvokeAsync(context);
 
-            (await ReadResponse(context)).Timestamp.ToUniversalTime().Should().BeAfter(before);
+            (await ReadResponse(context)).Timestamp.Should().BeAfter(before);
         }
 
         // ---------- NotFoundMiddleware ----------

@@ -56,6 +56,7 @@ namespace Connection360.Etl.Domain.Test.Constants
         [InlineData(nameof(ExternalDataFields.DocumentNumber), "DOCUMENTO DE TRANSPORTE (HBL)")]
         [InlineData(nameof(ExternalDataFields.Comment), "COMENTARIO")]
         [InlineData(nameof(ExternalDataFields.CommentDate), "FECHA COMENTARIO")]
+        [InlineData(nameof(ExternalDataFields.ChangeUser), "changeuser")]
         [InlineData(nameof(ExternalDataFields.IdLog), "ID")]
         [InlineData(nameof(ExternalDataFields.NewStateLog), "NUEVO ESTADO")]
         [InlineData(nameof(ExternalDataFields.OldStateLog), "ESTADO ANTERIOR")]

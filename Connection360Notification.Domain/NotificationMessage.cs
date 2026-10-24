@@ -1,4 +1,5 @@
 ﻿using Connection360Notification.Domain.Enums;
+using Connection360Notification.Domain.Time;
 using System.Text.Json.Serialization;
 
 namespace Connection360Notification.Domain
@@ -117,9 +118,9 @@ namespace Connection360Notification.Domain
             Message = message;
             DocumentNumber = documentNumber ?? String.Empty;
             Title = title ?? String.Empty;
-            MessageDate = messageDate == default ? DateTime.UtcNow : messageDate;
+            MessageDate = messageDate == default ? ColombiaClock.Now : messageDate;
             Status = status;
-            NotificationDate = notificationDate == default ? DateTime.UtcNow : notificationDate;
+            NotificationDate = notificationDate == default ? ColombiaClock.Now : notificationDate;
             NotificationChannel = notificationChannel ?? new NotificationChannelPreferences();
             Origen = origen ?? String.Empty;
             Destino = destino ?? String.Empty;

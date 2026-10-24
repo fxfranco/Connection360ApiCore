@@ -356,5 +356,51 @@ namespace Connection360.Api.Tests.Controllers
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
+
+        [Fact]
+        public async Task ListCustomersAllDataBase_RetornaOkConElListadoDelCasoDeUso()
+        {
+            var customers = new List<CustomerDtoResult> { new() { Identificacion = "900111" }, new() { Identificacion = "900222" } };
+            _customerUseCaseMock.Setup(u => u.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(customers);
+
+            var result = await _sut.ListCustomersAllDataBase(CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(customers);
+        }
+
+        [Fact]
+        public async Task ListCustomersAllDataBase_SinClientes_RetornaOkConListaVacia()
+        {
+            _customerUseCaseMock.Setup(u => u.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new List<CustomerDtoResult>());
+
+            var result = await _sut.ListCustomersAllDataBase(CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeAssignableTo<IEnumerable<CustomerDtoResult>>().Which.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ListCollaboratorDataBase_RetornaOkConElListadoDelCasoDeUso()
+        {
+            var collaborators = new List<CollaboratorDtoResult> { new() { Identificacion = "COL-1" } };
+            _collaboratorUseCaseMock.Setup(u => u.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(collaborators);
+
+            var result = await _sut.ListCollaboratorDataBase(CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(collaborators);
+        }
+
+        [Fact]
+        public async Task ListCustomerCollaboratorDataBase_RetornaOkConElListadoDelCasoDeUso()
+        {
+            var relations = new List<CustomerCollaboratorRelationDtoResult>
+            {
+                new() { IdentificacionCustomer = "CUS-1", IdentificacionCollaborator = "COL-1" }
+            };
+            _collaboratorUseCaseMock.Setup(u => u.ListCustomerCollaboratorAsync(It.IsAny<CancellationToken>())).ReturnsAsync(relations);
+
+            var result = await _sut.ListCustomerCollaboratorDataBase(CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(relations);
+        }
     }
 }

@@ -70,5 +70,26 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             var result = await _session.Connection.QueryAsync<CustomersOfCollaboratorDtoResult>(command);
             return result.ToList();
         }
+
+        public async Task<List<CustomerCollaboratorRelationDtoResult>> ListAllAsync(CancellationToken cancellationToken = default)
+        {
+            await _session.EnsureConnectionOpenAsync(cancellationToken);
+            const string query = @"
+            SELECT cu.identificacion AS ""identificacionCustomer"",
+                   co.identificacion AS ""identificacionCollaborator""
+            FROM connection360write.customers_of_collaborators cc
+                INNER JOIN connection360write.customers cu ON cc.id_customer = cu.id_customer
+                INNER JOIN connection360write.collaborators co ON cc.id_collaborator = co.id_collaborator
+            ORDER BY cu.identificacion, co.identificacion;";
+
+            var command = new CommandDefinition(
+                query,
+                transaction: _session.Transaction,
+                cancellationToken: cancellationToken
+            );
+
+            var result = await _session.Connection.QueryAsync<CustomerCollaboratorRelationDtoResult>(command);
+            return result.ToList();
+        }
     }
 }

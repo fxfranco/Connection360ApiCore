@@ -91,6 +91,29 @@ namespace Connection360.Etl.Domain.Test.Services
         }
 
         [Fact]
+        public void DetectChanges_ConChangeUser_LoCopiaAlCambio()
+        {
+            var sheet = Sheet("A", "En tránsito");
+            sheet.ChangeUser = "jperez";
+            var snaps = Snapshots(Snap("A", 42, "Pendiente"));
+
+            var changes = _sut.DetectChanges(new List<ApplicationDataSheet> { sheet }, snaps);
+
+            changes.Should().ContainSingle().Which.ChangeUser.Should().Be("jperez");
+        }
+
+        [Fact]
+        public void DetectChanges_SinChangeUser_ElCambioQuedaConChangeUserVacio()
+        {
+            var sheets = new List<ApplicationDataSheet> { Sheet("A", "En tránsito") };
+            var snaps = Snapshots(Snap("A", 42, "Pendiente"));
+
+            var changes = _sut.DetectChanges(sheets, snaps);
+
+            changes.Should().ContainSingle().Which.ChangeUser.Should().BeEmpty();
+        }
+
+        [Fact]
         public void DetectChanges_CambioDeComentarioTexto_MarcaCommentChanged()
         {
             var sheets = new List<ApplicationDataSheet> { Sheet("A", "Pendiente", "nuevo", Fecha) };

@@ -1,6 +1,7 @@
 ﻿using Connection360Notification.Application.Ports.Output;
 using Connection360Notification.Domain;
 using Connection360Notification.Domain.Enums;
+using Connection360Notification.Domain.Time;
 using Connection360Notification.Infrastructure.Adapters.Input;
 using Connection360Notification.Infrastructure.Adapters.Output;
 using FluentAssertions;
@@ -84,14 +85,14 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
         public async Task SendNotificationToUserAsync_ElPayloadExponeMessageDataYTimestamp()
         {
             var datos = new { Extra = "dato" };
-            var antes = DateTime.UtcNow;
+            var antes = ColombiaClock.Now;
 
             var payload = await CapturarPayload("hola", datos);
 
             var tipo = payload.GetType();
             tipo.GetProperty("Message")!.GetValue(payload).Should().Be("hola");
             tipo.GetProperty("Data")!.GetValue(payload).Should().BeSameAs(datos);
-            ((DateTime)tipo.GetProperty("Timestamp")!.GetValue(payload)!).Should().BeOnOrAfter(antes).And.BeOnOrBefore(DateTime.UtcNow);
+            ((DateTime)tipo.GetProperty("Timestamp")!.GetValue(payload)!).Should().BeOnOrAfter(antes).And.BeOnOrBefore(ColombiaClock.Now);
         }
 
         [Fact]

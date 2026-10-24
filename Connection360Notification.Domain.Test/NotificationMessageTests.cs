@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Connection360Notification.Domain;
 using Connection360Notification.Domain.Enums;
+using Connection360Notification.Domain.Time;
 using FluentAssertions;
 using Xunit;
 
@@ -53,11 +54,11 @@ namespace Connection360Notification.Domain.Tests
         [Fact]
         public void Constructor_SoloConDatosObligatorios_AplicaValoresPorDefecto()
         {
-            var antes = DateTime.UtcNow;
+            var antes = ColombiaClock.Now;
 
             var sut = new NotificationMessage("CLI-1", NotificationType.ChangeState, "Mensaje");
 
-            var despues = DateTime.UtcNow;
+            var despues = ColombiaClock.Now;
             sut.DocumentNumber.Should().BeEmpty();
             sut.Title.Should().BeEmpty();
             sut.Origen.Should().BeEmpty();

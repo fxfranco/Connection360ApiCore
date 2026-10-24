@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Ports.Persistence;
+using Connection360.Domain.Time;
 using Connection360.Observability.Domain.Telemetry;
 using Connection360Notification.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,7 +62,7 @@ namespace Connection360.Infrastructure.Messaging
                 }
 
                 // 2. Creación del Scope manual para este ciclo de ejecución
-                DateTime date = DateTime.Now;
+                DateTime date = ColombiaClock.Now;
                 _logger.LogInformation("Iniciando OutboxPublisherWorker {Date}", date);
                 // Se usa CreateAsyncScope + "await using" (y no CreateScope + "using") porque
                 // IUnitOfWork (UnitOfWork) solo implementa IAsyncDisposable: al cerrar un scope

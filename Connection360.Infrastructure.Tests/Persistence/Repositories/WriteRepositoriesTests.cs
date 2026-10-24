@@ -1,5 +1,6 @@
 ﻿using Connection360.Domain.Dtos;
 using Connection360.Domain.Entities.Persistence;
+using Connection360.Domain.Time;
 using Connection360.Infrastructure.Persistence.Repositories;
 using Connection360.Infrastructure.Tests.TestHelpers;
 using FluentAssertions;
@@ -58,6 +59,33 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
             Int64? id = await new CustomerRepository(_session).GetCustomerByIdAsync("NO-EXISTE");
 
             id.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task CustomerRepository_ListAsync_RetornaLaIdentificacionDeCadaCliente()
+        {
+            _connection.ReaderResult = FakeDbConnection.Table(
+                new[] { "Identificacion" },
+                new Object?[] { "900111" },
+                new Object?[] { "900222" });
+
+            List<CustomerDtoResult> result = await new CustomerRepository(_session).ListAsync();
+
+            result.Select(c => c.Identificacion).Should().Equal("900111", "900222");
+            RecordedCommand command = _connection.Commands.Single();
+            command.CommandText.Should().Contain("identificacion").And.Contain("FROM connection360write.customers");
+            command.CommandText.Should().NotContain("WHERE");
+            _connection.OpenCount.Should().Be(1);
+        }
+
+        [Fact]
+        public async Task CustomerRepository_ListAsync_SinFilas_RetornaListaVacia()
+        {
+            _connection.ReaderResult = FakeDbConnection.Table(new[] { "Identificacion" });
+
+            List<CustomerDtoResult> result = await new CustomerRepository(_session).ListAsync();
+
+            result.Should().BeEmpty();
         }
 
         // ---------- CollaboratorRepository ----------
@@ -145,6 +173,66 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
             result[1].IdCustomer.Should().Be(11);
             result[1].IdentificacionCustomer.Should().Be("CUS-11");
             _connection.Commands.Single().Parameters["IdCollaborator"].Should().Be("COL-1");
+        }
+
+        [Fact]
+        public async Task CollaboratorRepository_ListAsync_RetornaLaIdentificacionDeCadaColaborador()
+        {
+            _connection.ReaderResult = FakeDbConnection.Table(
+                new[] { "Identificacion" },
+                new Object?[] { "COL-1" },
+                new Object?[] { "COL-2" });
+
+            List<CollaboratorDtoResult> result = await new CollaboratorRepository(_session).ListAsync();
+
+            result.Select(c => c.Identificacion).Should().Equal("COL-1", "COL-2");
+            RecordedCommand command = _connection.Commands.Single();
+            command.CommandText.Should().Contain("identificacion").And.Contain("FROM connection360write.collaborators");
+            command.CommandText.Should().NotContain("WHERE");
+        }
+
+        [Fact]
+        public async Task CollaboratorRepository_ListAsync_SinFilas_RetornaListaVacia()
+        {
+            _connection.ReaderResult = FakeDbConnection.Table(new[] { "Identificacion" });
+
+            List<CollaboratorDtoResult> result = await new CollaboratorRepository(_session).ListAsync();
+
+            result.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task CustomersOfCollaboratorsRepository_ListAllAsync_RelacionaClienteYColaboradorConSusAlias()
+        {
+            _connection.ReaderResult = FakeDbConnection.Table(
+                new[] { "identificacionCustomer", "identificacionCollaborator" },
+                new Object?[] { "CUS-10", "COL-1" },
+                new Object?[] { "CUS-11", "COL-2" });
+
+            List<CustomerCollaboratorRelationDtoResult> result = await new CustomersOfCollaboratorsRepository(_session).ListAllAsync();
+
+            result.Should().HaveCount(2);
+            result[0].IdentificacionCustomer.Should().Be("CUS-10");
+            result[0].IdentificacionCollaborator.Should().Be("COL-1");
+            result[1].IdentificacionCustomer.Should().Be("CUS-11");
+            result[1].IdentificacionCollaborator.Should().Be("COL-2");
+            RecordedCommand command = _connection.Commands.Single();
+            command.CommandText.Should().Contain("FROM connection360write.customers_of_collaborators")
+                .And.Contain("INNER JOIN connection360write.customers cu ON cc.id_customer = cu.id_customer")
+                .And.Contain("INNER JOIN connection360write.collaborators co ON cc.id_collaborator = co.id_collaborator")
+                .And.Contain("cu.identificacion AS \"identificacionCustomer\"")
+                .And.Contain("co.identificacion AS \"identificacionCollaborator\"");
+            command.CommandText.Should().NotContain("WHERE");
+        }
+
+        [Fact]
+        public async Task CustomersOfCollaboratorsRepository_ListAllAsync_SinFilas_RetornaListaVacia()
+        {
+            _connection.ReaderResult = FakeDbConnection.Table(new[] { "identificacionCustomer", "identificacionCollaborator" });
+
+            List<CustomerCollaboratorRelationDtoResult> result = await new CustomersOfCollaboratorsRepository(_session).ListAllAsync();
+
+            result.Should().BeEmpty();
         }
 
         [Fact]
@@ -421,7 +509,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
             Guid generated = Guid.NewGuid();
             _connection.ScalarResult = generated;
             var request = new OutboxMessagesRequestDto { ClientId = "C1", EventType = "ESTADO", DocumentNumber = "D1", Title = "T", Message = "M" };
-            DateTime before = DateTime.UtcNow.AddSeconds(-5);
+            DateTime before = ColombiaClock.Now.AddSeconds(-5);
 
             Guid id = await new OutboxMessagesRepository(_session).CrearAsync(request);
 
@@ -430,7 +518,11 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
             command.CommandText.Should().Contain("INSERT INTO connection360write.outbox_messages");
             command.Parameters["EventType"].Should().Be("ESTADO");
             command.Parameters["Id"].Should().BeOfType<Guid>().Which.Should().NotBe(Guid.Empty);
-            command.Parameters["CreatedAt"].Should().BeOfType<DateTime>().Which.Should().BeOnOrAfter(before);
+            // created_at es timestamptz: hora de Colombia marcada como Utc (Npgsql solo acepta Kind=Utc).
+            DateTime createdAt = command.Parameters["CreatedAt"].Should().BeOfType<DateTime>().Which;
+            createdAt.Kind.Should().Be(DateTimeKind.Utc);
+            createdAt.Should().BeOnOrAfter(before);
+            createdAt.Should().BeBefore(ColombiaClock.Now.AddSeconds(5));
             OutboxMessagesRequestDto payload = JsonSerializer.Deserialize<OutboxMessagesRequestDto>((String)command.Parameters["Payload"]!)!;
             payload.ClientId.Should().Be("C1");
             payload.DocumentNumber.Should().Be("D1");

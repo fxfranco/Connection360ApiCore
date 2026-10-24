@@ -2,6 +2,7 @@
 using Connection360Notification.Application.Services;
 using Connection360Notification.Domain;
 using Connection360Notification.Domain.Enums;
+using Connection360Notification.Domain.Time;
 using FluentAssertions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -109,7 +110,7 @@ namespace Connection360Notification.Api.IntegrationTests.Hubs
             argumentos1.GetProperty("message").GetString().Should().Be("para-uno");
             argumentos1.GetProperty("data").GetProperty("clientId").GetString().Should().Be("cliente-1");
             argumentos1.GetProperty("data").GetProperty("documentNumber").GetString().Should().Be("DOC-1");
-            argumentos1.GetProperty("timestamp").GetDateTime().Should().BeAfter(DateTime.UtcNow.AddMinutes(-5));
+            argumentos1.GetProperty("timestamp").GetDateTime().Should().BeAfter(ColombiaClock.Now.AddMinutes(-5));
 
             mensaje2.GetProperty("target").GetString().Should().Be("ReceiveNotification");
             JsonElement argumentos2 = mensaje2.GetProperty("arguments")[0];

@@ -121,5 +121,32 @@ namespace Connection360.Application.Tests.UseCases.Persistence
 
             result.Should().Be(10);
         }
+
+        [Fact]
+        public async Task ListAsync_DelegaAlRepositorioYRetornaLosClientes_SinAbrirTransaccion()
+        {
+            var customers = new List<Connection360.Domain.Dtos.CustomerDtoResult>
+            {
+                new() { Identificacion = "900111" },
+                new() { Identificacion = "900222" }
+            };
+            _repositoryMock.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(customers);
+
+            List<Connection360.Domain.Dtos.CustomerDtoResult> result = await _useCase.ListAsync(CancellationToken.None);
+
+            result.Should().BeSameAs(customers);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ListAsync_SiElRepositorioFalla_PropagaLaExcepcion()
+        {
+            _repositoryMock.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException());
+
+            Func<Task> act = () => _useCase.ListAsync(CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
     }
 }

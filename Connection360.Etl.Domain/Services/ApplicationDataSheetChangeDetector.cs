@@ -74,6 +74,7 @@ namespace Connection360.Etl.Domain.Services
                     // que ya estaban, que por definición coinciden con los actuales.
                     Comentario = sheet.Comentario,
                     FechaComentario = sheet.FechaComentario,
+                    ChangeUser = sheet.ChangeUser,
                 });
             }
 

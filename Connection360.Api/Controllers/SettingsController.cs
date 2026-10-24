@@ -469,6 +469,54 @@ namespace Connection360.Api.Controllers
             return CreatedAtRoute(nameof(CreateCustomerCollaboratorDataBase), new { id = resultado }, resultado);
         }
 
+        /// <summary>Lista las identificaciones de todos los clientes almacenados en connection360write.customers.</summary>
+        /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+        /// <returns>El listado de clientes (campo identificacion), envuelto en la respuesta estándar de la API.</returns>
+        /// <response code="200">Listado obtenido correctamente (vacío si no hay clientes).</response>
+        /// <response code="403">El usuario no tiene el rol ADMIN.</response>
+        [HttpGet("listcustomersdb")]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(typeof(List<CustomerDtoResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult<List<CustomerDtoResult>>> ListCustomersAllDataBase(CancellationToken cancellationToken)
+        {
+            List<CustomerDtoResult> resultado = await _customerUseCase.ListAsync(cancellationToken);
+            return Ok(resultado);
+        }
+
+        /// <summary>Lista las identificaciones de todos los colaboradores almacenados en connection360write.collaborators.</summary>
+        /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+        /// <returns>El listado de colaboradores (campo identificacion), envuelto en la respuesta estándar de la API.</returns>
+        /// <response code="200">Listado obtenido correctamente (vacío si no hay colaboradores).</response>
+        /// <response code="403">El usuario no tiene el rol ADMIN.</response>
+        [HttpGet("listcollaboratorsdb")]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(typeof(List<CollaboratorDtoResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult<List<CollaboratorDtoResult>>> ListCollaboratorDataBase(CancellationToken cancellationToken)
+        {
+            List<CollaboratorDtoResult> resultado = await _collaboratorUseCase.ListAsync(cancellationToken);
+            return Ok(resultado);
+        }
+
+        /// <summary>
+        /// Lista las relaciones cliente - colaborador de connection360write.customers_of_collaborators, con la
+        /// identificación de cada lado (identificacionCustomer e identificacionCollaborator).
+        /// </summary>
+        /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
+        /// <returns>El listado de relaciones, envuelto en la respuesta estándar de la API.</returns>
+        /// <response code="200">Listado obtenido correctamente (vacío si no hay relaciones).</response>
+        /// <response code="403">El usuario no tiene el rol ADMIN.</response>
+        [HttpGet("listcustomercollaboratordb")]
+        [Authorize(Roles = "ADMIN")]
+        [ProducesResponseType(typeof(List<CustomerCollaboratorRelationDtoResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult<List<CustomerCollaboratorRelationDtoResult>>> ListCustomerCollaboratorDataBase(CancellationToken cancellationToken)
+        {
+            List<CustomerCollaboratorRelationDtoResult> resultado = await _collaboratorUseCase.ListCustomerCollaboratorAsync(cancellationToken);
+            return Ok(resultado);
+        }
+
         /// <summary>
         /// Endpoint de prueba: encola un mensaje de notificación en el patrón Outbox para su
         /// posterior publicación. Endpoint anónimo pensado para pruebas, no para el flujo normal de

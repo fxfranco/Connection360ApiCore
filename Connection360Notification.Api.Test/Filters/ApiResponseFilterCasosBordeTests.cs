@@ -1,5 +1,6 @@
 ﻿using Connection360Notification.Api.Filters;
 using Connection360Notification.Api.Models;
+using Connection360Notification.Domain.Time;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -241,14 +242,14 @@ namespace Connection360Notification.Api.Tests.Filters
         }
 
         [Fact]
-        public async Task OnResultExecutionAsync_GeneraTimestampUtcReciente()
+        public async Task OnResultExecutionAsync_GeneraTimestampReciente_HoraColombia()
         {
-            DateTime before = DateTime.UtcNow.AddSeconds(-5);
+            DateTime before = ColombiaClock.Now.AddSeconds(-5);
 
             var response = await Execute(new ObjectResult("x") { StatusCode = 200 });
 
             response.Timestamp.Should().BeAfter(before);
-            response.Timestamp.Should().BeOnOrBefore(DateTime.UtcNow.AddSeconds(5));
+            response.Timestamp.Should().BeOnOrBefore(ColombiaClock.Now.AddSeconds(5));
         }
     }
 }

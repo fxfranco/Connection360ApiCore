@@ -1,4 +1,5 @@
 ﻿using Connection360.Application.Ports.Persistence;
+using Connection360.Domain.Dtos;
 using Connection360.Domain.Exceptions;
 using Connection360.Domain.Ports.Persistence;
 
@@ -49,6 +50,14 @@ namespace Connection360.Application.UseCases.Persistence
             Int64? idResult = (Int64?)await customerRepository.GetCustomerByIdAsync(clientId, cancellationToken);
 
             return idResult;
+        }
+
+        public async Task<List<CustomerDtoResult>> ListAsync(CancellationToken cancellationToken = default)
+        {
+            // Consulta de solo lectura: no requiere transacción.
+            ICustomerRepository customerRepository = _unitOfWork.GetRepository<ICustomerRepository>();
+
+            return await customerRepository.ListAsync(cancellationToken);
         }
     }
 }

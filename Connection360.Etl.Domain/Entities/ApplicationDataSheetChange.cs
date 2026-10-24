@@ -73,5 +73,11 @@ namespace Connection360.Etl.Domain.Entities
         /// (<see cref="DateTime.MinValue"/> cuando el envío no tiene fecha de comentario).
         /// </summary>
         public DateTime FechaComentario { get; set; }
+
+        /// <summary>
+        /// Usuario que realizó el cambio, según las APIs externas (campo "changeuser"). Vacío si no vino;
+        /// en ese caso EtlChangeNotifier usa el usuario de sistema configurado en appsettings.
+        /// </summary>
+        public String ChangeUser { get; set; } = String.Empty;
     }
 }

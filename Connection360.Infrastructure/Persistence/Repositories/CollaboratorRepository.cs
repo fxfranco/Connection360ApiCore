@@ -1,4 +1,5 @@
-﻿using Connection360.Domain.Ports.Persistence;
+﻿using Connection360.Domain.Dtos;
+using Connection360.Domain.Ports.Persistence;
 using Dapper;
 
 namespace Connection360.Infrastructure.Persistence.Repositories
@@ -43,6 +44,21 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             );
 
             return await _session.Connection.QueryFirstOrDefaultAsync<Int64?>(command);
+        }
+
+        public async Task<List<CollaboratorDtoResult>> ListAsync(CancellationToken cancellationToken = default)
+        {
+            await _session.EnsureConnectionOpenAsync(cancellationToken);
+            const string query = @"SELECT identificacion AS ""Identificacion"" FROM connection360write.collaborators ORDER BY identificacion;";
+
+            var command = new CommandDefinition(
+                query,
+                transaction: _session.Transaction,
+                cancellationToken: cancellationToken
+            );
+
+            var result = await _session.Connection.QueryAsync<CollaboratorDtoResult>(command);
+            return result.ToList();
         }
     }
 }
