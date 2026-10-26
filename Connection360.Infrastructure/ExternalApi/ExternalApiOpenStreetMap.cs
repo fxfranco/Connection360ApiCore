@@ -45,7 +45,7 @@ namespace Connection360.Infrastructure.ExternalApi
                     throw new HttpRequestException($"El API externo respondió con status {(Int32)response.StatusCode}");
                 }
 
-                String jsonString = await response.Content.ReadAsStringAsync();
+                String jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
                 List<ExternalApiOpenStreetMapResponse>? resultados = JsonSerializer.Deserialize<List<ExternalApiOpenStreetMapResponse>>(jsonString);
 
                 if (resultados == null || resultados.Count == 0)

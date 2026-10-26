@@ -132,11 +132,8 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
                 cancellationToken: cancellationToken)
                 ?? throw new InvalidOperationException("Respuesta vacía del API externo.");
 
-            if (dto is null)
-                return DynamicDataSet.Empty;
-
-            DynamicDataSet domainDataSet = dto.ToDomainDataSet();
-            return domainDataSet;
+            // La respuesta vacía ya se rechazó arriba (?? throw): aquí dto nunca es null.
+            return dto.ToDomainDataSet();
         }
     }
 }

@@ -161,4 +161,4 @@ app.UseMiddleware<NotFoundMiddleware>();
 app.MapHealthChecks("/health");
 app.Map("/error", () => Results.Problem(title: "Ha ocurrido un error inesperado."));
 
-app.Run();
+await app.RunAsync();

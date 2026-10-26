@@ -31,8 +31,8 @@ namespace Connection360.Application.UseCases.Persistence
             {
                 throw new ArgumentException("No existe un cliente identificado.", nameof(clientId));
             }
-            CustomerNotificationChannelsResponseDto? customerNotificationChannelsResponseDto = await this.GetCustomerNotificationChannels(customerId);
-            CustomerNotificationEventsResponseDto? customerNotificationEventsResponseDto = await this.GetCustomerNotificationEvent(customerId);
+            CustomerNotificationChannelsResponseDto? customerNotificationChannelsResponseDto = await this.GetCustomerNotificationChannels(customerId, cancellationToken);
+            CustomerNotificationEventsResponseDto? customerNotificationEventsResponseDto = await this.GetCustomerNotificationEvent(customerId, cancellationToken);
 
             if (customerNotificationChannelsResponseDto == null)
             {

@@ -23,7 +23,7 @@ namespace Connection360Notification.Api.Middleware
                 };
 
                 context.Response.ContentType = "application/json";
-                await context.Response.WriteAsJsonAsync(response);
+                await context.Response.WriteAsJsonAsync(response, context.RequestAborted);
             }
         }
     }

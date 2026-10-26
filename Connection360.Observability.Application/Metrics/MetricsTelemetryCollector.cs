@@ -53,7 +53,7 @@ namespace Connection360.Observability.Application.Metrics
             _listener.Start();
 
             _stop = new CancellationTokenSource();
-            _loop = Task.Run(() => RunAsync(_stop.Token));
+            _loop = Task.Run(() => RunAsync(_stop.Token), _stop.Token);
             return Task.CompletedTask;
         }
 
@@ -64,7 +64,11 @@ namespace Connection360.Observability.Application.Metrics
                 return;
             }
 
-            _stop?.Cancel();
+            if (_stop is not null)
+            {
+                await _stop.CancelAsync().ConfigureAwait(false);
+            }
+
             if (_loop is not null)
             {
                 try

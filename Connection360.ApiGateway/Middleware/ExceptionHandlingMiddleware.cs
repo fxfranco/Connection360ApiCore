@@ -48,7 +48,7 @@ namespace Connection360.ApiGateway.Middleware
                     traceId = context.TraceIdentifier
                 });
 
-                await context.Response.WriteAsync(payload);
+                await context.Response.WriteAsync(payload, context.RequestAborted);
             }
         }
     }

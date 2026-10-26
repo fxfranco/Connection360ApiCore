@@ -208,5 +208,24 @@ namespace Connection360.Application.Tests.UseCases.Persistence
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
+
+        [Fact]
+        public async Task GetCustomerNotificationSettings_PasaElTokenDeCancelacionALosRepositoriosDeCanalesYEventos()
+        {
+            using var cts = new CancellationTokenSource();
+            CancellationToken token = cts.Token;
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("123", token)).ReturnsAsync(5);
+            _channelsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, token)).ReturnsAsync(new CustomerNotificationChannels(1, 5, true, false, false));
+            _eventsRepositoryMock.Setup(r => r.GetByCustomerIdAsync(5, token)).ReturnsAsync(new CustomerNotificationEvents(1, 5, true, false, false, false, false));
+
+            CustomerNotificationsSettingsResponse result = await _sut.GetCustomerNotificationSettings("123", UserRoleApplication.CLIENT, token);
+
+            result.NotificationChannels!.Application.Should().BeTrue();
+            result.NotificationEvents!.ChangeState.Should().BeTrue();
+            _channelsRepositoryMock.Verify(r => r.GetByCustomerIdAsync(5, token), Times.Once);
+            _eventsRepositoryMock.Verify(r => r.GetByCustomerIdAsync(5, token), Times.Once);
+            _channelsRepositoryMock.Verify(r => r.GetByCustomerIdAsync(5, CancellationToken.None), Times.Never);
+            _eventsRepositoryMock.Verify(r => r.GetByCustomerIdAsync(5, CancellationToken.None), Times.Never);
+        }
     }
 }

@@ -150,4 +150,4 @@ app.Map("/error", () => Results.Problem(title: "Ha ocurrido un error inesperado.
 // Mapeo del Endpoint del Hub (El Hub vive en la capa de Infrastructure)
 app.MapHub<NotificationHub>("api/v{version:apiVersion}/hubs/notifications");
 
-app.Run();
+await app.RunAsync();

@@ -41,7 +41,7 @@ namespace Connection360Notification.Api.Middleware
 
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = status;
-                await context.Response.WriteAsJsonAsync(response);
+                await context.Response.WriteAsJsonAsync(response, context.RequestAborted);
             }
         }
     }

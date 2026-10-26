@@ -68,4 +68,4 @@ app.MapHealthChecks("/health");
 //app.MapControllers();
 app.MapReverseProxy();                              // 9. Enruta hacia los microservicios (p.ej. Products.Api)
 
-app.Run();
+await app.RunAsync();
