@@ -28,7 +28,7 @@ concurrency:
 jobs:
   ci:
     name: CI
-    uses: ./.github/workflows/ci-fases.yml
+    uses: ./.github/workflows/Connection360-CI-Fases.yml
     with:
       ref: ${{ inputs.branch }}
       continue_on_failure: true
