@@ -75,10 +75,17 @@ namespace Connection360Notification.Infrastructure.Email
         /// <summary>Introducción cuando el correo informa un cambio en la información general del envío.</summary>
         public const String IntroOtherInfo = "la información de su envío de carga internacional ha sido actualizada en";
 
-        // Sección opcional: {{#Nombre}}contenido{{/Nombre}}. La referencia inversa (\1) exige que cierre con el mismo nombre.
-        private static readonly Regex SectionPattern = new(@"\{\{#(\w+)\}\}(.*?)\{\{/\1\}\}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
+        /// <summary>
+        /// Tiempo máximo de cada evaluación de las expresiones regulares de la plantilla. Evita que un patrón con
+        /// retroceso excesivo (ReDoS) deje el hilo ocupado indefinidamente; la plantilla es corta, así que 2 segundos
+        /// sobran. Si se supera se lanza <see cref="RegexMatchTimeoutException"/>.
+        /// </summary>
+        public static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromSeconds(2);
 
-        private static readonly Regex TokenPattern = new(@"\{\{(\w+)\}\}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        // Sección opcional: {{#Nombre}}contenido{{/Nombre}}. La referencia inversa (\1) exige que cierre con el mismo nombre.
+        private static readonly Regex SectionPattern = new(@"\{\{#(\w+)\}\}(.*?)\{\{/\1\}\}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline, RegexMatchTimeout);
+
+        private static readonly Regex TokenPattern = new(@"\{\{(\w+)\}\}", RegexOptions.Compiled | RegexOptions.CultureInvariant, RegexMatchTimeout);
 
         private static readonly Lazy<String> Template = new(() => ReadResourceText(TemplateResourceName));
 

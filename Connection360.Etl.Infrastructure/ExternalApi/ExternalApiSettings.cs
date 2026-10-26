@@ -39,12 +39,13 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
         public Int32 PageSize { get; set; } = 0;
 
         /// <summary>
-        /// SOLO PARA DESARROLLO. Si es <c>true</c>, el ETL acepta cualquier certificado TLS al
-        /// llamar a las APIs externas (autofirmado, de otro host, no confiable o vencido), por
-        /// ejemplo el certificado de desarrollo de Visual Studio/IIS Express emitido para
-        /// "localhost" cuando se consume por IP desde un contenedor. Por defecto es <c>false</c>
-        /// (se valida el certificado como siempre). No activar en producción: expone las llamadas a
-        /// ataques de intermediario. Variable de entorno: ExternalApi__AllowInvalidServerCertificate.
+        /// SOLO PARA DESARROLLO. Si es <c>true</c>, el ETL tolera los problemas típicos de un certificado
+        /// de desarrollo al llamar a las APIs externas (autofirmado, emitido para otro host o con cadena no
+        /// confiable), por ejemplo el certificado de Visual Studio/IIS Express emitido para "localhost"
+        /// cuando se consume por IP desde un contenedor. Aun así se rechazan los certificados vencidos,
+        /// revocados o inválidos y el servidor sin certificado (ver DevelopmentServerCertificateValidator).
+        /// Por defecto es <c>false</c> (se valida el certificado como siempre). No activar en producción:
+        /// expone las llamadas a ataques de intermediario. Variable de entorno: ExternalApi__AllowInvalidServerCertificate.
         /// </summary>
         public Boolean AllowInvalidServerCertificate { get; set; } = false;
 

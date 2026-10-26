@@ -228,5 +228,21 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             logo.Take(8).Should().Equal(0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A);
             ShipmentStatusEmailTemplate.LogoMediaType.Should().Be("image/png");
         }
+
+        [Fact]
+        public void RegexMatchTimeout_EsFinito_YLoUsanLasDosExpresionesRegulares()
+        {
+            ShipmentStatusEmailTemplate.RegexMatchTimeout.Should().BeGreaterThan(TimeSpan.Zero).And.BeLessOrEqualTo(TimeSpan.FromSeconds(10));
+
+            foreach (String nombre in new[] { "SectionPattern", "TokenPattern" })
+            {
+                System.Reflection.FieldInfo? campo = typeof(ShipmentStatusEmailTemplate)
+                    .GetField(nombre, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+                campo.Should().NotBeNull(nombre);
+                var regex = (System.Text.RegularExpressions.Regex)campo!.GetValue(null)!;
+                regex.MatchTimeout.Should().Be(ShipmentStatusEmailTemplate.RegexMatchTimeout, nombre);
+            }
+        }
     }
 }

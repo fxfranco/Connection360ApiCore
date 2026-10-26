@@ -208,7 +208,7 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
         [InlineData("BPMS")]
         [InlineData("SIM")]
         [InlineData("ASIS")]
-        public void AddEtlInfrastructure_AllowInvalidServerCertificateVerdadero_AceptaCualquierCertificadoEnCadaApi(String apiName)
+        public void AddEtlInfrastructure_AllowInvalidServerCertificateVerdadero_UsaElValidadorDeDesarrolloEnCadaApi(String apiName)
         {
             var values = DefaultValues();
             values["ExternalApi:AllowInvalidServerCertificate"] = "true";
@@ -217,9 +217,23 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
             HttpClientHandler handler = BuildPrimaryHandler(provider, apiName);
 
             handler.ServerCertificateCustomValidationCallback.Should().NotBeNull();
+            handler.ServerCertificateCustomValidationCallback.Should().NotBeSameAs(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
+
+            // Tolera un nombre que no coincide (certificado de desarrollo emitido para "localhost")...
+            using var rsa = System.Security.Cryptography.RSA.Create(2048);
+            var request = new System.Security.Cryptography.X509Certificates.CertificateRequest(
+                "CN=localhost", rsa, System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+            using System.Security.Cryptography.X509Certificates.X509Certificate2 certificado =
+                request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(30));
+
             handler.ServerCertificateCustomValidationCallback!
-                .Invoke(new HttpRequestMessage(), null, null, SslPolicyErrors.RemoteCertificateNameMismatch | SslPolicyErrors.RemoteCertificateChainErrors)
+                .Invoke(new HttpRequestMessage(), certificado, null, SslPolicyErrors.RemoteCertificateNameMismatch)
                 .Should().BeTrue();
+
+            // ...pero ya no acepta "cualquier cosa": sin certificado del servidor rechaza.
+            handler.ServerCertificateCustomValidationCallback!
+                .Invoke(new HttpRequestMessage(), null, null, SslPolicyErrors.RemoteCertificateNotAvailable)
+                .Should().BeFalse();
         }
 
         [Theory]

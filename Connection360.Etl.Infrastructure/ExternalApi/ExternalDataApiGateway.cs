@@ -39,7 +39,7 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
             if (_settings.AllowInvalidServerCertificate)
             {
                 _logger.LogWarning(
-                    "ExternalApi:AllowInvalidServerCertificate está activo: NO se valida el certificado TLS de las APIs externas. Usar solo en desarrollo.");
+                    "ExternalApi:AllowInvalidServerCertificate está activo: se toleran certificados TLS autofirmados, no confiables o de otro host en las APIs externas (los vencidos o revocados se rechazan). Usar solo en desarrollo.");
             }
         }
 

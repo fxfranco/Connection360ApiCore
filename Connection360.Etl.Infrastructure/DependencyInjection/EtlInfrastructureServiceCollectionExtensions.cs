@@ -47,13 +47,15 @@ namespace Connection360.Etl.Infrastructure.DependencyInjection
                     });
 
                     // SOLO DESARROLLO: únicamente cuando se activa explícitamente el interruptor se
-                    // cambia el handler primario para aceptar cualquier certificado TLS. Con el valor
-                    // por defecto (false) no se toca el handler y la validación sigue igual que antes.
+                    // cambia el handler primario para tolerar certificados TLS de desarrollo (autofirmado,
+                    // nombre que no coincide, cadena no confiable), pero NO vencidos, revocados ni inválidos
+                    // (ver DevelopmentServerCertificateValidator). Con el valor por defecto (false) no se
+                    // toca el handler y se aplica la validación estándar de .NET.
                     if (externalApiSettings.AllowInvalidServerCertificate)
                     {
                         httpClientBuilder.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
                         {
-                            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                            ServerCertificateCustomValidationCallback = DevelopmentServerCertificateValidator.Validate
                         });
                     }
                 }

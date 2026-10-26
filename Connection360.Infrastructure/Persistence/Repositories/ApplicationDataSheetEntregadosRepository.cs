@@ -26,7 +26,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
-            String query = $"SELECT {ApplicationDataSheetViewColumns.AllColumnsSql} FROM {ViewName};";
+            String query = SelectQueryBuilder.Build(ApplicationDataSheetViewColumns.AllColumnsSql, ViewName);
 
             var command = new CommandDefinition(
                 query,
@@ -44,7 +44,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
             String columns = ApplicationDataSheetViewColumns.BuildSelectColumns(fieldsSelection.Fields);
-            String query = $"SELECT {columns} FROM {ViewName};";
+            String query = SelectQueryBuilder.Build(columns, ViewName);
 
             var command = new CommandDefinition(
                 query,
@@ -60,7 +60,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
-            String query = $"SELECT {ApplicationDataSheetViewColumns.AllColumnsSql} FROM {ViewName} WHERE nit_cliente = @NitCliente;";
+            String query = SelectQueryBuilder.Build(ApplicationDataSheetViewColumns.AllColumnsSql, ViewName, "nit_cliente = @NitCliente");
 
             var command = new CommandDefinition(
                 query,
@@ -78,7 +78,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
             String columns = ApplicationDataSheetViewColumns.BuildSelectColumns(fieldsSelection.Fields);
-            String query = $"SELECT {columns} FROM {ViewName} WHERE nit_cliente = @NitCliente;";
+            String query = SelectQueryBuilder.Build(columns, ViewName, "nit_cliente = @NitCliente");
 
             var command = new CommandDefinition(
                 query,

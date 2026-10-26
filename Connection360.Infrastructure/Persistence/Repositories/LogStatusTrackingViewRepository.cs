@@ -26,7 +26,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
-            String query = $"SELECT {LogStatusTrackingViewColumns.AllColumnsSql} FROM {ViewName};";
+            String query = SelectQueryBuilder.Build(LogStatusTrackingViewColumns.AllColumnsSql, ViewName);
 
             var command = new CommandDefinition(
                 query,
@@ -44,7 +44,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
             String columns = LogStatusTrackingViewColumns.BuildSelectColumns(fieldsSelection.Fields);
-            String query = $"SELECT {columns} FROM {ViewName};";
+            String query = SelectQueryBuilder.Build(columns, ViewName);
 
             var command = new CommandDefinition(
                 query,
@@ -60,7 +60,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
-            String query = $"SELECT {LogStatusTrackingViewColumns.AllColumnsSql} FROM {ViewName} WHERE documento_transporte_hbl = @DocumentoTransporteHbl;";
+            String query = SelectQueryBuilder.Build(LogStatusTrackingViewColumns.AllColumnsSql, ViewName, "documento_transporte_hbl = @DocumentoTransporteHbl");
 
             var command = new CommandDefinition(
                 query,
@@ -78,7 +78,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 
             String columns = LogStatusTrackingViewColumns.BuildSelectColumns(fieldsSelection.Fields);
-            String query = $"SELECT {columns} FROM {ViewName} WHERE documento_transporte_hbl = @DocumentoTransporteHbl;";
+            String query = SelectQueryBuilder.Build(columns, ViewName, "documento_transporte_hbl = @DocumentoTransporteHbl");
 
             var command = new CommandDefinition(
                 query,
