@@ -1,0 +1,35 @@
+# =====================================================================================
+# CI DevSecOps - Develop
+#   - Automático: cada Pull Request hacia la rama "develop".
+#   - Manual: sobre cualquier rama (campo "branch").
+#   - Ejecuta TODAS las fases aunque alguna falle; el pipeline solo queda en verde si todas pasaron.
+# =====================================================================================
+name: Connection360 CI Develop (DevSecOps)
+
+on:
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Rama a analizar (vacío = la rama seleccionada en "Use workflow from")'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-develop-${{ github.event.pull_request.number || inputs.branch || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci-fases.yml
+    with:
+      ref: ${{ inputs.branch }}
+      continue_on_failure: true
+    secrets: inherit
