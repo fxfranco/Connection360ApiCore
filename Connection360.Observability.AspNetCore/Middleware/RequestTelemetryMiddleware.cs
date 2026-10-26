@@ -90,14 +90,11 @@ namespace Connection360.Observability.AspNetCore.Middleware
             // Convención de OpenTelemetry para spans de servidor: "{método} {ruta}".
             activity.DisplayName = String.IsNullOrEmpty(route) ? context.Request.Method : $"{context.Request.Method} {route}";
 
-            if (status >= 500)
+            // Si el catch ya anotó la excepción (estado y descripción), no se sobrescribe.
+            if (status >= 500 && activity.Status != ActivityStatusCode.Error)
             {
-                // Si el catch ya anotó la excepción (estado y descripción), no se sobrescribe.
-                if (activity.Status != ActivityStatusCode.Error)
-                {
-                    activity.SetTag("error.type", status.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    activity.SetStatus(ActivityStatusCode.Error);
-                }
+                activity.SetTag("error.type", status.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                activity.SetStatus(ActivityStatusCode.Error);
             }
         }
     }

@@ -33,11 +33,11 @@ namespace Connection360.Application.UseCases.Persistence
                 // 2. Uso explícito de Unit of Work para garantizar la atomicidad transaccional
                 await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-                Guid? idResult = await outboxMessagesRepository.CrearAsync(outboxMessagesRequest, cancellationToken);
+                Guid idResult = await outboxMessagesRepository.CrearAsync(outboxMessagesRequest, cancellationToken);
 
                 await _unitOfWork.CommitAsync(cancellationToken);
 
-                if (idResult != null && idResult != Guid.Empty) {
+                if (idResult != Guid.Empty) {
                     result = true;
                 }
             }

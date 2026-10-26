@@ -9,6 +9,8 @@ namespace Connection360.Observability.Domain.Test
 {
     public class DomainModelTests
     {
+        private static readonly String[] ValuesMicrosoftAsSystemNetHNpgsql = { "Microsoft.AspNetCore", "System.Net.Http", "Npgsql" };
+
         [Fact]
         public void ServiceIdentity_EsUnRecordConIgualdadPorValor()
         {
@@ -71,7 +73,7 @@ namespace Connection360.Observability.Domain.Test
         [Fact]
         public void TracesOptions_EscuchaLasFuentesIntegradasDeDotNet()
         {
-            new TracesOptions().IncludeSources.Should().Contain(new[] { "Microsoft.AspNetCore", "System.Net.Http", "Npgsql" });
+            new TracesOptions().IncludeSources.Should().Contain(ValuesMicrosoftAsSystemNetHNpgsql);
         }
 
         [Fact]

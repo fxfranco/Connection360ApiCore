@@ -44,7 +44,7 @@ namespace Connection360Notification.Infrastructure.Email
     /// <item><description><see cref="NotificationType.Comment"/>: un único "Estado" (el nuevo estado) más Comentario y Fecha comentario.</description></item>
     /// <item><description><see cref="NotificationType.OtherInfo"/>: un único "Estado" (el nuevo estado); sin Comentario ni Fecha comentario.</description></item>
     /// </list>
-    /// El texto de introducción también cambia con el tipo. Todo valor variable se codifica
+    /// El texto de introducción también cambia con el tipo. Cada valor variable se codifica
     /// como HTML (nada de lo que llegue en la notificación o en la base se interpreta como marcado) y la sustitución se
     /// hace en una sola pasada, de modo que un valor que contenga <c>{{...}}</c> no se vuelve a expandir.
     /// </summary>
@@ -132,12 +132,22 @@ namespace Connection360Notification.Infrastructure.Email
                 ["MostrarComentario"] = isComment
             };
 
+            String introduction = IntroChangeState;
+            if (isComment)
+            {
+                introduction = IntroComment;
+            }
+            else if (isOtherInfo)
+            {
+                introduction = IntroOtherInfo;
+            }
+
             var replacements = new Dictionary<String, String>(StringComparer.Ordinal)
             {
                 ["ClienteNombre"] = Encode(Or(values.ClientName, DefaultClientName)),
                 ["NumeroGuia"] = Encode(Or(values.DocumentNumber, EmptyValue)),
                 // Textos fijos del propio código (no vienen de la notificación): no necesitan codificarse y se conservan con sus tildes.
-                ["TextoIntroduccion"] = isComment ? IntroComment : isOtherInfo ? IntroOtherInfo : IntroChangeState,
+                ["TextoIntroduccion"] = introduction,
                 ["Origen"] = Encode(Or(values.Origin, EmptyValue)),
                 ["Destino"] = Encode(Or(values.Destination, EmptyValue)),
                 ["EstadoAnterior"] = Encode(Or(values.PreviousStatus, EmptyValue)),

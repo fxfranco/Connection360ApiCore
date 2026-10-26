@@ -13,7 +13,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             _session = session;
         }
 
-        public async Task<Int64> CrearAsync(CustomerNotificationEvents CustomerNotificationEvents, CancellationToken cancellationToken = default)
+        public async Task<Int64> CrearAsync(CustomerNotificationEvents customerNotificationEvents, CancellationToken cancellationToken = default)
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);
             const string query = @"
@@ -25,12 +25,12 @@ namespace Connection360.Infrastructure.Persistence.Repositories
                 query,
                  new
                  {
-                     CustomerNotificationEvents.IdCustomer,
-                     CustomerNotificationEvents.ChangeState,
-                     CustomerNotificationEvents.SuccessfulDelivery,
-                     CustomerNotificationEvents.WithIssues,
-                     CustomerNotificationEvents.ShipmentTransit,
-                     CustomerNotificationEvents.DeliveryReminder,
+                     customerNotificationEvents.IdCustomer,
+                     customerNotificationEvents.ChangeState,
+                     customerNotificationEvents.SuccessfulDelivery,
+                     customerNotificationEvents.WithIssues,
+                     customerNotificationEvents.ShipmentTransit,
+                     customerNotificationEvents.DeliveryReminder,
                  },
                 transaction: _session.Transaction,
                 cancellationToken: cancellationToken

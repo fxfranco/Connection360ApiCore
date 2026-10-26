@@ -6,7 +6,6 @@ namespace Connection360.Domain.Entities
     public static class DateParsingExtensions
     {
         private static readonly CultureInfo CultureEs = new("es-CO");
-        //private static readonly String[] DateFormats = { "d/MM/yyyy", "dd/MM/yyyy" };
         // Arreglo con todos los formatos posibles que puede enviar la API externa
         private static readonly String[] DateFormats = new[]
         {

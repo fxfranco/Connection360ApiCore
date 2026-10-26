@@ -21,7 +21,7 @@ namespace Connection360.Domain.Tests.Entities.Persistence
         [Fact]
         public void Constructor_IdCustomerCeroOMenor_DebeLanzarArgumentException()
         {
-            Action act = () => new CustomerNotificationChannels(1, 0, true, true, true);
+            Action act = () => _ = new CustomerNotificationChannels(1, 0, true, true, true);
 
             act.Should().Throw<ArgumentException>().WithParameterName("idCustomer");
         }
@@ -29,7 +29,7 @@ namespace Connection360.Domain.Tests.Entities.Persistence
         [Fact]
         public void Constructor_IdCustomerNegativo_DebeLanzarArgumentException()
         {
-            Action act = () => new CustomerNotificationChannels(1, -5, true, true, true);
+            Action act = () => _ = new CustomerNotificationChannels(1, -5, true, true, true);
 
             act.Should().Throw<ArgumentException>();
         }
@@ -75,7 +75,7 @@ namespace Connection360.Domain.Tests.Entities.Persistence
         [InlineData(-1)]
         public void Constructor_ConIdCustomerInvalido_LanzaArgumentException(Int64 idCustomerInvalido)
         {
-            Action act = () => new CustomerNotificationChannels(1, idCustomerInvalido, true, true, true);
+            Action act = () => _ = new CustomerNotificationChannels(1, idCustomerInvalido, true, true, true);
 
             act.Should().Throw<ArgumentException>()
                 .WithParameterName("idCustomer");

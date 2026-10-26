@@ -12,6 +12,8 @@ namespace Connection360.Etl.Domain.Test.Ports
     /// </summary>
     public class PortsTests
     {
+        private static readonly String[] ValuesH = { "H" };
+
         [Fact]
         public async Task IApplicationDataSheetRepository_Mock_RespetaFirmasYValoresPorDefectoDeCancelacion()
         {
@@ -23,8 +25,8 @@ namespace Connection360.Etl.Domain.Test.Ports
                 .ReturnsAsync(new Dictionary<String, Int64> { ["H"] = 7 });
 
             (await repo.Object.UpsertBatchAsync(new[] { new ApplicationDataSheet(), new ApplicationDataSheet() })).Should().Be(2);
-            (await repo.Object.GetChangeSnapshotsAsync(new[] { "H" })).Should().ContainKey("H");
-            (await repo.Object.GetIdsByDocumentAsync(new[] { "H" }))["H"].Should().Be(7);
+            (await repo.Object.GetChangeSnapshotsAsync(ValuesH)).Should().ContainKey("H");
+            (await repo.Object.GetIdsByDocumentAsync(ValuesH))["H"].Should().Be(7);
         }
 
         [Fact]

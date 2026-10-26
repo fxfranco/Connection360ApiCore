@@ -17,8 +17,7 @@ namespace Connection360.Etl.Domain.Services
     {
         public IReadOnlyList<LogStatusTracking> Map(DynamicDataSet dataLogsDataSet)
         {
-            if (dataLogsDataSet is null)
-                throw new ArgumentNullException(nameof(dataLogsDataSet));
+            ArgumentNullException.ThrowIfNull(dataLogsDataSet);
 
             var result = new List<LogStatusTracking>(dataLogsDataSet.Rows.Count);
 

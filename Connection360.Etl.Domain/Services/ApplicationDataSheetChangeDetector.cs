@@ -27,10 +27,8 @@ namespace Connection360.Etl.Domain.Services
             IReadOnlyList<ApplicationDataSheet> currentSheets,
             IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot> previousSnapshotsByDocument)
         {
-            if (currentSheets is null)
-                throw new ArgumentNullException(nameof(currentSheets));
-            if (previousSnapshotsByDocument is null)
-                throw new ArgumentNullException(nameof(previousSnapshotsByDocument));
+            ArgumentNullException.ThrowIfNull(currentSheets);
+            ArgumentNullException.ThrowIfNull(previousSnapshotsByDocument);
 
             var changes = new List<ApplicationDataSheetChange>();
 
@@ -40,7 +38,7 @@ namespace Connection360.Etl.Domain.Services
                 if (isNewDocument)
                     previous = EmptySnapshot;
 
-                Boolean stateChanged = !String.Equals(previous.Estado, sheet.Estado, StringComparison.Ordinal);
+                Boolean stateChanged = !String.Equals(previous!.Estado, sheet.Estado, StringComparison.Ordinal);
                 Boolean commentChanged = !String.Equals(previous.Comentario, sheet.Comentario, StringComparison.Ordinal)
                     || previous.FechaComentario != sheet.FechaComentario;
 

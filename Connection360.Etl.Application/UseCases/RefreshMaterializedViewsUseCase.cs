@@ -64,7 +64,10 @@ namespace Connection360.Etl.Application.UseCases
                         await repository.RefreshConcurrentlyAsync(view, cancellationToken);
                         TimeSpan elapsed = Stopwatch.GetElapsedTime(start);
                         result.Views.Add(new MaterializedViewRefreshOutcome(view, true, elapsed));
-                        _logger.LogInformation("Vista materializada {View} refrescada en {Duration}.", view, elapsed);
+                        if (_logger.IsEnabled(LogLevel.Information))
+                        {
+                            _logger.LogInformation("Vista materializada {View} refrescada en {Duration}.", view, elapsed);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -78,10 +81,9 @@ namespace Connection360.Etl.Application.UseCases
             {
                 // Defensa final (p. ej. no se pudo resolver el repositorio): el contrato es no lanzar.
                 _logger.LogError(ex, "La sincronización de vistas materializadas terminó con error.");
-                foreach (MaterializedViewName view in Enum.GetValues<MaterializedViewName>())
+                foreach (MaterializedViewName view in Enum.GetValues<MaterializedViewName>().Where(candidate => !result.Views.Exists(v => v.View == candidate)))
                 {
-                    if (!result.Views.Exists(v => v.View == view))
-                        result.Views.Add(new MaterializedViewRefreshOutcome(view, false, TimeSpan.Zero, ex.Message));
+                    result.Views.Add(new MaterializedViewRefreshOutcome(view, false, TimeSpan.Zero, ex.Message));
                 }
             }
             finally

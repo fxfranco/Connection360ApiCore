@@ -12,7 +12,7 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
     /// entidad de dominio (NotificationMessage) y el modelo de persistencia (NotificationDocument) a
     /// través de NotificationDocumentMapper, y obtiene su colección desde IMongoDbContext: nunca crea
     /// su propio MongoClient, así que todas las instancias (aunque el repositorio esté registrado
-    /// como Scoped) reutilizan la única conexión/pool compartido de todo el proceso.
+    /// como Scoped) reutilizan la única conexión/pool compartido del proceso completo.
     /// </summary>
     public sealed class MongoNotificationRepository : INotificationRepository
     {

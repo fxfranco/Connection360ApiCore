@@ -1,5 +1,4 @@
-﻿using Connection360Notification.Application.Services;
-using Connection360Notification.Domain;
+﻿using Connection360Notification.Domain;
 using Connection360Notification.Infrastructure.Adapters.Output;
 using FluentAssertions;
 using Xunit;
@@ -17,7 +16,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
         [Fact]
         public void Set_GuardaElDestinatario_YConNuloLoLimpia()
         {
-            INotificationRecipientContext sut = new NotificationRecipientContext();
+            NotificationRecipientContext sut = new NotificationRecipientContext();
             var usuario = new BasicUserData("auth0|1", "900123", "Ana Perez", "3001112233", "ana@correo.com");
 
             sut.Set(usuario);

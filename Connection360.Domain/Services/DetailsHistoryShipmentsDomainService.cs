@@ -9,10 +9,6 @@ namespace Connection360.Domain.Services
     {
         public HistoryShipmentsDomainDtoResult GetDetailsHistoryShipments(DynamicDataSet dataSet, String DocumentNumber)
         {
-            //List<DynamicRecord> historyRecords = dataSet.Rows
-            //    .Where(r => r[ExternalDataFields.DocumentNumber] == DocumentNumber)
-            //    .ToList();
-
             List<DetailsHistoryShipmentsDomainDtoResult> historyShipmentsResult = dataSet.Rows
                 .OrderBy(r => Int64.TryParse(r[ExternalDataFields.IdLog], out Int64 id) ? id : 0)
                 .Select(s => new DetailsHistoryShipmentsDomainDtoResult // Mapeo a tu DTO final

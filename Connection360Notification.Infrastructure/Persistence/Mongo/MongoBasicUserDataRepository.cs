@@ -8,7 +8,7 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
 {
     /// <summary>
     /// Adaptador de salida (hexagonal) de <see cref="IBasicUserDataRepository"/> para MongoDB. Obtiene su colección
-    /// desde IMongoDbContext (una sola conexión compartida por todo el proceso).
+    /// desde IMongoDbContext (una sola conexión compartida por el proceso completo).
     ///
     /// Sin duplicados: el Id de Auth0 es el "_id" del documento y cada escritura es un ReplaceOne con upsert sobre ese
     /// Id, de modo que reenviar un usuario lo reemplaza en vez de crear otro; como "_id" es único en MongoDB, ni dos

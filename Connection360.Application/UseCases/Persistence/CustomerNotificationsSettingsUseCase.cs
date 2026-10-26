@@ -25,7 +25,7 @@ namespace Connection360.Application.UseCases.Persistence
             }
             EnsureSupportedRole(role);
 
-            //ToDo: Pendiente crear exceptiones personalizadas tipo NotFoundException : Exception
+            //Pendiente: crear excepciones personalizadas tipo NotFoundException : Exception
             Int64 customerId = await this.GetCustomerId(clientId, cancellationToken);
             if (customerId == 0)
             {
@@ -77,7 +77,7 @@ namespace Connection360.Application.UseCases.Persistence
             return (Int64)(idResult == null ? 0 : idResult);
         }
 
-        private async Task<CustomerNotificationEventsResponseDto> GetCustomerNotificationEvent(Int64 customerId, CancellationToken cancellationToken = default)
+        private async Task<CustomerNotificationEventsResponseDto?> GetCustomerNotificationEvent(Int64 customerId, CancellationToken cancellationToken = default)
         {
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
             ICustomerNotificationEventRepository customerNotificationEventRepository = _unitOfWork.GetRepository<ICustomerNotificationEventRepository>();
@@ -90,7 +90,7 @@ namespace Connection360.Application.UseCases.Persistence
                 customerNotificationEvents.DeliveryReminder);
         }
 
-        private async Task<CustomerNotificationChannelsResponseDto> GetCustomerNotificationChannels(Int64 customerId, CancellationToken cancellationToken = default)
+        private async Task<CustomerNotificationChannelsResponseDto?> GetCustomerNotificationChannels(Int64 customerId, CancellationToken cancellationToken = default)
         {
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
             ICustomerNotificationChannelsRepository customerNotificationChannelsRepository = _unitOfWork.GetRepository<ICustomerNotificationChannelsRepository>();
@@ -112,7 +112,7 @@ namespace Connection360.Application.UseCases.Persistence
 
             try
             {
-                String clientId = !String.IsNullOrEmpty(customerNotificationsSettings.NotificationChannels?.ClientId) ? customerNotificationsSettings.NotificationChannels.ClientId : customerNotificationsSettings.NotificationEvents?.ClientId;
+                String? clientId = !String.IsNullOrEmpty(customerNotificationsSettings.NotificationChannels?.ClientId) ? customerNotificationsSettings.NotificationChannels.ClientId : customerNotificationsSettings.NotificationEvents?.ClientId;
 
                 if (String.IsNullOrEmpty(clientId))
                 {
@@ -130,14 +130,14 @@ namespace Connection360.Application.UseCases.Persistence
 
                 await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-                Int64 createdChannels = await this.CreateCustomerNotificationChannels(customerNotificationsSettings.NotificationChannels, customerId, cancellationToken);
+                Int64 createdChannels = await this.CreateCustomerNotificationChannels(customerNotificationsSettings.NotificationChannels!, customerId, cancellationToken);
                 if (createdChannels <= 0)
                 {
                     throw new ArgumentException("Error creando notificaciones de canales");                    
                 }
                 customerNotificationsSettings.NotificationChannels.NotificationChannelId = createdChannels;
 
-                Int64 createdEvents = await this.CreateCustomerNotificationEvents(customerNotificationsSettings.NotificationEvents, customerId, cancellationToken);
+                Int64 createdEvents = await this.CreateCustomerNotificationEvents(customerNotificationsSettings.NotificationEvents!, customerId, cancellationToken);
 
                 if (createdEvents <= 0)
                 {
@@ -198,7 +198,7 @@ namespace Connection360.Application.UseCases.Persistence
 
             try
             {
-                String clientId = !String.IsNullOrEmpty(customerNotificationsSettings.NotificationChannels?.ClientId) ? customerNotificationsSettings.NotificationChannels.ClientId : customerNotificationsSettings.NotificationEvents?.ClientId;
+                String? clientId = !String.IsNullOrEmpty(customerNotificationsSettings.NotificationChannels?.ClientId) ? customerNotificationsSettings.NotificationChannels.ClientId : customerNotificationsSettings.NotificationEvents?.ClientId;
 
                 if (String.IsNullOrEmpty(clientId))
                 {
@@ -212,13 +212,13 @@ namespace Connection360.Application.UseCases.Persistence
                 }
                 await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-                Boolean updateChannels = await this.UpdateCustomerNotificationChannels(customerNotificationsSettings.NotificationChannels, customerId, cancellationToken);
+                Boolean updateChannels = await this.UpdateCustomerNotificationChannels(customerNotificationsSettings.NotificationChannels!, customerId, cancellationToken);
                 if (!updateChannels)
                 {
                     throw new ArgumentException("Error modificando notificaciones de canales");
                 }
 
-                Boolean updateEvents = await this.UpdateCustomerNotificationEvents(customerNotificationsSettings.NotificationEvents, customerId, cancellationToken);
+                Boolean updateEvents = await this.UpdateCustomerNotificationEvents(customerNotificationsSettings.NotificationEvents!, customerId, cancellationToken);
 
                 if (!updateEvents)
                 {

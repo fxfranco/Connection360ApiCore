@@ -32,6 +32,7 @@ namespace Connection360.Observability.AspNetCore.Test.Middleware
         {
             _listener.Dispose();
             _source.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private static DefaultHttpContext NewContext(String method = "GET", String path = "/api/v1/home/totals", String? route = null, String query = "?idClient=123&token=secreto")
@@ -51,7 +52,7 @@ namespace Connection360.Observability.AspNetCore.Test.Middleware
             return context;
         }
 
-        private Task Run(HttpContext context, RequestDelegate next) => new RequestTelemetryMiddleware(next).InvokeAsync(context);
+        private static Task Run(HttpContext context, RequestDelegate next) => new RequestTelemetryMiddleware(next).InvokeAsync(context);
 
         [Fact]
         public async Task ConSpanActivo_AgregaLosDatosDeLaPeticion()
@@ -215,7 +216,7 @@ namespace Connection360.Observability.AspNetCore.Test.Middleware
         public async Task UseConnection360RequestTelemetry_RegistraElMiddlewareEnElPipeline()
         {
             using Activity activity = _source.StartActivity("x", ActivityKind.Server)!;
-            var services = new ServiceCollectionStub().Build();
+            var services = ServiceCollectionStub.Build();
             var builder = new ApplicationBuilder(services);
             builder.UseConnection360RequestTelemetry();
             builder.Run(ctx => { ctx.Response.StatusCode = 201; return Task.CompletedTask; });
@@ -228,7 +229,7 @@ namespace Connection360.Observability.AspNetCore.Test.Middleware
 
         private sealed class ServiceCollectionStub
         {
-            public IServiceProvider Build() => Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions
+            public static Microsoft.Extensions.DependencyInjection.ServiceProvider Build() => Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions
                 .BuildServiceProvider(new Microsoft.Extensions.DependencyInjection.ServiceCollection());
         }
     }

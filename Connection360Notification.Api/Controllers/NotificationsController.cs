@@ -97,25 +97,5 @@ namespace Connection360Notification.Api.Controllers
             var notifications = await _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(cancellationToken);
             return Ok(notifications);
         }
-
-        /// <summary>
-        /// Envía una notificación produciendo un evento en Kafka.
-        /// </summary>
-        //[HttpPost("simulatenotifications")]
-        //[AllowAnonymous]
-        ////[Authorize(Roles = "ADMIN,CLIENT,ANALISTAOPE,ANALISTASAC")]
-        //[ProducesResponseType(StatusCodes.Status202Accepted)]
-        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
-        //public async Task<IActionResult> SendNotification([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
-        //{
-        //    if (request == null || string.IsNullOrWhiteSpace(request.Recipient))
-        //    {
-        //        return BadRequest("Solicitud inválida.");
-        //    }
-
-        //    await _notificationUseCase.ExecuteSendAsync(request, cancellationToken);
-
-        //    return Accepted(new { Message = "Notificación enviada a cola de procesamiento." });
-        //}
     }
 }

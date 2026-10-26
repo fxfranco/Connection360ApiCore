@@ -91,6 +91,7 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
             _sut.Dispose();
             _provider.Dispose();
             _cts.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private static ConsumeResult<String, String> Resultado(String valor) => new() { Message = new Message<String, String> { Key = "k", Value = valor } };

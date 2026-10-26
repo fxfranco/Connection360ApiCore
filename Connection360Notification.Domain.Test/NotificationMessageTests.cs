@@ -10,6 +10,8 @@ namespace Connection360Notification.Domain.Tests
 {
     public class NotificationMessageTests
     {
+        private static readonly JsonSerializerOptions Opciones = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
+
         private static readonly DateTime FechaFija = new(2024, 5, 17, 10, 30, 0, DateTimeKind.Utc);
 
         [Fact]
@@ -109,9 +111,9 @@ namespace Connection360Notification.Domain.Tests
         [InlineData("   ")]
         public void Constructor_ConClientIdInvalido_LanzaArgumentException(String? clientId)
         {
-            Action act = () => new NotificationMessage(clientId!, NotificationType.Comment, "Mensaje");
+            Action act = () => _ = new NotificationMessage(clientId!, NotificationType.Comment, "Mensaje");
 
-            act.Should().Throw<ArgumentException>().WithParameterName("clientId");
+            act.Should().Throw<ArgumentException>().WithParameterName(nameof(clientId));
         }
 
         [Theory]
@@ -120,9 +122,9 @@ namespace Connection360Notification.Domain.Tests
         [InlineData("   ")]
         public void Constructor_ConMensajeInvalido_LanzaArgumentException(String? message)
         {
-            Action act = () => new NotificationMessage("CLI-1", NotificationType.Comment, message!);
+            Action act = () => _ = new NotificationMessage("CLI-1", NotificationType.Comment, message!);
 
-            act.Should().Throw<ArgumentException>().WithParameterName("message");
+            act.Should().Throw<ArgumentException>().WithParameterName(nameof(message));
         }
 
         [Fact]
@@ -275,7 +277,7 @@ namespace Connection360Notification.Domain.Tests
             var json = "{\"ClientId\":\"CLI-2\",\"EventType\":\"OtherInfo\",\"DocumentNumber\":\"HBL-9\",\"Title\":\"t\",\"Message\":\"Hola\","
                 + "\"MessageDate\":\"2026-10-21T15:30:05Z\",\"Origen\":\"Medellin\",\"Destino\":\"Miami\",\"Comentario\":\"Listo\","
                 + "\"FechaComentario\":\"2026-10-20T00:00:00\",\"EstadoAnterior\":\"En transito\",\"NuevoEstado\":\"En puerto\"}";
-            var opciones = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
+            var opciones = Opciones;
 
             var sut = JsonSerializer.Deserialize<NotificationMessage>(json, opciones);
 

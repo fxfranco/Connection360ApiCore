@@ -121,15 +121,21 @@ namespace Connection360Notification.Infrastructure.Messaging
                 UpsertedUsers.Add(result.Upserted);
                 span?.SetTag("basicusers.upserted", result.Upserted);
 
-                _logger.LogInformation(
-                    "Lote {Batch}/{Batches} de usuarios (sync {SyncId}): {Upserted} guardados, {Discarded} descartados.",
-                    message.BatchIndex + 1, message.BatchCount, message.SyncId, result.Upserted, result.Discarded);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "Lote {Batch}/{Batches} de usuarios (sync {SyncId}): {Upserted} guardados, {Discarded} descartados.",
+                        message.BatchIndex + 1, message.BatchCount, message.SyncId, result.Upserted, result.Discarded);
+                }
 
                 if (result.IsLastBatch)
                 {
                     if (result.CleanupPerformed)
                     {
-                        _logger.LogInformation("Sincronización {SyncId} completa: {Deleted} usuario(s) obsoleto(s) eliminado(s).", message.SyncId, result.Deleted);
+                        if (_logger.IsEnabled(LogLevel.Information))
+                        {
+                            _logger.LogInformation("Sincronización {SyncId} completa: {Deleted} usuario(s) obsoleto(s) eliminado(s).", message.SyncId, result.Deleted);
+                        }
                     }
                     else
                     {
@@ -153,6 +159,7 @@ namespace Connection360Notification.Infrastructure.Messaging
             // Primero se cancela el token (base.Dispose) para que el bucle deje de usar el cliente.
             base.Dispose();
             _consumer.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

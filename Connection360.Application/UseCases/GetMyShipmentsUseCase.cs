@@ -42,9 +42,11 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
-            var filters = new Dictionary<String, String>();
 
             ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
             {
@@ -102,9 +104,11 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
-            var filters = new Dictionary<String, String>();
             ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
             {
                 Scope = ApplicationDataSheetViewScope.NoEntregados,
@@ -115,7 +119,7 @@ namespace Connection360.Application.UseCases
 
             MyShipmentsFiltersDto myShipmentsFiltersDto = new MyShipmentsFiltersDto
             {
-                ValueFilter = request.Filters.ValueFilter,
+                ValueFilter = request.Filters!.ValueFilter,
                 OperationType = request.Filters.OperationType,
                 ShipmentMode = request.Filters.ShipmentMode,
                 State = request.Filters.State,
@@ -166,9 +170,11 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
-            var filters = new Dictionary<String, String>();
             ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
             {
                 Scope = ApplicationDataSheetViewScope.Entregados,
@@ -223,9 +229,11 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
-            var filters = new Dictionary<String, String>();
             ApplicationDataSheetDataRequest applicationDataSheetDataRequest = new ApplicationDataSheetDataRequest
             {
                 Scope = ApplicationDataSheetViewScope.Entregados,
@@ -236,7 +244,7 @@ namespace Connection360.Application.UseCases
 
             MyShipmentsFiltersDto myShipmentsFiltersDto = new MyShipmentsFiltersDto
             {
-                ValueFilter = request.Filters.ValueFilter,
+                ValueFilter = request.Filters!.ValueFilter,
                 OperationType = request.Filters.OperationType,
                 ShipmentMode = request.Filters.ShipmentMode,
                 State = request.Filters.State,
@@ -290,7 +298,10 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
             // El historial (log_status_tracking) se consulta solo para el documento pedido: el servicio de
             // dominio igualmente filtra por ExternalDataFields.DocumentNumber, asi que el resultado es el mismo
@@ -314,7 +325,7 @@ namespace Connection360.Application.UseCases
             DynamicDataSet dataSetDATALOGS = await _logStatusTrackingDataGateway.FetchDataAsync(filters, cancellationToken);
             var detailsHistory = _detailsHistoryShipmentsDomainService.GetDetailsHistoryShipments(dataSetDATALOGS, DocumentNumber: request.DocumentNumber);
 
-            String originName = myShipmentsDetails.ResumenShipments.Origin;
+            String originName = myShipmentsDetails.ResumenShipments!.Origin;
             String DestinationName = myShipmentsDetails.ResumenShipments.Destination;
 
             OpenStreetMapDto OpenStreetMapOrigin = await _externalApiOpenStreetMap.GetCoordinates("OPENSTREETMAP", originName, cancellationToken);
@@ -344,7 +355,7 @@ namespace Connection360.Application.UseCases
                 },
                 TrackingShipments = new TrackingShipmentsResponse
                 {
-                    State = myShipmentsDetails.TrackingShipments.State,
+                    State = myShipmentsDetails.TrackingShipments!.State,
                     OriginNameCoordinates = OpenStreetMapOrigin.PlaceName,
                     OriginLatitudCoordinates = OpenStreetMapOrigin.Latitud,
                     OriginLongitudCoordinates = OpenStreetMapOrigin.Longitud,
@@ -354,7 +365,7 @@ namespace Connection360.Application.UseCases
                 },
                 LogisticsDatesShipments = new LogisticsDatesShipmentsResponse
                 {
-                    StoreOriginDate = myShipmentsDetails.LogisticsDatesShipments.StoreOriginDate,
+                    StoreOriginDate = myShipmentsDetails.LogisticsDatesShipments!.StoreOriginDate,
                     ETDDate = myShipmentsDetails.LogisticsDatesShipments.ETDDate,
                     ATDDate = myShipmentsDetails.LogisticsDatesShipments.ATDDate,
                     ETADate = myShipmentsDetails.LogisticsDatesShipments.ETADate,
@@ -367,7 +378,7 @@ namespace Connection360.Application.UseCases
                 },
                 ContainerShipments = new ContainerShipmentsResponse
                 {
-                    ContainerType = myShipmentsDetails.ContainerShipments.ContainerType,
+                    ContainerType = myShipmentsDetails.ContainerShipments!.ContainerType,
                     ContainerAmount = myShipmentsDetails.ContainerShipments.ContainerAmount,
                     ContainerNumber = myShipmentsDetails.ContainerShipments.ContainerNumber,
                     DaysOff = myShipmentsDetails.ContainerShipments.DaysOff,
@@ -380,7 +391,7 @@ namespace Connection360.Application.UseCases
                 },
                 FinancialInfoShipments = new FinancialInfoShipmentsResponse
                 {
-                    AdvancePaymentRequestDate = myShipmentsDetails.FinancialInfoShipments.AdvancePaymentRequestDate,
+                    AdvancePaymentRequestDate = myShipmentsDetails.FinancialInfoShipments!.AdvancePaymentRequestDate,
                     AdvancePaymentDate = myShipmentsDetails.FinancialInfoShipments.AdvancePaymentDate,
                     AdvancePaymentAmount = myShipmentsDetails.FinancialInfoShipments.AdvancePaymentAmount,
                     SupplierInvoice = myShipmentsDetails.FinancialInfoShipments.SupplierInvoice,
@@ -396,7 +407,7 @@ namespace Connection360.Application.UseCases
                 HistoryShipments = new HistoryShipmentsResponse
                 {
 
-                    DetailsHistoryShipments = detailsHistory.DetailsHistoryShipments.Select(x => new DetailsHistoryShipmentsResponse
+                    DetailsHistoryShipments = detailsHistory.DetailsHistoryShipments!.Select(x => new DetailsHistoryShipmentsResponse
                     {
                         ChangeDate = x.ChangeDate,
                         ChangeUser= x.ChangeUser,

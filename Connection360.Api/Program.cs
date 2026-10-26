@@ -34,22 +34,6 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddApiVersioningSetup();
 
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowAll",
-//        policy =>
-//        {
-//            policy
-//                .WithOrigins(
-//                    "http://localhost:4200"
-//                 )
-//                //.AllowAnyOrigin()
-//                .AllowAnyMethod()
-//                .AllowAnyHeader()
-//                .AllowCredentials();
-//        });
-//});
-
 // Infrastructure
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -149,7 +133,6 @@ else
 // Completa el span de cada petición (método, ruta, estado) con las convenciones de OpenTelemetry.
 app.UseConnection360RequestTelemetry();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-//app.UseCors("AllowAll");	
 app.UseHttpsRedirection(); // Fuerza TLS
 app.UseAuthentication();
 app.UseAuthorization();

@@ -36,7 +36,6 @@ namespace Connection360.Infrastructure.ExternalApi
 
             try
             {
-                //var response = await client.GetAsync(url);
                 using var response = await httpClient.GetAsync(url, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
@@ -50,7 +49,7 @@ namespace Connection360.Infrastructure.ExternalApi
 
                 if (resultados == null || resultados.Count == 0)
                 {
-                    _logger.LogError($"No se encontraron coordenadas para: '{PlaceName}'");
+                    _logger.LogError("No se encontraron coordenadas para: '{PlaceName}'", PlaceName);
                     throw new HttpRequestException($"No se encontraron coordenadas para: '{PlaceName}'");
                 }
 
@@ -69,7 +68,7 @@ namespace Connection360.Infrastructure.ExternalApi
             }
             catch (Exception ex)
             {
-                _logger.LogError($" Error {ex} ");
+                _logger.LogError(" Error {Exception} ", ex);
                 throw;
             }
         }

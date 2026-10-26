@@ -9,6 +9,8 @@ namespace Connection360Notification.Api.Tests.Middleware
 {
     public class NotFoundMiddlewareTests
     {
+        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new() { PropertyNameCaseInsensitive = true };
+
         private static DefaultHttpContext BuildContext(String path = "/api/v1/no-existe")
         {
             var context = new DefaultHttpContext();
@@ -32,7 +34,7 @@ namespace Connection360Notification.Api.Tests.Middleware
             context.Response.Body.Seek(0, SeekOrigin.Begin);
             using var reader = new StreamReader(context.Response.Body);
             var json = await reader.ReadToEndAsync();
-            var response = JsonSerializer.Deserialize<ApiResponse<Object>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            var response = JsonSerializer.Deserialize<ApiResponse<Object>>(json, CaseInsensitiveOptions)!;
 
             response.Status.Should().Be(404);
             response.Message.Should().Be("Ruta no encontrada");

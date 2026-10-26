@@ -19,7 +19,7 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
     /// </summary>
     public static class DevelopmentServerCertificateValidator
     {
-        /// <summary>Estados de la cadena que se aceptan en desarrollo (todo lo demás se rechaza).</summary>
+        /// <summary>Estados de la cadena que se aceptan en desarrollo (cualquier otro estado se rechaza).</summary>
         public const X509ChainStatusFlags ToleratedChainStatus =
             X509ChainStatusFlags.NoError
             | X509ChainStatusFlags.UntrustedRoot

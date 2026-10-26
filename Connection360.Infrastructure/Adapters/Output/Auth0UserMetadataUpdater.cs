@@ -100,18 +100,8 @@ namespace Connection360.Infrastructure.Adapters.Output
         /// <summary>Clave tal como ya existe en el metadata (sin distinguir mayúsculas) o la clave canónica si no existe.</summary>
         private static String ResolveKey(IDictionary<String, Object>? current, String canonicalKey)
         {
-            if (current != null)
-            {
-                foreach (String existing in current.Keys)
-                {
-                    if (String.Equals(existing, canonicalKey, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return existing;
-                    }
-                }
-            }
-
-            return canonicalKey;
+            return current?.Keys.FirstOrDefault(existing => String.Equals(existing, canonicalKey, StringComparison.OrdinalIgnoreCase))
+                ?? canonicalKey;
         }
     }
 }

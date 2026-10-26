@@ -5,7 +5,7 @@
     /// </summary>
     public class ClientSummaryRequest
     {
-        //TODO: Pendiente cambiar nombre para no confundir 
+        //Pendiente: cambiar nombre para no confundir 
         /// <summary>Identificador del cliente sobre el que se consulta. Puede quedar vacío cuando <see cref="AllClient"/> es <c>true</c> o el rol del usuario permite ver todos los clientes.</summary>
         public String IdClient { get; set; } = default!;
 

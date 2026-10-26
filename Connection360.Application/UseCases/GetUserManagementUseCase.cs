@@ -19,9 +19,9 @@ namespace Connection360.Application.UseCases
             return await _auth0UserService.GetUsersAsync(page: usersManagement.Page, size: usersManagement.Size);
         }
 
-        public async Task<Boolean> UpdateUserAsync(String userId, Auth0UserDto dto)
+        public async Task<Boolean> UpdateUserAsync(String userId, Auth0UserDto userUpdate)
         {
-            return await _auth0UserService.UpdateUserAsync(userId, dto);
+            return await _auth0UserService.UpdateUserAsync(userId, userUpdate);
         }
 
         public async Task<Boolean> DeleteUserAsync(String userId)

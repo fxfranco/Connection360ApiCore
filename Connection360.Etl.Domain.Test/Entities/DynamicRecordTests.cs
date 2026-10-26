@@ -6,6 +6,8 @@ namespace Connection360.Etl.Domain.Test.Entities
 {
     public class DynamicRecordTests
     {
+        private static readonly String[] ValuesAB = { "A", "B" };
+
         [Fact]
         public void Constructor_ConDiccionarioNulo_CreaRegistroVacio()
         {
@@ -81,7 +83,7 @@ namespace Connection360.Etl.Domain.Test.Entities
 
             record.Fields.Should().HaveCount(2);
             record.Fields["A"].Should().Be("1");
-            record.Fields.Keys.Should().BeEquivalentTo(new[] { "A", "B" });
+            record.Fields.Keys.Should().BeEquivalentTo(ValuesAB);
         }
     }
 }

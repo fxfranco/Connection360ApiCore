@@ -10,6 +10,10 @@ namespace Connection360.ApiGateway.Tests.Extensions
 {
     public class CorsExtensionsTests
     {
+        private static readonly String[] ValuesHttpsMiappHttpsOtraT = { "https://miapp.test", "https://otra.test" };
+        private static readonly String[] ValuesHttpsMiappEmptyBlankHttpsOtra = { "https://miapp.test", "", "   ", "https://otra.test" };
+        private static readonly String[] ValuesHttpsMiapp = { "https://miapp.test" };
+
         private static IConfiguration BuildConfig(String[] allowedOrigins) =>
             new ConfigurationBuilder().AddInMemoryCollection(
                 allowedOrigins.Select((origin, index) => new KeyValuePair<String, String?>($"Cors:AllowedOrigins:{index}", origin))
@@ -19,7 +23,7 @@ namespace Connection360.ApiGateway.Tests.Extensions
         public void AddGatewayCors_RegistraLaPoliticaConLosOrigenesConfigurados()
         {
             var services = new ServiceCollection();
-            var config = BuildConfig(new[] { "https://miapp.test" });
+            var config = BuildConfig(ValuesHttpsMiapp);
 
             services.AddGatewayCors(config);
             var provider = services.BuildServiceProvider();
@@ -34,7 +38,7 @@ namespace Connection360.ApiGateway.Tests.Extensions
         public void AddGatewayCors_LaPoliticaPermiteCredenciales()
         {
             var services = new ServiceCollection();
-            var config = BuildConfig(new[] { "https://miapp.test" });
+            var config = BuildConfig(ValuesHttpsMiapp);
 
             services.AddGatewayCors(config);
             var provider = services.BuildServiceProvider();
@@ -58,13 +62,13 @@ namespace Connection360.ApiGateway.Tests.Extensions
         public void AddGatewayCors_IgnoraLosOrigenesVaciosQueLlegaranPorVariablesDeEntorno()
         {
             var services = new ServiceCollection();
-            var config = BuildConfig(new[] { "https://miapp.test", "", "   ", "https://otra.test" });
+            var config = BuildConfig(ValuesHttpsMiappEmptyBlankHttpsOtra);
 
             services.AddGatewayCors(config);
             var provider = services.BuildServiceProvider();
             var policy = provider.GetRequiredService<IOptions<CorsOptions>>().Value.GetPolicy(CorsExtensions.PolicyName);
 
-            policy!.Origins.Should().BeEquivalentTo(new[] { "https://miapp.test", "https://otra.test" });
+            policy!.Origins.Should().BeEquivalentTo(ValuesHttpsMiappHttpsOtraT);
         }
     }
 }

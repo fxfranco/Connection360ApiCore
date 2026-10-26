@@ -284,7 +284,8 @@ namespace Connection360.Observability.Application.Test.Metrics
             MetricsTelemetryCollector collector = await StartAsync(m => m.CollectionIntervalSeconds = 1);
             _meter.CreateCounter<Int32>("pruebas.periodico").Add(1);
 
-            await Wait.UntilAsync(() => _queue.Reader.Count > 0, "el temporizador emite la métrica", timeoutMs: 5_000);
+            Func<Task> esperarMetrica = () => Wait.UntilAsync(() => _queue.Reader.Count > 0, "el temporizador emite la métrica", timeoutMs: 5_000);
+            await esperarMetrica.Should().NotThrowAsync();
         }
 
         [Fact]

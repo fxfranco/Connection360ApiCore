@@ -15,7 +15,7 @@ using System.Diagnostics;
 
 // ---------- Composition root del proceso ETL (Extract, Transform, Load) ----------
 // Sigue el mismo patrón de arranque que Connection360.Api/Program.cs: un NpgsqlDataSource
-// SINGLETON para todo el proceso (pool de conexiones, sin reabrir sockets) y las capas de
+// SINGLETON para el proceso completo (pool de conexiones, sin reabrir sockets) y las capas de
 // Application/Infrastructure registradas mediante sus propias extensiones de IServiceCollection.
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -80,12 +80,18 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
 
     foreach (var (apiName, count) in result.ExtractedRecordsByApi)
     {
-        logger.LogInformation("Extract [{Api}]: {Count} registros", apiName, count);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Extract [{Api}]: {Count} registros", apiName, count);
+        }
     }
 
-    logger.LogInformation(
-        "Corrida ETL (logs) finalizada. Éxito={Success}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
-        result.Success, result.TransformedRecords, result.LoadedRecords, result.Duration);
+    if (logger.IsEnabled(LogLevel.Information))
+    {
+        logger.LogInformation(
+            "Corrida ETL (logs) finalizada. Éxito={Success}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
+            result.Success, result.TransformedRecords, result.LoadedRecords, result.Duration);
+    }
 
     if (!result.Success)
     {
@@ -107,12 +113,18 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
 
     foreach (var (apiName, count) in result.ExtractedRecordsByApi)
     {
-        logger.LogInformation("Extract [{Api}]: {Count} registros", apiName, count);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Extract [{Api}]: {Count} registros", apiName, count);
+        }
     }
 
-    logger.LogInformation(
-        "Corrida ETL (bodega de datos) finalizada. Éxito={Success}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
-        result.Success, result.TransformedRecords, result.LoadedRecords, result.Duration);
+    if (logger.IsEnabled(LogLevel.Information))
+    {
+        logger.LogInformation(
+            "Corrida ETL (bodega de datos) finalizada. Éxito={Success}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
+            result.Success, result.TransformedRecords, result.LoadedRecords, result.Duration);
+    }
 
     if (!result.Success)
     {
@@ -132,7 +144,10 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
     var purgeEtlJobControlUseCase = scope.ServiceProvider.GetRequiredService<IPurgeEtlJobControlUseCase>();
     Int32 deletedRows = await purgeEtlJobControlUseCase.ExecuteAsync(cancellationTokenSource.Token);
 
-    logger.LogInformation("Depuración de etl_job_control finalizada: {Deleted} registro(s) eliminados.", deletedRows);
+    if (logger.IsEnabled(LogLevel.Information))
+    {
+        logger.LogInformation("Depuración de etl_job_control finalizada: {Deleted} registro(s) eliminados.", deletedRows);
+    }
 }
 
 // ---------- 4. Sincronización de las vistas materializadas de lectura (connection360read) ----------
@@ -148,9 +163,12 @@ await using (AsyncServiceScope scope = host.Services.CreateAsyncScope())
     var result = await refreshMaterializedViewsUseCase.ExecuteAsync(cancellationTokenSource.Token);
     EtlTelemetry.RecordViewsResult(jobSpan, result);
 
-    logger.LogInformation(
-        "Sincronización de vistas materializadas finalizada. Éxito={Success}. Omitida={Skipped}. Refrescadas={Refreshed}. Fallidas={Failed}. Duración={Duration}.",
-        result.Success, result.Skipped, result.Views.Count(v => v.Success), result.Views.Count(v => !v.Success), result.Duration);
+    if (logger.IsEnabled(LogLevel.Information))
+    {
+        logger.LogInformation(
+            "Sincronización de vistas materializadas finalizada. Éxito={Success}. Omitida={Skipped}. Refrescadas={Refreshed}. Fallidas={Failed}. Duración={Duration}.",
+            result.Success, result.Skipped, result.Views.Count(v => v.Success), result.Views.Count(v => !v.Success), result.Duration);
+    }
 
     foreach (var failed in result.Views.Where(v => !v.Success))
     {

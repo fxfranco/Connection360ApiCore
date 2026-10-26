@@ -9,6 +9,13 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
 {
     public class ApplicationDataSheetRepositoryTests
     {
+        private static readonly String[] ValuesH1 = { "H1" };
+        private static readonly String[] ValuesH1H2 = { "H1", "H2" };
+        private static readonly String[] ValuesH1H2H2Empty = { "H1", "H2", "H2", "" };
+        private static readonly String[] ValuesBlankEmpty = { " ", "" };
+        private static readonly String[] ValuesH1H22 = { "H1", "h2" };
+        private static readonly String[] ValuesH1H1BlankH2Empty = { "H1", "H1", " ", "H2", "" };
+
         private static ApplicationDataSheet Sheet(String doc) => new()
         {
             DocumentoTransporteHbl = doc,
@@ -170,12 +177,12 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => SnapshotTable();
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            await sut.GetChangeSnapshotsAsync(new[] { "H1", "H1", " ", "H2", "" });
+            await sut.GetChangeSnapshotsAsync(ValuesH1H1BlankH2Empty);
 
             FakeExecution execution = scope.Connection.Executions.Single();
             execution.Kind.Should().Be("Reader");
             execution.CommandText.Should().Contain("FROM connection360write.application_data_sheet").And.Contain("fecha_comentario::timestamp");
-            DocumentParameters(execution).Should().BeEquivalentTo(new[] { "H1", "H2" });
+            DocumentParameters(execution).Should().BeEquivalentTo(ValuesH1H2);
         }
 
         [Theory]
@@ -192,7 +199,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => SnapshotTable();
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+            await sut.GetChangeSnapshotsAsync(ValuesH1);
 
             scope.Connection.Executions.Single().CommandText.Should().Contain(columna).And.Contain($"AS \"{alias}\"");
         }
@@ -217,7 +224,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => SnapshotTable();
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+            await sut.GetChangeSnapshotsAsync(ValuesH1);
 
             // Npgsql 10 devuelve DATE como DateOnly, que Dapper no convierte a DateTime: el cast ::timestamp es obligatorio.
             scope.Connection.Executions.Single().CommandText.Should().Contain($"{columna}::timestamp AS \"{alias}\"");
@@ -241,7 +248,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => table;
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            var result = await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+            var result = await sut.GetChangeSnapshotsAsync(ValuesH1);
 
             ApplicationDataSheetChangeSnapshot snap = result["H1"];
             snap.Transportista.Should().Be("TCC");
@@ -262,7 +269,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
                 (2L, "h2", "EN TRANSITO", "", new DateTime(2025, 5, 7)));
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            var result = await sut.GetChangeSnapshotsAsync(new[] { "H1", "h2" });
+            var result = await sut.GetChangeSnapshotsAsync(ValuesH1H22);
 
             result.Should().HaveCount(2);
             ApplicationDataSheetChangeSnapshot first = result["H1"];
@@ -282,7 +289,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => SnapshotTable();
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            var result = await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+            var result = await sut.GetChangeSnapshotsAsync(ValuesH1);
 
             result.Should().BeEmpty();
         }
@@ -296,7 +303,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Session.Transaction = transaction;
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            await sut.GetChangeSnapshotsAsync(new[] { "H1" });
+            await sut.GetChangeSnapshotsAsync(ValuesH1);
 
             scope.Connection.OpenCalls.Should().Be(1);
             scope.Connection.Executions.Single().Transaction.Should().BeSameAs(transaction);
@@ -310,7 +317,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             await using var scope = new FakeSessionScope(ConnectionState.Closed);
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            (await sut.GetIdsByDocumentAsync(new[] { " ", "" })).Should().BeEmpty();
+            (await sut.GetIdsByDocumentAsync(ValuesBlankEmpty)).Should().BeEmpty();
             (await sut.GetIdsByDocumentAsync(null!)).Should().BeEmpty();
             (await sut.GetIdsByDocumentAsync(new List<String>())).Should().BeEmpty();
 
@@ -325,14 +332,14 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => IdTable((10L, "H1"), (20L, "H2"));
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            var result = await sut.GetIdsByDocumentAsync(new[] { "H1", "H2", "H2", "" });
+            var result = await sut.GetIdsByDocumentAsync(ValuesH1H2H2Empty);
 
             result.Should().HaveCount(2);
             result["H1"].Should().Be(10);
             result["H2"].Should().Be(20);
             FakeExecution execution = scope.Connection.Executions.Single();
             execution.CommandText.Should().Contain("SELECT id AS \"Id\"").And.Contain("ANY(");
-            DocumentParameters(execution).Should().BeEquivalentTo(new[] { "H1", "H2" });
+            DocumentParameters(execution).Should().BeEquivalentTo(ValuesH1H2);
         }
 
         [Fact]
@@ -344,7 +351,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Session.Transaction = transaction;
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            var result = await sut.GetIdsByDocumentAsync(new[] { "H1" });
+            var result = await sut.GetIdsByDocumentAsync(ValuesH1);
 
             scope.Connection.OpenCalls.Should().Be(1);
             scope.Connection.Executions.Single().Transaction.Should().BeSameAs(transaction);
@@ -358,7 +365,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ThrowOnExecute = new InvalidOperationException("sin conexion");
             var sut = new ApplicationDataSheetRepository(scope.Session);
 
-            Func<Task> act = () => sut.GetIdsByDocumentAsync(new[] { "H1" });
+            Func<Task> act = () => sut.GetIdsByDocumentAsync(ValuesH1);
 
             await act.Should().ThrowAsync<InvalidOperationException>();
         }

@@ -24,7 +24,10 @@ namespace Connection360.Etl.Orchestrator.Execution
             // que no existe, como pasó al confundir cuántos "../" hacen falta para salir de
             // bin/Debug/net10.0- se ve inmediatamente en la pantalla del orquestador, en vez de
             // enterarse solo por un error críptico del sistema operativo al lanzar el proceso.
-            _logger.LogInformation("[{Job}] Working directory resuelto: {Dir}", job.Name, workingDirectory);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("[{Job}] Working directory resuelto: {Dir}", job.Name, workingDirectory);
+            }
 
             if (!Directory.Exists(workingDirectory))
             {
@@ -55,7 +58,12 @@ namespace Connection360.Etl.Orchestrator.Execution
             process.OutputDataReceived += (_, e) =>
             {
                 if (e.Data is not null)
-                    _logger.LogInformation("[{Job}] {Line}", job.Name, e.Data);
+                {
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation("[{Job}] {Line}", job.Name, e.Data);
+                    }
+                }
             };
             process.ErrorDataReceived += (_, e) =>
             {

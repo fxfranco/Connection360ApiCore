@@ -233,7 +233,9 @@ namespace Connection360.Observability.Application.Test.DependencyInjection
 
             await using (await provider.StartObservabilityAsync())
             {
+                #pragma warning disable CA1873 // Prueba: la llamada de registro es el objeto de la prueba; no se protege con IsEnabled.
                 provider.GetRequiredService<ILoggerFactory>().CreateLogger("Etl.Prueba").LogInformation("hola {Valor}", 1);
+                #pragma warning restore CA1873
                 Connection360Telemetry.Meter.CreateCounter<Int32>(Counter_Name).Add(3);
                 using (Connection360Telemetry.Source.StartActivity("e2e.operacion")) { }
             }

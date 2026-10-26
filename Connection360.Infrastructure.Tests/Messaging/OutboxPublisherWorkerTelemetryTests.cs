@@ -67,6 +67,7 @@ namespace Connection360.Infrastructure.Tests.Messaging
             _activityListener.Dispose();
             _meterListener.Dispose();
             _provider.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private OutboxPublisherWorker BuildWorker()

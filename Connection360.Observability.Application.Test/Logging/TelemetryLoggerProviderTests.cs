@@ -38,7 +38,9 @@ namespace Connection360.Observability.Application.Test.Logging
         {
             using var fixture = new Fixture();
 
+            #pragma warning disable CA1873 // Prueba: la llamada de registro es el objeto de la prueba; no se protege con IsEnabled.
             fixture.Logger().LogInformation("Procesadas {Cantidad} notificaciones de {Cliente}", 5, "ACME");
+            #pragma warning restore CA1873
 
             LogRecord record = fixture.Queue.DrainAll().Should().ContainSingle().Subject;
             record.Message.Should().Be("Procesadas 5 notificaciones de ACME");
@@ -146,7 +148,9 @@ namespace Connection360.Observability.Application.Test.Logging
 
             using (logger.BeginScope(new Dictionary<String, Object?> { ["Cliente"] = "del scope" }))
             {
+                #pragma warning disable CA1873 // Prueba: la llamada de registro es el objeto de la prueba; no se protege con IsEnabled.
                 logger.LogInformation("Hola {Cliente}", "del mensaje");
+                #pragma warning restore CA1873
             }
 
             fixture.Queue.DrainAll().Single().Attributes["Cliente"].Should().Be("del mensaje");
@@ -190,7 +194,9 @@ namespace Connection360.Observability.Application.Test.Logging
         {
             using var fixture = new Fixture(o => o.MaxFieldLength = 20);
 
+            #pragma warning disable CA1873 // Prueba: la llamada de registro es el objeto de la prueba; no se protege con IsEnabled.
             fixture.Logger().LogInformation("Valor {Texto}", new String('x', 500));
+            #pragma warning restore CA1873
 
             LogRecord record = fixture.Queue.DrainAll().Single();
             record.Message.Length.Should().Be(20);
@@ -270,7 +276,9 @@ namespace Connection360.Observability.Application.Test.Logging
 
             Action act = () =>
             {
+                #pragma warning disable CA1873 // Prueba: la llamada de registro es el objeto de la prueba; no se protege con IsEnabled.
                 for (Int32 i = 0; i < 10; i++) logger.LogInformation("m{i}", i);
+                #pragma warning restore CA1873
             };
 
             act.Should().NotThrow();

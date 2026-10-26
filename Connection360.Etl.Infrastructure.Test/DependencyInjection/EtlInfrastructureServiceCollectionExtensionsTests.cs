@@ -23,6 +23,8 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
 {
     public class EtlInfrastructureServiceCollectionExtensionsTests
     {
+        private static readonly String[] ValuesBpmsSimAsis = { "BPMS", "SIM", "ASIS" };
+
         private static IConfiguration BuildConfiguration(Dictionary<String, String?> values)
             => new ConfigurationBuilder().AddInMemoryCollection(values).Build();
 
@@ -77,7 +79,7 @@ namespace Connection360.Etl.Infrastructure.Tests.DependencyInjection
 
             settings.PaginationEnabled.Should().BeTrue();
             settings.PageSize.Should().Be(250);
-            settings.Apis.Keys.Should().BeEquivalentTo(new[] { "BPMS", "SIM", "ASIS" });
+            settings.Apis.Keys.Should().BeEquivalentTo(ValuesBpmsSimAsis);
             settings.GetConfig("bpms")!.ApiKey.Should().Be("clave-bpms");
             settings.GetConfig("BPMS")!.TimeoutSeconds.Should().Be(12);
             settings.GetConfig("SIM")!.PageNumberParam.Should().Be("p");

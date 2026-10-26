@@ -8,7 +8,7 @@ namespace Connection360Notification.Infrastructure.Adapters.Input
     {
         public override async Task OnConnectedAsync()
         {
-            String idClient = Context.UserIdentifier; // Extraído automáticamente del claim 'sub' o NameIdentifier
+            _ = Context.UserIdentifier; // Extraído automáticamente del claim 'sub' o NameIdentifier
             await base.OnConnectedAsync();
         }
     }

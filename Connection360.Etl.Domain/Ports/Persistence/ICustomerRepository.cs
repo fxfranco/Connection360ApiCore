@@ -16,7 +16,7 @@ namespace Connection360.Etl.Domain.Ports.Persistence
         /// Inserta en connection360write.customers (columna <c>identificacion</c>) únicamente las
         /// identificaciones que todavía NO existen; las que ya existen se omiten, y las repetidas
         /// dentro de <paramref name="identifications"/> o vacías se ignoran, de modo que nunca
-        /// queda un cliente duplicado. Todo en una sola sentencia por lote (un round-trip),
+        /// queda un cliente duplicado. Se hace en una sola sentencia por lote (un round-trip),
         /// para no penalizar el rendimiento de la carga.
         /// </summary>
         /// <returns>Cantidad de clientes nuevos insertados.</returns>

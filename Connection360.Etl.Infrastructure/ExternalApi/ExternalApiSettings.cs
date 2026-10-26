@@ -18,7 +18,7 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
         public Dictionary<String, ExternalApisDetail> Apis { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Interruptor GLOBAL para todo el proceso ETL: si es <c>false</c> (valor por defecto), cada
+        /// Interruptor GLOBAL para el proceso ETL completo: si es <c>false</c> (valor por defecto), cada
         /// API se consulta completa en una sola petición, igual que antes. Si es <c>true</c>, el
         /// proceso consulta cada API página por página (ver <see cref="PageSize"/> y los parámetros
         /// de paginación de cada API en <see cref="ExternalApisDetail"/>) y ejecuta

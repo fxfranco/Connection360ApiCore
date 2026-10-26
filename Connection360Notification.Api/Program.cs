@@ -114,9 +114,6 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
     options.Preload = true;
 });
-//builder.Services.AddSwaggerGen();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-//builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
@@ -138,7 +135,6 @@ else
 // Completa el span de cada petición (método, ruta, estado) con las convenciones de OpenTelemetry.
 app.UseConnection360RequestTelemetry();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-//app.UseRouting();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

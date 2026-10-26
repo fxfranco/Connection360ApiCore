@@ -7,13 +7,15 @@ namespace Connection360.Etl.Domain.Test.Entities
 {
     public class DynamicDataSetTests
     {
+        private static readonly String[] ValuesAB = { "A", "B" };
+
         [Fact]
         public void Constructor_CopiaCamposYFilasEnOrden()
         {
             var r1 = Record(("A", "1"));
             var r2 = Record(("A", "2"));
 
-            var ds = new DynamicDataSet(new[] { "A", "B" }, new[] { r1, r2 });
+            var ds = new DynamicDataSet(ValuesAB, new[] { r1, r2 });
 
             ds.AvailableFields.Should().Equal("A", "B");
             ds.Rows.Should().HaveCount(2);
@@ -47,7 +49,7 @@ namespace Connection360.Etl.Domain.Test.Entities
         [Fact]
         public void Constructor_CamposNulos_LanzaArgumentNullException()
         {
-            Action act = () => new DynamicDataSet(null!, Enumerable.Empty<DynamicRecord>());
+            Action act = () => _ = new DynamicDataSet(null!, Enumerable.Empty<DynamicRecord>());
 
             act.Should().Throw<ArgumentNullException>();
         }
@@ -55,7 +57,7 @@ namespace Connection360.Etl.Domain.Test.Entities
         [Fact]
         public void Constructor_FilasNulas_LanzaArgumentNullException()
         {
-            Action act = () => new DynamicDataSet(Enumerable.Empty<String>(), null!);
+            Action act = () => _ = new DynamicDataSet(Enumerable.Empty<String>(), null!);
 
             act.Should().Throw<ArgumentNullException>();
         }

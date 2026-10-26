@@ -10,6 +10,12 @@ namespace Connection360.Infrastructure.Tests.Adapters
     /// <summary>Armado del cambio de user_metadata (company, document, fullName y phone.number) al actualizar (sin red).</summary>
     public class Auth0UserMetadataUpdaterTests
     {
+        private static readonly String[] ValuesCompanyDocumentFullNamePhone = { "company", "document", "fullName", "phone" };
+        private static readonly String[] ValuesPhone = { "Phone" };
+        private static readonly String[] ValuesPhone2 = { "phone" };
+        private static readonly String[] ValuesFullName = { "FullName" };
+        private static readonly String[] ValuesCompanyFullName = { "company", "fullName" };
+
         private static JsonElement Json(String raw) => JsonDocument.Parse(raw).RootElement.Clone();
 
         private static Dictionary<String, Object> MetadataActual() => new()
@@ -52,7 +58,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
 
             patch.Should().NotBeNull();
             patch!.Should().HaveCount(1);
-            patch["company"].Should().Be("Nueva SAS");
+            patch!["company"].Should().Be("Nueva SAS");
         }
 
         [Fact]
@@ -63,7 +69,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
             Dictionary<String, Object>? patch = Auth0UserMetadataUpdater.BuildPatch(requested, MetadataActual());
 
             patch.Should().NotBeNull();
-            patch!.Keys.Should().BeEquivalentTo(new[] { "company", "fullName" });
+            patch!.Keys.Should().BeEquivalentTo(ValuesCompanyFullName);
             patch["company"].Should().Be("Nueva SAS");
             patch["fullName"].Should().Be("Carlos Franco");
         }
@@ -83,7 +89,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
 
             Dictionary<String, Object>? patch = Auth0UserMetadataUpdater.BuildPatch(new Auth0UserDto { FullName = "Carlos Franco" }, current);
 
-            patch!.Keys.Should().BeEquivalentTo(new[] { "FullName" });
+            patch!.Keys.Should().BeEquivalentTo(ValuesFullName);
             patch["FullName"].Should().Be("Carlos Franco");
         }
 
@@ -94,7 +100,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
 
             Dictionary<String, Object>? patch = Auth0UserMetadataUpdater.BuildPatch(requested, null);
 
-            patch!.Keys.Should().BeEquivalentTo(new[] { "company", "document", "fullName", "phone" });
+            patch!.Keys.Should().BeEquivalentTo(ValuesCompanyDocumentFullNamePhone);
             Serializar(patch["phone"]).Should().Be("{\"number\":\"300\"}");
         }
 
@@ -103,7 +109,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
         {
             Dictionary<String, Object>? patch = Auth0UserMetadataUpdater.BuildPatch(new Auth0UserDto { Phone = "3000000000" }, MetadataActual());
 
-            patch!.Keys.Should().BeEquivalentTo(new[] { "phone" });
+            patch!.Keys.Should().BeEquivalentTo(ValuesPhone2);
             using JsonDocument json = JsonDocument.Parse(Serializar(patch["phone"]));
             json.RootElement.GetProperty("number").GetString().Should().Be("3000000000");
             json.RootElement.GetProperty("countryCode").GetString().Should().Be("57");
@@ -140,7 +146,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
 
             Dictionary<String, Object>? patch = Auth0UserMetadataUpdater.BuildPatch(new Auth0UserDto { Phone = "3000000000" }, current);
 
-            patch!.Keys.Should().BeEquivalentTo(new[] { "phone" });
+            patch!.Keys.Should().BeEquivalentTo(ValuesPhone2);
             Serializar(patch["phone"]).Should().Be("{\"number\":\"3000000000\"}");
         }
 
@@ -177,7 +183,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
 
             Dictionary<String, Object>? patch = Auth0UserMetadataUpdater.BuildPatch(new Auth0UserDto { Phone = "3000000000" }, current);
 
-            patch!.Keys.Should().BeEquivalentTo(new[] { "Phone" });
+            patch!.Keys.Should().BeEquivalentTo(ValuesPhone);
             Serializar(patch["Phone"]).Should().Be("{\"Number\":\"3000000000\"}");
         }
 
@@ -199,7 +205,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
 
             Dictionary<String, Object>? patch = Auth0UserMetadataUpdater.BuildPatch(requested, MetadataActual());
 
-            patch!.Keys.Should().BeEquivalentTo(new[] { "company", "document", "fullName", "phone" });
+            patch!.Keys.Should().BeEquivalentTo(ValuesCompanyDocumentFullNamePhone);
             patch.Should().NotContainKey("otro");
         }
     }

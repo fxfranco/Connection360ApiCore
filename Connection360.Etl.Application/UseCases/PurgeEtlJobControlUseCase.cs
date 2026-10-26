@@ -45,9 +45,12 @@ namespace Connection360.Etl.Application.UseCases
                     _applicationDataSheetRetentionDays,
                     cancellationToken);
 
-                _logger.LogInformation(
-                    "Depuración de etl_job_control ({JobName}): {Deleted} registro(s) eliminados (updated_at anterior a {Days} días).",
-                    EtlJobName.ApplicationDataSheet.ToDbValue(), deleted, _applicationDataSheetRetentionDays);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "Depuración de etl_job_control ({JobName}): {Deleted} registro(s) eliminados (updated_at anterior a {Days} días).",
+                        EtlJobName.ApplicationDataSheet.ToDbValue(), deleted, _applicationDataSheetRetentionDays);
+                }
 
                 return deleted;
             }

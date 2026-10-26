@@ -26,10 +26,6 @@ builder.Services.AddReverseProxy()
 
 builder.Services.AddHealthChecks();
 
-//builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-//builder.Services.AddOpenApi();
-
 var app = builder.Build();
 
 // El orden del pipeline es critico para la seguridad:
@@ -51,7 +47,6 @@ if (app.Configuration.GetValue("HttpsRedirection:Enabled", true))
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //app.MapOpenApi();
     app.UseHsts();
 }
 
@@ -65,7 +60,6 @@ app.UseAuthorization();                              // 8. Que puedes hacer (rol
 app.MapTokenEndpoints();                            // Endpoint OAuth2 client_credentials (/connect/token)
 app.MapHealthChecks("/health");
 
-//app.MapControllers();
 app.MapReverseProxy();                              // 9. Enruta hacia los microservicios (p.ej. Products.Api)
 
 await app.RunAsync();

@@ -11,7 +11,7 @@ namespace Connection360.Application.DTOs
     public class NotificationChannelsResponse
     {
         /// <summary>Identificador del cliente dueño de la configuración.</summary>
-        public String ClientId { get; set; }
+        public String ClientId { get; set; } = null!;
 
         /// <summary>Identificador del registro de canales de notificación.</summary>
         public Int64 NotificationChannelId { get; set; }

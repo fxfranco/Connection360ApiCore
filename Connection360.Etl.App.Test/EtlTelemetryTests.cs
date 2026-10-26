@@ -44,6 +44,7 @@ namespace Connection360.Etl.App.Test
         {
             _activityListener.Dispose();
             _meterListener.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private static Dictionary<String, Object?> ToDictionary(ReadOnlySpan<KeyValuePair<String, Object?>> tags)

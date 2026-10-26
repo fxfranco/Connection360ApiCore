@@ -11,6 +11,8 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
     /// </summary>
     public sealed class MongoObservabilityInitializer : ITelemetryStoreInitializer
     {
+        private const String TimestampField = "timestamp";
+
         private readonly IMongoObservabilityContext _context;
 
         public MongoObservabilityInitializer(IMongoObservabilityContext context) => _context = context;
@@ -24,16 +26,16 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
             }
 
             await CreateAsync(options.LogsCollection, BuildIndexes(options.LogsRetentionDays,
-                Compound("ix_service_timestamp", ("service", 1), ("timestamp", -1)),
-                Compound("ix_level_timestamp", ("level", 1), ("timestamp", -1)),
+                Compound("ix_service_timestamp", ("service", 1), (TimestampField, -1)),
+                Compound("ix_level_timestamp", ("level", 1), (TimestampField, -1)),
                 Compound("ix_traceId", ("traceId", 1))), cancellationToken).ConfigureAwait(false);
 
             await CreateAsync(options.MetricsCollection, BuildIndexes(options.MetricsRetentionDays,
-                Compound("ix_service_name_timestamp", ("service", 1), ("name", 1), ("timestamp", -1))), cancellationToken).ConfigureAwait(false);
+                Compound("ix_service_name_timestamp", ("service", 1), ("name", 1), (TimestampField, -1))), cancellationToken).ConfigureAwait(false);
 
             await CreateAsync(options.TracesCollection, BuildIndexes(options.TracesRetentionDays,
                 Compound("ix_traceId_startTime", ("traceId", 1), ("startTime", 1)),
-                Compound("ix_service_name_timestamp", ("service", 1), ("name", 1), ("timestamp", -1))), cancellationToken).ConfigureAwait(false);
+                Compound("ix_service_name_timestamp", ("service", 1), ("name", 1), (TimestampField, -1))), cancellationToken).ConfigureAwait(false);
         }
 
         private async Task CreateAsync(String collectionName, List<CreateIndexModel<BsonDocument>> indexes, CancellationToken cancellationToken)
@@ -59,7 +61,7 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
             if (retentionDays > 0)
             {
                 indexes.Add(new CreateIndexModel<BsonDocument>(
-                    new BsonDocument("timestamp", 1),
+                    new BsonDocument(TimestampField, 1),
                     new CreateIndexOptions { Name = "ttl_timestamp", ExpireAfter = TimeSpan.FromDays(retentionDays) }));
             }
 

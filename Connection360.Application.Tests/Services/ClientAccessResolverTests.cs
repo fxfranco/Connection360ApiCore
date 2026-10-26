@@ -10,6 +10,8 @@ namespace Connection360.Application.Tests.Services
 {
     public class ClientAccessResolverTests
     {
+        private static readonly String[] ValuesCus10Cus11 = { "CUS-10", "CUS-11" };
+
         private const String CollaboratorId = "COL-1";
 
         private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
@@ -81,7 +83,7 @@ namespace Connection360.Application.Tests.Services
             List<CustomersOfCollaboratorDtoResult> result = await _sut.ResolveAsync(request);
 
             result.Should().HaveCount(2);
-            result.Select(x => x.IdentificacionCustomer).Should().BeEquivalentTo(new[] { "CUS-10", "CUS-11" });
+            result.Select(x => x.IdentificacionCustomer).Should().BeEquivalentTo(ValuesCus10Cus11);
             _repositoryMock.Verify(r => r.ListCustomersByCollaboratorAsync(CollaboratorId, It.IsAny<CancellationToken>()), Times.Once);
         }
 

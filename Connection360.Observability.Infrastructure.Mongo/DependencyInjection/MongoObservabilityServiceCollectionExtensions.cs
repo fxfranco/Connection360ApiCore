@@ -14,6 +14,7 @@ namespace Connection360.Observability.Infrastructure.Mongo.DependencyInjection
         /// notificationTraces). Configuración en "Observability:Mongo". Si no hay cadena de conexión
         /// no se registra nada y la telemetría simplemente se descarta (la aplicación sigue igual).
         /// </summary>
+        /// <param name="builder">Builder de observabilidad devuelto por <c>AddConnection360Observability</c>.</param>
         /// <param name="fallbackSection">
         /// Sección existente con "ConnectionString" y "DatabaseName" que se usa cuando "Observability:Mongo"
         /// no los define (por ejemplo "MongoDbSettings" en Notification.Api, para usar la misma BD).

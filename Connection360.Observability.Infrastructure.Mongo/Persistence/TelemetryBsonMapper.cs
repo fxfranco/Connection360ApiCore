@@ -11,6 +11,8 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
     /// </summary>
     public static class TelemetryBsonMapper
     {
+        private const String AttributesField = "attributes";
+
         public static BsonDocument ToDocument(LogRecord record)
         {
             var document = Common(record);
@@ -21,7 +23,7 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
             document["eventName"] = OrNull(record.EventName);
             document["message"] = record.Message;
             document["messageTemplate"] = OrNull(record.MessageTemplate);
-            document["attributes"] = Attributes(record.Attributes);
+            document[AttributesField] = Attributes(record.Attributes);
             document["exception"] = record.ExceptionType is null
                 ? BsonNull.Value
                 : new BsonDocument
@@ -50,7 +52,7 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
             document["min"] = Finite(record.Min);
             document["max"] = Finite(record.Max);
             document["last"] = Finite(record.Last);
-            document["attributes"] = Attributes(record.Attributes);
+            document[AttributesField] = Attributes(record.Attributes);
             return document;
         }
 
@@ -67,18 +69,18 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
             document["endTime"] = Date(record.EndTime);
             document["durationMs"] = Finite(record.DurationMs);
             document["status"] = new BsonDocument { { "code", record.Status }, { "description", OrNull(record.StatusDescription) } };
-            document["attributes"] = Attributes(record.Attributes);
+            document[AttributesField] = Attributes(record.Attributes);
             document["events"] = new BsonArray(record.Events.Select(e => new BsonDocument
             {
                 { "name", e.Name },
                 { "timestamp", Date(e.Timestamp) },
-                { "attributes", Attributes(e.Attributes) },
+                { AttributesField, Attributes(e.Attributes) },
             }));
             document["links"] = new BsonArray(record.Links.Select(l => new BsonDocument
             {
                 { "traceId", l.TraceId },
                 { "spanId", l.SpanId },
-                { "attributes", Attributes(l.Attributes) },
+                { AttributesField, Attributes(l.Attributes) },
             }));
             return document;
         }
@@ -127,7 +129,7 @@ namespace Connection360.Observability.Infrastructure.Mongo.Persistence
 
         private static BsonValue OrNull(String? text) => text is null ? BsonNull.Value : text;
 
-        private static BsonValue Date(DateTime value)
+        private static BsonDateTime Date(DateTime value)
             => new BsonDateTime(value.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : value.ToUniversalTime());
 
         /// <summary>BSON admite NaN/Infinito, pero muchas plataformas de análisis no: se normalizan a 0.</summary>

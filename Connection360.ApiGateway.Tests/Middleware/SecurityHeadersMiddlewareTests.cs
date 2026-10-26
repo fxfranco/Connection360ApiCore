@@ -15,20 +15,20 @@ namespace Connection360.ApiGateway.Tests.Middleware
 
             await middleware.InvokeAsync(context);
 
-            context.Response.Headers["X-Content-Type-Options"].ToString().Should().Be("nosniff");
-            context.Response.Headers["X-Frame-Options"].ToString().Should().Be("DENY");
+            context.Response.Headers.XContentTypeOptions.ToString().Should().Be("nosniff");
+            context.Response.Headers.XFrameOptions.ToString().Should().Be("DENY");
             context.Response.Headers["Referrer-Policy"].ToString().Should().Be("strict-origin-when-cross-origin");
             context.Response.Headers["Permissions-Policy"].ToString().Should().Be("geolocation=(), microphone=(), camera=()");
-            context.Response.Headers["X-XSS-Protection"].ToString().Should().Be("0");
-            context.Response.Headers["Content-Security-Policy"].ToString().Should().Contain("default-src 'self'");
+            context.Response.Headers.XXSSProtection.ToString().Should().Be("0");
+            context.Response.Headers.ContentSecurityPolicy.ToString().Should().Contain("default-src 'self'");
         }
 
         [Fact]
         public async Task InvokeAsync_EliminaLosHeadersServerYXPoweredBySiEstabanPresentes()
         {
             var context = new DefaultHttpContext();
-            context.Response.Headers["Server"] = "Kestrel";
-            context.Response.Headers["X-Powered-By"] = "ASP.NET";
+            context.Response.Headers.Server = "Kestrel";
+            context.Response.Headers.XPoweredBy = "ASP.NET";
             var middleware = new SecurityHeadersMiddleware(_ => Task.CompletedTask);
 
             await middleware.InvokeAsync(context);

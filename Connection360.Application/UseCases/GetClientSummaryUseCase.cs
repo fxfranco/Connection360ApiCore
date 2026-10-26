@@ -33,13 +33,12 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
             // 1. Aplica filtros a la api si se tienen
-            //var filters = new Dictionary<String, String>
-            //{
-            //    [ExternalDataFields.ClientNit] = request.Cliente
-            //};
 
             var filters = new Dictionary<String, String>();
             // 2. Consultar los datos consolidados (vistas application_data_sheet: Entregados + NoEntregados) filtrando solo por cliente
@@ -82,13 +81,12 @@ namespace Connection360.Application.UseCases
                 IdQueryClient = request.IdQueryClient
             };
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
             // 1. Aplica filtros a la api si se tienen
-            //var filters = new Dictionary<String, String>
-            //{
-            //    [ExternalDataFields.ClientNit] = request.Cliente
-            //};
 
             var filters = new Dictionary<String, String>();
             // 2. Consultar los datos consolidados (vistas application_data_sheet: Entregados + NoEntregados) filtrando solo por cliente

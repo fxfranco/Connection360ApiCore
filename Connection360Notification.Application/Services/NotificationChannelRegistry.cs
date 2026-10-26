@@ -20,11 +20,16 @@ namespace Connection360Notification.Application.Services
 
             foreach (INotificationChannel channel in channels)
             {
-                // Dos implementaciones para el mismo canal serían una mala configuración: se falla rápido
-                // en vez de enviar duplicado o elegir una "al azar".
-                if (!_channels.TryAdd(channel.Channel, channel))
-                    throw new InvalidOperationException($"Hay más de una implementación registrada para el canal de notificación '{channel.Channel}'.");
+                Register(channel);
             }
+        }
+
+        private void Register(INotificationChannel channel)
+        {
+            // Dos implementaciones para el mismo canal serían una mala configuración: se falla rápido
+            // en vez de enviar duplicado o elegir una "al azar".
+            if (!_channels.TryAdd(channel.Channel, channel))
+                throw new InvalidOperationException($"Hay más de una implementación registrada para el canal de notificación '{channel.Channel}'.");
         }
 
         public IReadOnlyList<INotificationChannel> Resolve(NotificationChannelPreferences? preferences)

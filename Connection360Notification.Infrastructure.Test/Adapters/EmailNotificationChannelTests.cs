@@ -57,7 +57,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             new("auth0|1", "CLI-7", fullName, "3001112233", email);
 
         private static NotificationMessage Notificacion(String? title = "Titulo visible", String message = "Contenido confidencial") =>
-            new("CLI-7", NotificationType.Comment, message, title: title, id: "N-1");
+            new("CLI-7", NotificationType.Comment, message, title: title!, id: "N-1");
 
         [Fact]
         public void Channel_EsEmail()

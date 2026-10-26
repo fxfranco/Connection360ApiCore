@@ -45,7 +45,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public void Build_ColumnasConCaracteresNoPermitidos_Lanza(String columns)
         {
             Action act = () => SelectQueryBuilder.Build(columns, View);
-            act.Should().Throw<ArgumentException>().WithParameterName("columns");
+            act.Should().Throw<ArgumentException>().WithParameterName(nameof(columns));
         }
 
         [Theory]

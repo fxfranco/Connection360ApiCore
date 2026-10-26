@@ -12,17 +12,14 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
     /// </summary>
     public sealed class DbSession : IAsyncDisposable
     {
-        private readonly NpgsqlDataSource _dataSource;
-
         // Cambiamos a DbConnection y DbTransaction de System.Data.Common
         public DbConnection Connection { get; private set; }
         public DbTransaction? Transaction { get; set; }
 
         public DbSession(NpgsqlDataSource dataSource)
         {
-            _dataSource = dataSource;
             // La conexión se crea a demanda usando el DataSource singleton
-            Connection = _dataSource.CreateConnection();
+            Connection = dataSource.CreateConnection();
         }
 
         public async Task EnsureConnectionOpenAsync(CancellationToken cancellationToken = default)

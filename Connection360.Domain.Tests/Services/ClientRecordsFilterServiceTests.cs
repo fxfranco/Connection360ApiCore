@@ -10,6 +10,8 @@ namespace Connection360.Domain.Tests.Services
 {
     public class ClientRecordsFilterServiceTests
     {
+        private static readonly String[] Values12 = { "1", "2" };
+
         private const String ClientId = "900123456";
 
         private readonly ClientRecordsFilterService _sut = new();
@@ -68,7 +70,7 @@ namespace Connection360.Domain.Tests.Services
 
             List<DynamicRecord> result = _sut.Filter(dataSet, "COLABORADOR-1", customers);
 
-            result.Select(r => r[ExternalDataFields.ID]).Should().BeEquivalentTo(new[] { "1", "2" });
+            result.Select(r => r[ExternalDataFields.ID]).Should().BeEquivalentTo(Values12);
         }
 
         [Fact]

@@ -94,9 +94,9 @@ namespace Connection360.Application.Tests.UseCases.Persistence
 
             MasterSettingsResponse result = await new MasterSettingsUseCase(_uow.Object).GetAsync();
 
-            result.Location.CurrencyType.Should().BeEmpty();
+            result.Location!.CurrencyType.Should().BeEmpty();
             result.Location.Language.Should().BeEmpty();
-            result.System.TimeZone.Should().BeEmpty();
+            result.System!.TimeZone.Should().BeEmpty();
             result.System.DataRetentionDays.Should().Be(0);
         }
 

@@ -54,7 +54,7 @@ namespace Connection360.Etl.Application.Tests.UseCases
                 {
                     maxConcurrent = Math.Max(maxConcurrent, Interlocked.Increment(ref concurrent));
                     order.Add(view);
-                    await Task.Delay(5);
+                    await Task.Delay(5, CancellationToken.None);
                     Interlocked.Decrement(ref concurrent);
                 });
 

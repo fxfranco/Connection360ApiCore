@@ -9,6 +9,12 @@ namespace Connection360.Domain.Tests.Services
 {
     public class DynamicDataSetMergerTests
     {
+        private static readonly String[] ValuesIdCiudad = { "ID", "CIUDAD" };
+        private static readonly String[] ValuesIdNombre = { "id", "NOMBRE" };
+        private static readonly String[] ValuesId = { "ID" };
+        private static readonly String[] ValuesIdNombre2 = { "ID", "NOMBRE" };
+        private static readonly String[] ValuesIdNombreCiudad = { "ID", "NOMBRE", "CIUDAD" };
+
         private readonly DynamicDataSetMerger _sut = new();
 
         [Fact]
@@ -23,7 +29,7 @@ namespace Connection360.Domain.Tests.Services
         [Fact]
         public void Merge_ConUnSoloDataSet_LoRetornaSinModificar()
         {
-            var dataSet = DataSet(new[] { "ID" }, Row(("ID", "1")));
+            var dataSet = DataSet(ValuesId, Row(("ID", "1")));
 
             DynamicDataSet result = _sut.Merge(new[] { dataSet }, "ID");
 
@@ -33,7 +39,7 @@ namespace Connection360.Domain.Tests.Services
         [Fact]
         public void Merge_IgnoraDataSetsNulos()
         {
-            var dataSet = DataSet(new[] { "ID" }, Row(("ID", "1")));
+            var dataSet = DataSet(ValuesId, Row(("ID", "1")));
 
             DynamicDataSet result = _sut.Merge(new DynamicDataSet?[] { null, dataSet }!, "ID");
 
@@ -43,8 +49,8 @@ namespace Connection360.Domain.Tests.Services
         [Fact]
         public void Merge_ConJoinFieldVacio_LanzaArgumentException()
         {
-            var a = DataSet(new[] { "ID" }, Row(("ID", "1")));
-            var b = DataSet(new[] { "ID" }, Row(("ID", "1")));
+            var a = DataSet(ValuesId, Row(("ID", "1")));
+            var b = DataSet(ValuesId, Row(("ID", "1")));
 
             Action act = () => _sut.Merge(new[] { a, b }, joinField: "");
 
@@ -54,20 +60,20 @@ namespace Connection360.Domain.Tests.Services
         [Fact]
         public void Merge_FullOuter_ConservaTodasLasLlavesDeAmbosDataSets()
         {
-            var a = DataSet(new[] { "ID", "NOMBRE" }, Row(("ID", "1"), ("NOMBRE", "Juan")));
-            var b = DataSet(new[] { "ID", "CIUDAD" }, Row(("ID", "2"), ("CIUDAD", "Bogota")));
+            var a = DataSet(ValuesIdNombre2, Row(("ID", "1"), ("NOMBRE", "Juan")));
+            var b = DataSet(ValuesIdCiudad, Row(("ID", "2"), ("CIUDAD", "Bogota")));
 
             DynamicDataSet result = _sut.Merge(new[] { a, b }, "ID", DataSetJoinType.FullOuter);
 
             result.Rows.Should().HaveCount(2);
-            result.AvailableFields.Should().Contain(new[] { "ID", "NOMBRE", "CIUDAD" });
+            result.AvailableFields.Should().Contain(ValuesIdNombreCiudad);
         }
 
         [Fact]
         public void Merge_Inner_ConservaSoloLasLlavesPresentesEnTodosLosDataSets()
         {
-            var a = DataSet(new[] { "ID", "NOMBRE" }, Row(("ID", "1"), ("NOMBRE", "Juan")), Row(("ID", "2"), ("NOMBRE", "Pedro")));
-            var b = DataSet(new[] { "ID", "CIUDAD" }, Row(("ID", "2"), ("CIUDAD", "Bogota")));
+            var a = DataSet(ValuesIdNombre2, Row(("ID", "1"), ("NOMBRE", "Juan")), Row(("ID", "2"), ("NOMBRE", "Pedro")));
+            var b = DataSet(ValuesIdCiudad, Row(("ID", "2"), ("CIUDAD", "Bogota")));
 
             DynamicDataSet result = _sut.Merge(new[] { a, b }, "ID", DataSetJoinType.Inner);
 
@@ -79,8 +85,8 @@ namespace Connection360.Domain.Tests.Services
         [Fact]
         public void Merge_FusionaCamposDeLaMismaLlaveSinSobreescribirConVacios()
         {
-            var a = DataSet(new[] { "ID", "NOMBRE" }, Row(("ID", "1"), ("NOMBRE", "Juan")));
-            var b = DataSet(new[] { "ID", "NOMBRE" }, Row(("ID", "1"), ("NOMBRE", "")));
+            var a = DataSet(ValuesIdNombre2, Row(("ID", "1"), ("NOMBRE", "Juan")));
+            var b = DataSet(ValuesIdNombre2, Row(("ID", "1"), ("NOMBRE", "")));
 
             DynamicDataSet result = _sut.Merge(new[] { a, b }, "ID", DataSetJoinType.FullOuter);
 
@@ -90,8 +96,8 @@ namespace Connection360.Domain.Tests.Services
         [Fact]
         public void Merge_IgnoraFilasConLlaveVacia()
         {
-            var a = DataSet(new[] { "ID" }, Row(("ID", "")));
-            var b = DataSet(new[] { "ID" }, Row(("ID", "1")));
+            var a = DataSet(ValuesId, Row(("ID", "")));
+            var b = DataSet(ValuesId, Row(("ID", "1")));
 
             DynamicDataSet result = _sut.Merge(new[] { a, b }, "ID", DataSetJoinType.FullOuter);
 
@@ -101,8 +107,8 @@ namespace Connection360.Domain.Tests.Services
         [Fact]
         public void Merge_UnionDeCampos_NoDuplicaCamposRepetidosSinImportarMayusculas()
         {
-            var a = DataSet(new[] { "id", "NOMBRE" }, Row(("id", "1"), ("NOMBRE", "Juan")));
-            var b = DataSet(new[] { "ID", "CIUDAD" }, Row(("ID", "1"), ("CIUDAD", "Bogota")));
+            var a = DataSet(ValuesIdNombre, Row(("id", "1"), ("NOMBRE", "Juan")));
+            var b = DataSet(ValuesIdCiudad, Row(("ID", "1"), ("CIUDAD", "Bogota")));
 
             DynamicDataSet result = _sut.Merge(new[] { a, b }, "ID", DataSetJoinType.FullOuter);
 

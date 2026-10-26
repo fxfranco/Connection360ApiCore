@@ -55,15 +55,12 @@ namespace Connection360.Observability.Application.Logging
 
         private LogLevel ResolveMinimumLevel(String category)
         {
-            foreach (var pair in _categoryLevels)
-            {
-                if (category.StartsWith(pair.Key, StringComparison.Ordinal))
-                {
-                    return pair.Value;
-                }
-            }
-
-            return _defaultLevel;
+            LogLevel? matched = _categoryLevels
+                .Where(pair => category.StartsWith(pair.Key, StringComparison.Ordinal))
+                .Select(pair => (LogLevel?)pair.Value)
+                .FirstOrDefault();
+            
+            return matched ?? _defaultLevel;
         }
 
         internal static LogLevel ParseLevel(String? text, LogLevel fallback)
@@ -123,9 +120,9 @@ namespace Connection360.Observability.Application.Logging
             }
         }
 
-        private LogRecord Build<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, String> formatter)
+        /// <summary>Copia los pares del estado del mensaje a <paramref name="attributes"/> y devuelve la plantilla original, si viene.</summary>
+        private String? CollectStateAttributes<TState>(TState state, Dictionary<String, Object?> attributes)
         {
-            var attributes = new Dictionary<String, Object?>();
             String? template = null;
 
             if (state is IEnumerable<KeyValuePair<String, Object?>> pairs)
@@ -141,6 +138,14 @@ namespace Connection360.Observability.Application.Logging
                     attributes[pair.Key] = TelemetryValue.Normalize(pair.Value, _maxFieldLength);
                 }
             }
+
+            return template;
+        }
+
+        private LogRecord Build<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, String> formatter)
+        {
+            var attributes = new Dictionary<String, Object?>();
+            String? template = CollectStateAttributes(state, attributes);
 
             _scopeProvider()?.ForEachScope(static (scope, target) =>
             {

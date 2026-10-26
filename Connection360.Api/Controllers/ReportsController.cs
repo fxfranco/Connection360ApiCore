@@ -46,7 +46,7 @@ namespace Connection360.Api.Controllers
             ClientSummaryRequest request = new ClientSummaryRequest
             {
                 IdClient = idClient,
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                AllClient = String.IsNullOrEmpty(idQueryClient),
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty
             };
 

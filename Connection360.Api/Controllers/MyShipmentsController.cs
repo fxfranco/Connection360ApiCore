@@ -19,6 +19,8 @@ namespace Connection360.Api.Controllers
     [Produces("application/json")]
     public sealed class MyShipmentsController : ControllerBase
     {
+        private const String AccessDeniedMessage = "Acceso denegado. No se tiene un rol asignado.";
+
 
         private readonly IGetMyShipmentsUseCase _getMyShipmentsUseCase;
 
@@ -48,7 +50,7 @@ namespace Connection360.Api.Controllers
             MyShipmentsRequest request = new MyShipmentsRequest 
             { 
                 IdClient = idClient,
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                AllClient = String.IsNullOrEmpty(idQueryClient),
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
                 Page = page, 
                 Size = size 
@@ -57,7 +59,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetAllShipmentsAsync(request, cancellationToken);
@@ -97,7 +99,7 @@ namespace Connection360.Api.Controllers
             MyShipmentsRequest request = new MyShipmentsRequest
             {
                 IdClient = idClient,
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                AllClient = String.IsNullOrEmpty(idQueryClient),
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
                 Page = page,
                 Size = size,
@@ -107,7 +109,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterShipmentsAsync(request, cancellationToken);
@@ -144,7 +146,7 @@ namespace Connection360.Api.Controllers
             MyShipmentsRequest request = new MyShipmentsRequest
             {
                 IdClient = idClient,
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                AllClient = String.IsNullOrEmpty(idQueryClient),
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
                 Page = page,
                 Size = size
@@ -153,7 +155,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteGetHistoryAllShipmentsAsync(request, cancellationToken);
@@ -192,7 +194,7 @@ namespace Connection360.Api.Controllers
             MyShipmentsRequest request = new MyShipmentsRequest
             {
                 IdClient = idClient,
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                AllClient = String.IsNullOrEmpty(idQueryClient),
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
                 Page = page,
                 Size = size,
@@ -202,7 +204,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             request.RoleName = role.ToString();
             MyShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteFilterHistoryShipmentsAsync(request, cancellationToken);
@@ -238,7 +240,7 @@ namespace Connection360.Api.Controllers
             MyShipmentsRequest request = new MyShipmentsRequest
             {
                 IdClient = idClient,
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                AllClient = String.IsNullOrEmpty(idQueryClient),
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty,
                 DocumentNumber = documentNumber
             };
@@ -246,7 +248,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             request.RoleName = role.ToString();
             DetailsShipmentsResponse result = await _getMyShipmentsUseCase.ExecuteDetailsShipmentsAsync(request, cancellationToken);

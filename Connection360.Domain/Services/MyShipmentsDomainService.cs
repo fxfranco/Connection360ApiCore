@@ -18,18 +18,13 @@ namespace Connection360.Domain.Services
         {
             List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
 
-            // Crea una nueva List<DynamicRecord> con solo los registros activos
-            //List<DynamicRecord> clientRecords = clientRecordsTotal
-            //    .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
-            //    .ToList();
-
-            Int64 totalClientRecords = clientRecords.Count();
+            Int64 totalClientRecords = clientRecords.Count;
             Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
             Int64 totalExports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
             Int64 totalAirShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
             Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.OceanShipment);
 
-            /// ToDo: Pendiente corregir ordenamiento de fecha
+            // Pendiente: corregir ordenamiento de fecha
             // 3. Aplicar ordenamiento (REQUISITO FUNDAMENTAL antes de Skip/Take)
             // y traer solo los registros de la página solicitada
             List<ResumenMyShipmentDto> resumenMyShipmentDto = clientRecords
@@ -73,11 +68,6 @@ namespace Connection360.Domain.Services
         {
 
             List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
-            // Crea una nueva List<DynamicRecord> con solo los registros activos
-            //List<DynamicRecord> clientRecords = clientRecordsTotal
-            //    .Where(r => r[ExternalDataFields.State] != ExternalDataValues.DeliveredState)
-            //    .ToList();
-
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
             IEnumerable<DynamicRecord> queryFilters = clientRecords;
 
@@ -93,27 +83,13 @@ namespace Connection360.Domain.Services
                 );
             }
 
-            if (!String.IsNullOrWhiteSpace(filters.OperationType))
-            {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.OperationType]) &&
-                                         s[ExternalDataFields.OperationType] == filters.OperationType);
-            }
-
-            if (!String.IsNullOrWhiteSpace(filters.ShipmentMode))
-            {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.ShipmentMode]) &&
-                                         s[ExternalDataFields.ShipmentMode] == filters.ShipmentMode);
-            }
-
-            if (!String.IsNullOrWhiteSpace(filters.State))
-            {
-                queryFilters = queryFilters.Where(s => !String.IsNullOrEmpty(s[ExternalDataFields.State]) &&
-                                         s[ExternalDataFields.State] == filters.State);
-            }
+            queryFilters = FilterByEquals(queryFilters, ExternalDataFields.OperationType, filters.OperationType);
+            queryFilters = FilterByEquals(queryFilters, ExternalDataFields.ShipmentMode, filters.ShipmentMode);
+            queryFilters = FilterByEquals(queryFilters, ExternalDataFields.State, filters.State);
 
             List<DynamicRecord> clientRecordsFinal = queryFilters.ToList();
 
-            Int64 totalClientRecords = clientRecordsFinal.Count();
+            Int64 totalClientRecords = clientRecordsFinal.Count;
             Int64 totalImports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
             Int64 totalExports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
             Int64 totalAirShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
@@ -158,66 +134,13 @@ namespace Connection360.Domain.Services
 
         public MyShipmentsDomainResult GetHistoryAllShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size)
         {
-            List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
-            // Crea una nueva List<DynamicRecord> con solo los registros activos
-            //List<DynamicRecord> clientRecords = clientRecordsTotal
-            //    .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
-            //    .ToList();
-
-            Int64 totalClientRecords = clientRecords.Count();
-            Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
-            Int64 totalExports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
-            Int64 totalAirShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
-            Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.OceanShipment);
-
-            /// ToDo: Pendiente corregir ordenamiento de fecha
-            // 3. Aplicar ordenamiento (REQUISITO FUNDAMENTAL antes de Skip/Take)
-            // y traer solo los registros de la página solicitada
-            List<ResumenMyShipmentDto> resumenMyShipmentDto = clientRecords
-                .OrderByDescending(s => s[ExternalDataFields.CreationDate].ToDateTimeOrMin()) // Ajusta por tu campo de ordenamiento
-                .OrderBy(s => Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0)
-                .Skip((Int32)((page - 1) * size))
-                .Take((Int32)size)
-                .Select(s => new ResumenMyShipmentDto // Mapeo a tu DTO final
-                {
-                    Id = Int64.TryParse(s[ExternalDataFields.ID], out Int64 id) ? id : 0,
-                    ClientNit = s[ExternalDataFields.ClientNit],
-                    ShipmentMode = s[ExternalDataFields.ShipmentMode],
-                    DocumentNumber = s[ExternalDataFields.DocumentNumber],
-                    State = s[ExternalDataFields.State],
-                    OperationType = s[ExternalDataFields.OperationType],
-                    ClientName = s[ExternalDataFields.ClientName],
-                    Origin = s[ExternalDataFields.Origin],
-                    Destination = s[ExternalDataFields.Destination],
-                    ETDDate = s[ExternalDataFields.ETDDate].ToDateTimeOrMin(),
-                    ATDDate = s[ExternalDataFields.ATDDate].ToDateTimeOrMin(),
-                    ETADate = s[ExternalDataFields.ETADate].ToDateTimeOrMin(),
-                    ATADate = s[ExternalDataFields.ATADate].ToDateTimeOrMin(),
-                })
-                .ToList();
-
-            return new MyShipmentsDomainResult
-            {
-                MyShipments = resumenMyShipmentDto,
-                ClientSummaryResponse = new ClientSummaryDomainResult
-                {
-                    TotalClientRecords = totalClientRecords,
-                    TotalImports = totalImports,
-                    TotalExports = totalExports,
-                    TotalAirShipments = totalAirShipments,
-                    TotalOceanShipments = totalOceanShipments
-                }
-            };
+            // La implementación es idéntica a la de GetAllShipments (todos los envíos del cliente).
+            return GetAllShipments(dataSet, clientId, customersOfCollaborator, page, size);
         }
 
         public MyShipmentsDomainResult GetFiltersHistoryShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size, MyShipmentsFiltersDto filters)
         {
             List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
-            // Crea una nueva List<DynamicRecord> con solo los registros activos
-            //List<DynamicRecord> clientRecords = clientRecordsTotal
-            //    .Where(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState)
-            //    .ToList();
-
             // 1. Convertir la lista a IEnumerable para aplicar LINQ en memoria
             IEnumerable<DynamicRecord> queryFilters = clientRecords;
 
@@ -247,7 +170,7 @@ namespace Connection360.Domain.Services
 
             List<DynamicRecord> clientRecordsFinal = queryFilters.ToList();
 
-            Int64 totalClientRecords = clientRecordsFinal.Count();
+            Int64 totalClientRecords = clientRecordsFinal.Count;
             Int64 totalImports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
             Int64 totalExports = clientRecordsFinal.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
             Int64 totalAirShipments = clientRecordsFinal.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
@@ -296,8 +219,6 @@ namespace Connection360.Domain.Services
             // Crea una nueva List<DynamicRecord> con solo los registros activos
             DynamicRecord? clientRecords = clientRecordsTotal?
                 .FirstOrDefault(r => r[ExternalDataFields.DocumentNumber] == DocumentNumber);
-
-            //clientRecords = clientRecords ?? new DynamicRecord(new Dictionary<String, String>(StringComparer.OrdinalIgnoreCase));
 
             if (clientRecords == null)
             {
@@ -372,6 +293,16 @@ namespace Connection360.Domain.Services
                     TotalInvoiceUSD = clientRecords[ExternalDataFields.TotalInvoiceUSD],
                 }
             };
+        }
+
+        private static IEnumerable<DynamicRecord> FilterByEquals(IEnumerable<DynamicRecord> records, String field, String? expected)
+        {
+            if (String.IsNullOrWhiteSpace(expected))
+            {
+                return records;
+            }
+
+            return records.Where(s => !String.IsNullOrEmpty(s[field]) && s[field] == expected);
         }
     }
 }

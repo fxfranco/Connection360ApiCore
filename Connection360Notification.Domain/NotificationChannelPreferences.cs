@@ -43,10 +43,9 @@ namespace Connection360Notification.Domain
                 return new[] { NotificationChannelType.Application };
 
             var channels = new List<NotificationChannelType>(3);
-            foreach (NotificationChannelType channel in Enum.GetValues<NotificationChannelType>())
+            foreach (NotificationChannelType channel in Enum.GetValues<NotificationChannelType>().Where(candidate => IsEnabled(candidate)))
             {
-                if (IsEnabled(channel))
-                    channels.Add(channel);
+                channels.Add(channel);
             }
 
             return channels;

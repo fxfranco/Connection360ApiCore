@@ -45,6 +45,7 @@ namespace Connection360.Observability.Application.Test.Pipeline
 
             await Wait.UntilAsync(() => store.Records.Count == 1, "el lote incompleto se escribe por tiempo");
             await writer.StopAsync(CancellationToken.None);
+            store.Records.Should().HaveCount(1);
         }
 
         [Fact]

@@ -20,14 +20,14 @@ namespace Connection360.Domain.Services
 
             List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
 
-            Int64 totalClientRecords = clientRecords.Count();
+            Int64 totalClientRecords = clientRecords.Count;
             Int64 totalImports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Import);
             Int64 totalExports = clientRecords.Count(r => r[ExternalDataFields.OperationType] == ExternalDataValues.Export);
             Int64 totalAirShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.AirShipment);
             Int64 totalOceanShipments = clientRecords.Count(r => r[ExternalDataFields.ShipmentMode] == ExternalDataValues.OceanShipment);
             Int64 totalWithIssues = clientRecords.Count(r => r[ExternalDataFields.State] == ExternalDataValues.WithIssuesState);
 
-            /// ToDo: Pendiente corregir ordenamiento de fecha
+            // Pendiente: corregir ordenamiento de fecha
             List<ResumenClienteDto> recentShipments = clientRecords
                 .OrderByDescending(r => r[ExternalDataFields.CreationDate].ToDateTimeOrMin())
                 .Select(r => new ResumenClienteDto
@@ -58,13 +58,6 @@ namespace Connection360.Domain.Services
         }
         public ResumenClienteDto Filter(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, String filterDocument)
         {
-            //List<DynamicRecord> searchResults = dataSet.Rows
-            //    .Where(r =>
-            //        r[ExternalDataFields.ClientNit] == clientId &&
-            //        r[ExternalDataFields.DocumentNumber].GetDocumentoSinPrefijo().Equals(filterDocument, StringComparison.OrdinalIgnoreCase)
-            //    )
-            //    .ToList();
-
             List<DynamicRecord> clientRecords = _clientRecordsFilterService.Filter(dataSet, clientId, customersOfCollaborator);
 
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.

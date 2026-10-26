@@ -60,7 +60,7 @@ namespace Connection360.Etl.Application.UseCases
 
             // Canales de notificación de TODOS los clientes de la ronda en una sola consulta (no una
             // por cambio), dentro de la misma transacción. Un cliente sin configuración (o que no
-            // aparece) usa CustomerNotificationChannelSettings.None = todo en false.
+            // aparece) usa CustomerNotificationChannelSettings.None = todos los canales en false.
             List<String> clientIds = changes.Where(c => c.StateChanged || c.CommentChanged || c.OtherInfoChanged).Select(c => c.NitCliente).Distinct(StringComparer.Ordinal).ToList();
             IReadOnlyDictionary<String, CustomerNotificationChannelSettings> channelsByClient = clientIds.Count == 0
                 ? new Dictionary<String, CustomerNotificationChannelSettings>(StringComparer.Ordinal)

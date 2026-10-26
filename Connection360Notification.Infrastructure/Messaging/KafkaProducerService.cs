@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace Connection360Notification.Infrastructure.Messaging
 {
-    public class KafkaProducerService : IKafkaProducerService, IDisposable
+    public sealed class KafkaProducerService : IKafkaProducerService, IDisposable
     {
         private readonly IProducer<String, String> _producer;
         private readonly KafkaSettings _kafkaSettings;
@@ -43,6 +43,7 @@ namespace Connection360Notification.Infrastructure.Messaging
         {
             _producer.Flush(TimeSpan.FromSeconds(5));
             _producer.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

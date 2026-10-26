@@ -24,13 +24,16 @@ namespace Connection360.ApiGateway.Middleware
                 await _next(context);
                 sw.Stop();
 
-                _logger.LogInformation(
-                    "{Method} {Path} -> {StatusCode} ({ElapsedMs}ms) [TraceId: {TraceId}]",
-                    context.Request.Method,
-                    context.Request.Path,
-                    context.Response.StatusCode,
-                    sw.ElapsedMilliseconds,
-                    context.TraceIdentifier);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "{Method} {Path} -> {StatusCode} ({ElapsedMs}ms) [TraceId: {TraceId}]",
+                        context.Request.Method,
+                        context.Request.Path,
+                        context.Response.StatusCode,
+                        sw.ElapsedMilliseconds,
+                        context.TraceIdentifier);
+                }
             }
             catch (Exception ex)
             {

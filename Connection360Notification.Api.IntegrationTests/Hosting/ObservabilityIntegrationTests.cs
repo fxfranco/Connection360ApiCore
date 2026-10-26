@@ -157,7 +157,8 @@ namespace Connection360Notification.Api.IntegrationTests.Hosting
         [Fact]
         public async Task ElInicializadorDeAlmacenamientoSeEjecutaAlArrancar()
         {
-            await RecordingTelemetryStore.UntilAsync(() => _factory.Store.Initialized, "se ejecutó el inicializador");
+            Func<Task> esperarInicializador = () => RecordingTelemetryStore.UntilAsync(() => _factory.Store.Initialized, "se ejecutó el inicializador");
+            await esperarInicializador.Should().NotThrowAsync();
         }
     }
 

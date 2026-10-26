@@ -11,6 +11,8 @@ namespace Connection360.Api.Tests.Middleware
 {
     public class ExceptionHandlingMiddlewareTests
     {
+        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new() { PropertyNameCaseInsensitive = true };
+
         private static (ExceptionHandlingMiddleware Middleware, DefaultHttpContext Context) Build(RequestDelegate next)
         {
             var middleware = new ExceptionHandlingMiddleware(next, NullLogger<ExceptionHandlingMiddleware>.Instance);
@@ -25,7 +27,7 @@ namespace Connection360.Api.Tests.Middleware
             context.Response.Body.Seek(0, SeekOrigin.Begin);
             using var reader = new StreamReader(context.Response.Body);
             var json = await reader.ReadToEndAsync();
-            return JsonSerializer.Deserialize<ApiResponse<Object>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            return JsonSerializer.Deserialize<ApiResponse<Object>>(json, CaseInsensitiveOptions)!;
         }
 
         [Fact]

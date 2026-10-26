@@ -6,6 +6,8 @@ namespace Connection360.Domain.Tests.Entities
 {
     public class DynamicDataSetTests
     {
+        private static readonly String[] ValuesA = { "A" };
+
         [Fact]
         public void Constructor_ConCamposYFilas_ExponeListasDeSoloLectura()
         {
@@ -30,7 +32,7 @@ namespace Connection360.Domain.Tests.Entities
         [Fact]
         public void AvailableFields_EsUnaListaDeSoloLectura()
         {
-            var dataSet = new DynamicDataSet(new[] { "A" }, Enumerable.Empty<DynamicRecord>());
+            var dataSet = new DynamicDataSet(ValuesA, Enumerable.Empty<DynamicRecord>());
 
             dataSet.AvailableFields.Should().BeAssignableTo<IReadOnlyList<String>>();
         }

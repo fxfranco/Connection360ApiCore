@@ -1,7 +1,6 @@
 ﻿using Connection360Notification.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-//using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Connection360Notification.Api.Filters
 {
@@ -43,9 +42,7 @@ namespace Connection360Notification.Api.Filters
                     {
                         // Con [ApiController], NotFound()/BadRequest() llegan como ProblemDetails: ToString() solo
                         // devolvería el nombre del tipo, así que se usa su detalle (o su título) como mensaje.
-                        error = objectResult.Value is ProblemDetails problem
-                            ? (problem.Detail ?? problem.Title)
-                            : objectResult.Value?.ToString();
+                        error = ResolveError(objectResult);
                         data = null;
                     }
 
@@ -80,6 +77,11 @@ namespace Connection360Notification.Api.Filters
 
             await next();
         }
+
+        private static String? ResolveError(ObjectResult objectResult) =>
+            objectResult.Value is ProblemDetails problem
+                ? (problem.Detail ?? problem.Title)
+                : objectResult.Value?.ToString();
 
         private static String ResolveMessage(Int32 status) => status switch
         {

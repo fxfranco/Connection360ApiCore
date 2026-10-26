@@ -7,6 +7,8 @@ namespace Connection360Notification.Application.Tests.DTOs
 {
     public class BasicUsersSyncDtosTests
     {
+        private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
+
         [Fact]
         public void BasicUsersSyncMessage_PorDefecto_TieneListaDeUsuariosVacia()
         {
@@ -38,7 +40,7 @@ namespace Connection360Notification.Application.Tests.DTOs
             String json = "{\"syncId\":\"" + syncId + "\",\"batchIndex\":1,\"batchCount\":3,\"totalUsers\":5,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
                 + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900\",\"fullName\":\"Ana Perez\",\"phone\":\"+57300\",\"email\":\"a@b.com\"}]}";
 
-            BasicUsersSyncMessage? message = JsonSerializer.Deserialize<BasicUsersSyncMessage>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            BasicUsersSyncMessage? message = JsonSerializer.Deserialize<BasicUsersSyncMessage>(json, WebOptions);
 
             message.Should().NotBeNull();
             message!.SyncId.Should().Be(syncId);

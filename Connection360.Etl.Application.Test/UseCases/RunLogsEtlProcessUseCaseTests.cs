@@ -19,6 +19,8 @@ namespace Connection360.Etl.Application.Tests.UseCases
 
         private sealed class Harness
         {
+            private static readonly String[] ValuesDoc = { "DOC" };
+
             public List<String> Calls { get; } = new();
             public List<(String Api, IDictionary<String, String> Filters)> FetchRequests { get; } = new();
             public List<DynamicDataSet> Pages { get; } = new();
@@ -68,7 +70,7 @@ namespace Connection360.Etl.Application.Tests.UseCases
             }
 
             public static DynamicDataSet Page(params String[] docs)
-                => new(new[] { "DOC" }, docs.Select(d => new DynamicRecord(new Dictionary<String, String> { ["DOC"] = d })));
+                => new(ValuesDoc, docs.Select(d => new DynamicRecord(new Dictionary<String, String> { ["DOC"] = d })));
 
             public RunLogsEtlProcessUseCase Create(Int32? pageSize = null)
                 => new(Gateway.Object, Mapping.Object, UnitOfWork.Object, pageSize, Logger);

@@ -17,6 +17,8 @@ namespace Connection360.Etl.App.Test.Extensions
 {
     public class ServiceCollectionExtensionsTests
     {
+        private static readonly String[] ValuesEstado = { "ESTADO" };
+
         private readonly Mock<IExternalDataGateway> _gateway = new();
         private readonly Mock<IUnitOfWork> _unitOfWork = new();
         private readonly Mock<IEtlJobControlRepository> _jobControlRepository = new();
@@ -368,7 +370,7 @@ namespace Connection360.Etl.App.Test.Extensions
                 .ReturnsAsync(true);
 
             var sheet = new ApplicationDataSheet { DocumentoTransporteHbl = "HBL-1", NitCliente = "900", Estado = "NUEVO" };
-            var unified = new DynamicDataSet(new[] { "ESTADO" }, new[] { new DynamicRecord(new Dictionary<String, String> { ["ESTADO"] = "NUEVO" }) });
+            var unified = new DynamicDataSet(ValuesEstado, new[] { new DynamicRecord(new Dictionary<String, String> { ["ESTADO"] = "NUEVO" }) });
             _gateway
                 .Setup(g => g.FetchDataPagedAsync("BPMS", It.IsAny<IDictionary<String, String>>(), It.IsAny<CancellationToken>()))
                 .Returns(() => OnePage(unified));

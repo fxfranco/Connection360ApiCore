@@ -85,7 +85,10 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
 
                 DynamicDataSet page = await FetchInternalAsync(apiName, pageFilters, cancellationToken);
 
-                _logger.LogInformation("Página {Page} de {Api}: {Count} registros.", pageNumber, apiName, page.Rows.Count);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("Página {Page} de {Api}: {Count} registros.", pageNumber, apiName, page.Rows.Count);
+                }
 
                 if (page.Rows.Count == 0)
                     yield break; // Página vacía: no hay más datos que traer.
@@ -113,7 +116,10 @@ namespace Connection360.Etl.Infrastructure.ExternalApi
                 ? apiConfig.DataEndpoint
                 : $"{apiConfig.DataEndpoint}?{query}";
 
-            _logger.LogInformation("Consultando API externo: {Url}", url);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Consultando API externo: {Url}", url);
+            }
 
             // Obtiene el HttpClient previamente registrado
             HttpClient httpClient = _httpClientFactory.CreateClient(apiName);

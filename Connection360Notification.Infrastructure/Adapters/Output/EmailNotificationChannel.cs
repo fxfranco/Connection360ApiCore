@@ -85,9 +85,12 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
             await _emailSender.SendAsync(email, cancellationToken);
 
             // No se registra el destinatario ni el contenido (datos personales); solo de dónde salió la dirección.
-            _logger.LogInformation(
-                "Correo de la notificación {NotificationId} enviado para el cliente {ClientId} (destinatario: {RecipientSource}).",
-                notification.Id, notification.ClientId, clientEmail != null ? "correo del cliente" : "RecipientEmail de la configuración");
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "Correo de la notificación {NotificationId} enviado para el cliente {ClientId} (destinatario: {RecipientSource}).",
+                    notification.Id, notification.ClientId, clientEmail != null ? "correo del cliente" : "RecipientEmail de la configuración");
+            }
         }
 
         /// <summary>

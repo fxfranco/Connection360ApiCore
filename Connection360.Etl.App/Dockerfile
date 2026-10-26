@@ -25,8 +25,9 @@ ARG APP_VERSION=
 
 RUN --mount=type=cache,id=connection360-nuget,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "Connection360.Etl.App/Connection360.Etl.App.csproj" \
- && dotnet publish "Connection360.Etl.App/Connection360.Etl.App.csproj" -c Release -o /app/publish --no-restore \
-        -p:UseAppHost=false ${APP_VERSION:+-p:Version=${APP_VERSION}}
+ && dotnet publish "Connection360.Etl.App/Connection360.Etl.App.csproj" \
+        -c Release -o /app/publish --no-restore \
+        -p:UseAppHost=false ${APP_VERSION:+"-p:Version=${APP_VERSION}"}
 
 # appsettings vacío: se eliminan los de la publicación (incluido cualquier Development) y se deja un {}.
 RUN find /app/publish -maxdepth 1 -name 'appsettings*.json' -delete \

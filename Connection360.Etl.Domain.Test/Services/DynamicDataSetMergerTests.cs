@@ -76,7 +76,7 @@ namespace Connection360.Etl.Domain.Test.Services
 
             Action act = () => _sut.Merge(new[] { a, b }, joinField!);
 
-            act.Should().Throw<ArgumentException>().WithParameterName("joinField");
+            act.Should().Throw<ArgumentException>().WithParameterName(nameof(joinField));
         }
 
         [Fact]

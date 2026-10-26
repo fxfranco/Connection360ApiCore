@@ -49,7 +49,7 @@ function Get-CsprojVersion([string]$project) {
 function Get-ImageTag([string]$version) { return $version.ToLowerInvariant().Replace('+', '-') }
 
 function Invoke-Docker([string[]]$dockerArgs) {
-    Write-Host ("+ docker " + ($dockerArgs -join ' '))
+    Write-Output ("+ docker " + ($dockerArgs -join ' '))
     if (-not $DryRun) {
         & docker @dockerArgs
         if ($LASTEXITCODE -ne 0) { throw "docker $($dockerArgs[0]) falló (código $LASTEXITCODE)." }

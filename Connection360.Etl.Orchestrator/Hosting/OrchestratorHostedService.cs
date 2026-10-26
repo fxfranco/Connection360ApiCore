@@ -58,7 +58,10 @@ namespace Connection360.Etl.Orchestrator.Hosting
                 })
                 .ToArray();
 
-            _logger.LogInformation("Orquestador iniciado con {Count} trabajo(s) programado(s).", loops.Length);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Orquestador iniciado con {Count} trabajo(s) programado(s).", loops.Length);
+            }
 
             await Task.WhenAll(loops);
         }

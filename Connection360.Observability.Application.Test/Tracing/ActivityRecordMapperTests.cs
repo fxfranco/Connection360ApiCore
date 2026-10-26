@@ -26,6 +26,7 @@ namespace Connection360.Observability.Application.Test.Tracing
         {
             _listener.Dispose();
             _source.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         [Fact]

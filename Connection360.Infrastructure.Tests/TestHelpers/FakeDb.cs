@@ -39,7 +39,7 @@ namespace Connection360.Infrastructure.Tests.TestHelpers
         public List<RecordedCommand> Commands { get; } = new();
         public Int32 OpenCount { get; private set; }
         public Int32 CloseCount { get; private set; }
-        public Boolean Disposed { get; private set; }
+        public new Boolean Disposed { get; private set; }
         public FakeDbTransaction? LastTransaction { get; private set; }
 
         [AllowNull]

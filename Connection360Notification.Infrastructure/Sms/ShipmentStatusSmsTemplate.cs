@@ -14,6 +14,8 @@ namespace Connection360Notification.Infrastructure.Sms
     /// </summary>
     public static class ShipmentStatusSmsTemplate
     {
+        private static readonly Char[] ValuesLineBreaks = { '\r', '\n' };
+
         /// <summary>Primera línea del SMS.</summary>
         public const String Brand = "Conexión360";
 
@@ -49,7 +51,7 @@ namespace Connection360Notification.Infrastructure.Sms
                 return EmptyValue;
             }
 
-            return String.Join(" ", value.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            return String.Join(" ", value.Split(ValuesLineBreaks, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         }
     }
 }

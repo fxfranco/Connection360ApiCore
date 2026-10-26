@@ -11,6 +11,8 @@ namespace Connection360.Api.Tests.Middleware
 {
     public class MiddlewareAdicionalesTests
     {
+        private static readonly JsonSerializerOptions CaseInsensitiveOptions = new() { PropertyNameCaseInsensitive = true };
+
         private static DefaultHttpContext BuildContext(String path = "/api/v1/test")
         {
             var context = new DefaultHttpContext();
@@ -23,7 +25,7 @@ namespace Connection360.Api.Tests.Middleware
         {
             context.Response.Body.Seek(0, SeekOrigin.Begin);
             using var reader = new StreamReader(context.Response.Body);
-            return JsonSerializer.Deserialize<ApiResponse<Object>>(reader.ReadToEnd(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            return JsonSerializer.Deserialize<ApiResponse<Object>>(reader.ReadToEnd(), CaseInsensitiveOptions)!;
         }
 
         [Fact]

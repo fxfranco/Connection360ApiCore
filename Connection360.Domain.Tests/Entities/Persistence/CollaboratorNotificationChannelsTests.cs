@@ -23,9 +23,9 @@ namespace Connection360.Domain.Tests.Entities.Persistence
         [InlineData(-5)]
         public void Constructor_IdColaboradorCeroONegativo_LanzaArgumentException(Int64 idCollaborator)
         {
-            Action act = () => new CollaboratorNotificationChannels(1, idCollaborator, true, true, true);
+            Action act = () => _ = new CollaboratorNotificationChannels(1, idCollaborator, true, true, true);
 
-            act.Should().Throw<ArgumentException>().WithParameterName("idCollaborator");
+            act.Should().Throw<ArgumentException>().WithParameterName(nameof(idCollaborator));
         }
 
         [Fact]

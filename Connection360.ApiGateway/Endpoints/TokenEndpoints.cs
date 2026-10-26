@@ -21,7 +21,7 @@ namespace Connection360.ApiGateway.Endpoints
                 if (!IsValidClient(request.ClientId, request.ClientSecret, out String role))
                     return Results.Json(new { error = "invalid_client" }, statusCode: StatusCodes.Status401Unauthorized);
 
-                String token = GenerateJwt(jwtSettings, request.ClientId!, role);
+                String token = GenerateJwt(jwtSettings, request.ClientId!);
 
                 return Results.Ok(new
                 {
@@ -59,7 +59,7 @@ namespace Connection360.ApiGateway.Endpoints
             return false;
         }
 
-        private static String GenerateJwt(JwtSettings settings, String clientId, String role)
+        private static String GenerateJwt(JwtSettings settings, String clientId)
         {
             string roleCustomClaimType = "https://conexion360.space/roles";
             IEnumerable<String> roles = new List<String> { "ADMIN", "CLIENT", "ANALISTAOPE", "ANALISTASAC"};

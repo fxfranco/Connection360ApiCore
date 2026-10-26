@@ -57,12 +57,24 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
             if (phone == null)
             {
                 // No se registra el número (dato personal), solo el motivo.
+                String reason;
+                if (recipient == null)
+                {
+                    reason = "el cliente no existe en basicUserData";
+                }
+                else if (String.IsNullOrWhiteSpace(recipient.Phone))
+                {
+                    reason = "el cliente no tiene celular registrado";
+                }
+                else
+                {
+                    reason = "el celular registrado no es válido";
+                }
+
                 _logger.LogWarning(
                     "[SMS] La notificación {NotificationId} del cliente {ClientId} no se envió: {Reason}.",
                     notification.Id, notification.ClientId,
-                    recipient == null ? "el cliente no existe en basicUserData"
-                    : String.IsNullOrWhiteSpace(recipient.Phone) ? "el cliente no tiene celular registrado"
-                    : "el celular registrado no es válido");
+                    reason);
                 return;
             }
 
@@ -72,9 +84,12 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
             String? messageId = await _smsSender.SendAsync(new SmsMessage(phone, content), cancellationToken);
 
             // No se registra el celular ni el contenido (datos personales).
-            _logger.LogInformation(
-                "[SMS] Notificación {NotificationId} enviada para el cliente {ClientId} (messageId de Brevo: {MessageId}).",
-                notification.Id, notification.ClientId, messageId ?? "-");
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "[SMS] Notificación {NotificationId} enviada para el cliente {ClientId} (messageId de Brevo: {MessageId}).",
+                    notification.Id, notification.ClientId, messageId ?? "-");
+            }
         }
 
         private void EnsureConfigured()

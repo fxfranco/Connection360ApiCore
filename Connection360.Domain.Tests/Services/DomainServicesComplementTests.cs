@@ -13,6 +13,8 @@ namespace Connection360.Domain.Tests.Services
     /// DynamicDataSetMerger y DetailsHistoryShipmentsDomainService.</summary>
     public class DomainServicesComplementTests
     {
+        private static readonly String[] ValuesIdXY = { "ID", "X", "Y" };
+
         private const String ClientId = "900123456";
         private static readonly String[] Fields = { ExternalDataFields.ClientNit };
 
@@ -243,7 +245,7 @@ namespace Connection360.Domain.Tests.Services
                 ReportRow("A", "N", origin: "BOG", destination: "MIA"),
                 ReportRow("A", "N", origin: "MIA", destination: "BOG"));
 
-            List<ReportsFrequentRoutesDomainDtoResult> routes = sut.Summarize(dataSet, String.Empty, 5, null).Single().FrequentRoutes;
+            List<ReportsFrequentRoutesDomainDtoResult> routes = sut.Summarize(dataSet, String.Empty, 5, null).Single().FrequentRoutes!;
 
             routes.Should().HaveCount(2);
             routes[0].Origin.Should().Be("BOG");
@@ -355,7 +357,7 @@ namespace Connection360.Domain.Tests.Services
         public void Merger_ConDataSetsDuplicadosDeLlaveEnElMismoSet_FusionaEnUnaSolaFila()
         {
             var sut = new DynamicDataSetMerger();
-            var a = DataSet(new[] { "ID", "X", "Y" }, Row(("ID", "1"), ("X", "x")), Row(("ID", "1"), ("Y", "y")));
+            var a = DataSet(ValuesIdXY, Row(("ID", "1"), ("X", "x")), Row(("ID", "1"), ("Y", "y")));
             var b = KeyedSet("Z", ("9", "z"));
 
             DynamicDataSet result = sut.Merge(new[] { a, b }, "ID");
@@ -405,7 +407,7 @@ namespace Connection360.Domain.Tests.Services
                 Row((ExternalDataFields.IdLog, "abc"), (ExternalDataFields.MessageLog, "invalido")),
                 Row((ExternalDataFields.IdLog, "2"), (ExternalDataFields.MessageLog, "dos")));
 
-            sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments.Select(x => x.Message).Should().Equal("invalido", "dos", "cinco");
+            sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments!.Select(x => x.Message).Should().Equal("invalido", "dos", "cinco");
         }
 
         [Fact]
@@ -414,7 +416,7 @@ namespace Connection360.Domain.Tests.Services
             var sut = new DetailsHistoryShipmentsDomainService();
             var dataSet = DataSet(Array.Empty<String>(), Row((ExternalDataFields.IdLog, "1"), (ExternalDataFields.ChangeDateLog, "no-fecha")));
 
-            sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments.Single().ChangeDate.Should().Be(DateTime.MinValue);
+            sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments!.Single().ChangeDate.Should().Be(DateTime.MinValue);
         }
 
         [Fact]
@@ -429,7 +431,7 @@ namespace Connection360.Domain.Tests.Services
                 (ExternalDataFields.OldStateLog, "Pendiente"),
                 (ExternalDataFields.NewStateLog, "Entregado")));
 
-            DetailsHistoryShipmentsDomainDtoResult item = sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments.Single();
+            DetailsHistoryShipmentsDomainDtoResult item = sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments!.Single();
 
             item.ChangeDate.Should().Be(new DateTime(2025, 5, 6, 7, 8, 9));
             item.ChangeUser.Should().Be("jperez");
@@ -446,7 +448,7 @@ namespace Connection360.Domain.Tests.Services
                 Row((ExternalDataFields.IdLog, "1"), (ExternalDataFields.MessageLog, "a")),
                 Row((ExternalDataFields.IdLog, "1"), (ExternalDataFields.MessageLog, "b")));
 
-            sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments.Select(x => x.Message).Should().Equal("a", "b");
+            sut.GetDetailsHistoryShipments(dataSet, "HBL-1").DetailsHistoryShipments!.Select(x => x.Message).Should().Equal("a", "b");
         }
     }
 }

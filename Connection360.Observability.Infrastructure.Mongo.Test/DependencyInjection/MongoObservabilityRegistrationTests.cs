@@ -161,7 +161,7 @@ namespace Connection360.Observability.Infrastructure.Mongo.Test.DependencyInject
         [Fact]
         public void Contexto_Configurado_NoSeConectaHastaQueSePideUnaColeccion()
         {
-            Action create = () => new MongoObservabilityContext(Options.Create(new MongoObservabilityOptions { ConnectionString = "mongodb://localhost:1", DatabaseName = "d" }));
+            Action create = () => _ = new MongoObservabilityContext(Options.Create(new MongoObservabilityOptions { ConnectionString = "mongodb://localhost:1", DatabaseName = "d" }));
 
             create.Should().NotThrow();
         }

@@ -47,7 +47,7 @@ namespace Connection360.Application.UseCases.Persistence
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
             ICustomerRepository customerRepository = _unitOfWork.GetRepository<ICustomerRepository>();
 
-            Int64? idResult = (Int64?)await customerRepository.GetCustomerByIdAsync(clientId, cancellationToken);
+            Int64? idResult = await customerRepository.GetCustomerByIdAsync(clientId, cancellationToken);
 
             return idResult;
         }

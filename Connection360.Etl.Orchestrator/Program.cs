@@ -21,7 +21,7 @@ var builder = Host.CreateApplicationBuilder(args);
 // Reemplaza el logger de consola por defecto por uno de una sola línea con timestamp: es lo que
 // convierte esta consola en la "pantalla" solicitada, donde se ven en vivo tanto los mensajes del
 // propio orquestador (próxima ejecución, resultado de cada corrida, etc.) como -línea por línea-
-// todo lo que imprime internamente cada corrida de la ETL.
+// lo que imprime internamente cada corrida de la ETL.
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
 {
@@ -45,7 +45,10 @@ Console.WriteLine("=============================================================
 // mezcló, si existe): la fuente más común de un "WorkingDirectory mal armado" es correr en un
 // entorno distinto al que se editó -por ejemplo, sin DOTNET_ENVIRONMENT=Development no se aplica
 // appsettings.Development.json, y el trabajo termina usando la ruta pensada para producción-.
-host.Services.GetRequiredService<ILogger<Program>>()
-    .LogInformation("Entorno activo (DOTNET_ENVIRONMENT): {Environment}", builder.Environment.EnvironmentName);
+ILogger<Program> startupLogger = host.Services.GetRequiredService<ILogger<Program>>();
+if (startupLogger.IsEnabled(LogLevel.Information))
+{
+    startupLogger.LogInformation("Entorno activo (DOTNET_ENVIRONMENT): {Environment}", builder.Environment.EnvironmentName);
+}
 
 await host.RunAsync();

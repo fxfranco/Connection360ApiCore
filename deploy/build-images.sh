@@ -34,8 +34,8 @@ declare -A PROJECT=( [gateway]=Connection360.ApiGateway [api]=Connection360.Api 
 declare -A IMAGE=( [gateway]=connection360.apigateway [api]=connection360.api [notification]=connection360notification.api [etl-app]=connection360.etl.app [etl-orchestrator]=connection360.etl.orchestrator )
 declare -A VARNAME=( [gateway]=APIGATEWAY_VERSION [api]=API_VERSION [notification]=NOTIFICATION_API_VERSION [etl-app]=ETL_APP_VERSION [etl-orchestrator]=ETL_ORCHESTRATOR_VERSION )
 
-csproj_version() { sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$1/$1.csproj" | head -n1 | tr -d '\r'; }
-tag_of() { echo "$1" | tr 'A-Z' 'a-z' | tr '+' '-'; }   # un tag de Docker no admite '+'
+csproj_version() { local project="$1"; sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$project/$project.csproj" | head -n1 | tr -d '\r'; }
+tag_of() { local version="$1"; echo "$version" | tr 'A-Z' 'a-z' | tr '+' '-'; }   # un tag de Docker no admite '+'
 run() { echo "+ $*"; [[ $DRY -eq 1 ]] || "$@"; }
 
 VERSIONS_FILE="$ROOT/deploy/versions.env"

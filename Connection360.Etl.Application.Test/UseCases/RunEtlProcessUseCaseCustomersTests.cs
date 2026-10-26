@@ -15,6 +15,10 @@ namespace Connection360.Etl.Application.Tests.UseCases
     /// </summary>
     public class RunEtlProcessUseCaseCustomersTests
     {
+        private static readonly String[] ValuesNitH1 = { "NIT-H1" };
+        private static readonly String[] ValuesNitH3 = { "NIT-H3" };
+        private static readonly String[] ValuesNitH1NitH2 = { "NIT-H1", "NIT-H2" };
+
         private static ApplicationDataSheetChange Change(String document, Boolean stateChanged = false, Boolean commentChanged = false, String? nit = null)
             => new()
             {
@@ -42,8 +46,8 @@ namespace Connection360.Etl.Application.Tests.UseCases
 
             result.Success.Should().BeTrue();
             h.InsertedCustomerBatches.Should().HaveCount(2);
-            h.InsertedCustomerBatches[0].Should().BeEquivalentTo(new[] { "NIT-H1", "NIT-H2" });
-            h.InsertedCustomerBatches[1].Should().BeEquivalentTo(new[] { "NIT-H3" });
+            h.InsertedCustomerBatches[0].Should().BeEquivalentTo(ValuesNitH1NitH2);
+            h.InsertedCustomerBatches[1].Should().BeEquivalentTo(ValuesNitH3);
         }
 
         [Fact]
@@ -54,7 +58,7 @@ namespace Connection360.Etl.Application.Tests.UseCases
             var result = await h.CreateUseCase().ExecuteAsync();
 
             result.IsInitialMigrationRun.Should().BeTrue();
-            h.InsertedCustomerBatches.Should().ContainSingle().Which.Should().BeEquivalentTo(new[] { "NIT-H1" });
+            h.InsertedCustomerBatches.Should().ContainSingle().Which.Should().BeEquivalentTo(ValuesNitH1);
         }
 
         [Fact]

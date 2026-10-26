@@ -111,6 +111,7 @@ namespace Connection360Notification.Infrastructure.Sms
             }
             catch (JsonException)
             {
+                // El cuerpo no es JSON válido: se continúa con el valor alterno.
             }
 
             return null;
@@ -139,12 +140,13 @@ namespace Connection360Notification.Infrastructure.Sms
             }
             catch (JsonException)
             {
+                // El cuerpo no es JSON válido: se continúa con el valor alterno.
             }
 
             return responseBody;
         }
 
         private static String Truncate(String value) =>
-            value.Length <= MaxErrorLength ? value : value.Substring(0, MaxErrorLength) + "...";
+            value.Length <= MaxErrorLength ? value : String.Concat(value.AsSpan(0, MaxErrorLength), "...");
     }
 }

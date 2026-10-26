@@ -7,7 +7,7 @@
     public class NotificationEventsResponse
     {
         /// <summary>Identificador del cliente dueño de la configuración.</summary>
-        public String ClientId { get; set; }
+        public String ClientId { get; set; } = null!;
 
         /// <summary>Identificador del registro de eventos de notificación.</summary>
         public Int64 NotificationEventId { get; set; }

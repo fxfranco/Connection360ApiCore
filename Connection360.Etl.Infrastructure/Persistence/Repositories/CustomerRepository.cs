@@ -39,7 +39,7 @@ namespace Connection360.Etl.Infrastructure.Persistence.Repositories
             // Una sola sentencia por lote: unnest(@Identifications) expande el arreglo y el
             // NOT EXISTS descarta las identificaciones que ya están en la tabla, así que no se
             // insertan duplicados ni hay un SELECT + INSERT por cliente (sin N+1). La tabla no
-            // define UNIQUE sobre "identificacion": la ETL corre en una sola instancia y todo el
+            // define UNIQUE sobre "identificacion": la ETL corre en una sola instancia y el
             // lote va en la transacción de la ronda; un índice UNIQUE en esa columna (recomendado)
             // además garantizaría la no duplicidad ante escrituras concurrentes y aceleraría este
             // NOT EXISTS y la consulta de canales.

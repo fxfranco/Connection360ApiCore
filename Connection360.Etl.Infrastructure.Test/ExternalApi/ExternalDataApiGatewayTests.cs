@@ -12,6 +12,8 @@ namespace Connection360.Etl.Infrastructure.Tests.ExternalApi
 {
     public class ExternalDataApiGatewayTests
     {
+        private static readonly String[] ValuesIdNombre = { "ID", "NOMBRE" };
+
         private const String Endpoint = "https://api.test/data";
 
         private static String Json(Int32 rows, String idPrefix = "R")
@@ -19,7 +21,7 @@ namespace Connection360.Etl.Infrastructure.Tests.ExternalApi
             var rowList = Enumerable.Range(1, rows).Select(i => new Dictionary<String, Object?> { ["ID"] = $"{idPrefix}{i}", ["NOMBRE"] = $"Nombre {i}" });
             return JsonSerializer.Serialize(new
             {
-                requestedFields = new[] { "ID", "NOMBRE" },
+                requestedFields = ValuesIdNombre,
                 missingColumns = Array.Empty<String>(),
                 rows = rowList,
             });

@@ -59,9 +59,11 @@ namespace Connection360.Etl.Domain.Time
                 }
                 catch (TimeZoneNotFoundException)
                 {
+                    // El identificador no existe en este sistema: se prueba con el siguiente.
                 }
                 catch (InvalidTimeZoneException)
                 {
+                    // Datos de zona horaria no válidos en este sistema: se prueba con el siguiente identificador.
                 }
             }
 

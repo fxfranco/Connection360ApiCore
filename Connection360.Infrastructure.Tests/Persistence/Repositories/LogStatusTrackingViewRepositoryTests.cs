@@ -9,6 +9,9 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
 {
     public class LogStatusTrackingViewRepositoryTests
     {
+        private static readonly String[] ValuesFechaCambioNuevoEstado = { "fecha_cambio", "nuevo_estado" };
+        private static readonly String[] ValuesIdMensaje = { "id", "mensaje" };
+
         private static readonly String[] AllColumns =
             { "id", "id_operacion", "documento_transporte_hbl", "fecha_cambio", "usuario_cambio", "mensaje", "estado_anterior", "nuevo_estado" };
 
@@ -67,7 +70,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task GetAllAsync_ConSeleccion_SoloConsultaLasColumnasPedidasEnOrdenFijo()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id", "mensaje" }, new Object?[] { 5L, "hola" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdMensaje, new Object?[] { 5L, "hola" });
             var selection = new LogStatusTrackingViewFieldsSelectionDto
             {
                 Fields = { LogStatusTrackingViewField.Mensaje, LogStatusTrackingViewField.Id, LogStatusTrackingViewField.Id }
@@ -117,7 +120,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task GetByDocumentoTransporteHblAsync_ConSeleccion_UsaSoloLasColumnasPedidas()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "fecha_cambio", "nuevo_estado" }, new Object?[] { new DateTime(2025, 5, 5), "FIN" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesFechaCambioNuevoEstado, new Object?[] { new DateTime(2025, 5, 5), "FIN" });
             var selection = new LogStatusTrackingViewFieldsSelectionDto
             {
                 Fields = { LogStatusTrackingViewField.NuevoEstado, LogStatusTrackingViewField.FechaCambio }

@@ -57,6 +57,7 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
             _sut.Dispose();
             _provider.Dispose();
             _cts.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private static ConsumeResult<String, String> Resultado(String? valor) => new()
@@ -82,7 +83,7 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
             var cola = new Queue<Func<ConsumeResult<String, String>?>>(pasos);
             _consumerMock.Setup(c => c.Consume(It.IsAny<CancellationToken>())).Returns(() =>
             {
-                if (cola.Count > 0) return cola.Dequeue()();
+                if (cola.Count > 0) return cola.Dequeue()()!;
                 _cts.Cancel();
                 throw new OperationCanceledException();
             });

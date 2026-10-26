@@ -19,12 +19,7 @@ namespace Connection360.Etl.Domain.Services
     {
         public IReadOnlyList<ApplicationDataSheet> Map(DynamicDataSet unifiedDataSet)
         {
-            if (unifiedDataSet is null)
-                throw new ArgumentNullException(nameof(unifiedDataSet));
-
-            // Índice del último cambio de estado por documento (histórico DATALOGS), usando el
-            // mismo criterio de orden (ID_LOG ascendente) que DetailsHistoryShipmentsDomainService.
-            //var latestLogByDocument = BuildLatestLogIndex(historyDataSet);
+            ArgumentNullException.ThrowIfNull(unifiedDataSet);
 
             var result = new List<ApplicationDataSheet>(unifiedDataSet.Rows.Count);
 
@@ -103,46 +98,11 @@ namespace Connection360.Etl.Domain.Services
                     ChangeUser = record[ExternalDataFields.ChangeUser],
                 };
 
-                //if (latestLogByDocument.TryGetValue(documentNumber, out var latestLog))
-                //{
-                //    sheet.Comentario = latestLog[ExternalDataFields.MessageLog];
-                //    sheet.FechaComentario = latestLog[ExternalDataFields.ChangeDateLog].ToDateTimeOrMin();
-                //}
-
                 result.Add(sheet);
             }
 
             return result;
         }
-
-        /// <summary>
-        /// Construye, para cada documento de transporte, el registro de log más reciente (mayor
-        /// ID_LOG) del histórico DATALOGS. Mismo criterio de orden que
-        /// Connection360.Domain.Services.DetailsHistoryShipmentsDomainService.GetDetailsHistoryShipments,
-        /// pero calculado una sola vez para todos los documentos en lugar de por documento individual.
-        /// </summary>
-        //private static Dictionary<String, DynamicRecord> BuildLatestLogIndex(DynamicDataSet historyDataSet)
-        //{
-        //    var index = new Dictionary<String, DynamicRecord>(StringComparer.OrdinalIgnoreCase);
-
-        //    if (historyDataSet is null)
-        //        return index;
-
-        //    var groupedByDocument = historyDataSet.Rows
-        //        .Where(r => !String.IsNullOrWhiteSpace(r[ExternalDataFields.DocumentNumber]))
-        //        .GroupBy(r => r[ExternalDataFields.DocumentNumber], StringComparer.OrdinalIgnoreCase);
-
-        //    foreach (var group in groupedByDocument)
-        //    {
-        //        var latest = group
-        //            .OrderBy(r => Int64.TryParse(r[ExternalDataFields.IdLog], out Int64 id) ? id : 0)
-        //            .Last();
-
-        //        index[group.Key] = latest;
-        //    }
-
-        //    return index;
-        //}
 
         private static String? NullIfEmpty(String value) => String.IsNullOrWhiteSpace(value) ? null : value;
     }

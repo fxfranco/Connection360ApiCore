@@ -46,7 +46,7 @@ namespace Connection360.Infrastructure.Persistence.Repositories
             return await _session.Connection.ExecuteScalarAsync<Int64>(command);
         }
 
-        public async Task<MasterSettings> GetAsync(CancellationToken cancellationToken = default)
+        public async Task<MasterSettings?> GetAsync(CancellationToken cancellationToken = default)
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);
 

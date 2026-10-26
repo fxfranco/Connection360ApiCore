@@ -105,7 +105,7 @@ namespace Connection360Notification.Api.Tests.Extensions
         private static void AssertDescriptor<TService, TImplementation>(IServiceCollection services)
         {
             ServiceDescriptor descriptor = services.Single(sd => sd.ServiceType == typeof(TService));
-            descriptor.ImplementationType.Should().Be(typeof(TImplementation));
+            descriptor.ImplementationType.Should().Be<TImplementation>();
             descriptor.Lifetime.Should().Be(ServiceLifetime.Scoped);
         }
 

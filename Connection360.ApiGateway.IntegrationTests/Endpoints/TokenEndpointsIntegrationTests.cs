@@ -9,6 +9,8 @@ namespace Connection360.ApiGateway.IntegrationTests.Endpoints
 {
     public class TokenEndpointsIntegrationTests
     {
+        private static readonly String[] ValuesAdminClientAnalistaopeAnalistasac = { "ADMIN", "CLIENT", "ANALISTAOPE", "ANALISTASAC" };
+
         private static Object ClientCredentialsBody(String clientId, String clientSecret) => new
         {
             grantType = "client_credentials",
@@ -85,7 +87,7 @@ namespace Connection360.ApiGateway.IntegrationTests.Endpoints
             var jwt = handler.ReadJwtToken(accessToken);
             var roleClaims = jwt.Claims.Where(c => c.Type == "https://conexion360.space/roles").Select(c => c.Value);
 
-            roleClaims.Should().Contain(new[] { "ADMIN", "CLIENT", "ANALISTAOPE", "ANALISTASAC" });
+            roleClaims.Should().Contain(ValuesAdminClientAnalistaopeAnalistasac);
         }
 
         [Fact]

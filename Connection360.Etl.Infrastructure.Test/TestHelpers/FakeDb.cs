@@ -30,7 +30,7 @@ namespace Connection360.Etl.Infrastructure.Tests.TestHelpers
         public List<FakeExecution> Executions { get; } = new();
         public Int32 OpenCalls { get; private set; }
         public Int32 CloseCalls { get; private set; }
-        public Boolean Disposed { get; private set; }
+        public new Boolean Disposed { get; private set; }
         public FakeDbTransaction? LastTransaction { get; private set; }
 
         /// <summary>Filas afectadas devueltas por cada ExecuteNonQuery.</summary>

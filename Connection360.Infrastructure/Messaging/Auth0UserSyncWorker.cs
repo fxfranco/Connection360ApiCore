@@ -57,18 +57,18 @@ namespace Connection360.Infrastructure.Messaging
             _producer = new ProducerBuilder<String, String>(config).Build();
         }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             // Cede el hilo para que el arranque del host no espere a la primera sincronización.
             await Task.Yield();
 
             // 1. Sincronización inicial, al arrancar la aplicación (con reintentos).
-            await RunStartupSyncAsync(cancellationToken);
+            await RunStartupSyncAsync(stoppingToken);
 
             // 2. Sincronización periódica. La periodicidad se lee de IOptionsMonitor (no IOptions) para poder
             //    cambiarla en caliente editando el appsettings, igual que en OutboxPublisherWorker.
             using var timer = new PeriodicTimer(GetPollingInterval());
-            while (!cancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync(cancellationToken))
+            while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
                 TimeSpan currentInterval = GetPollingInterval();
                 if (timer.Period != currentInterval)
@@ -76,7 +76,7 @@ namespace Connection360.Infrastructure.Messaging
                     timer.Period = currentInterval;
                 }
 
-                await RunSyncCycleAsync(cancellationToken);
+                await RunSyncCycleAsync(stoppingToken);
             }
         }
 
@@ -110,7 +110,10 @@ namespace Connection360.Infrastructure.Messaging
                 return true;
             }
 
-            _logger.LogInformation("Iniciando Auth0UserSyncWorker {Date}", ColombiaClock.Now);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Iniciando Auth0UserSyncWorker {Date}", ColombiaClock.Now);
+            }
 
             // Un span por ciclo; si nadie escucha trazas (observabilidad desactivada) es null.
             using Activity? span = Connection360Telemetry.Source.StartActivity("auth0.users.sync", ActivityKind.Producer);
@@ -142,7 +145,10 @@ namespace Connection360.Infrastructure.Messaging
                 span?.SetTag("auth0.sync.batches", batches);
                 SyncedUsers.Add(users.Count);
                 SyncCycles.Add(1, new KeyValuePair<String, Object?>("success", true));
-                _logger.LogInformation("Auth0UserSyncWorker publicó {Users} usuarios en {Batches} mensaje(s).", users.Count, batches);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("Auth0UserSyncWorker publicó {Users} usuarios en {Batches} mensaje(s).", users.Count, batches);
+                }
                 return true;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -224,6 +230,7 @@ namespace Connection360.Infrastructure.Messaging
             // Primero se cancela el token (base.Dispose) para que el bucle deje de usar el cliente.
             base.Dispose();
             _producer.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

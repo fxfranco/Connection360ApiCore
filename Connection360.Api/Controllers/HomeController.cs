@@ -48,7 +48,7 @@ namespace Connection360.Api.Controllers
             ClientSummaryRequest clientSummaryRequest = new ClientSummaryRequest 
             { 
                 IdClient = idClient, 
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false, 
+                AllClient = String.IsNullOrEmpty(idQueryClient), 
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty 
             };
 
@@ -88,7 +88,7 @@ namespace Connection360.Api.Controllers
             {
                 IdClient = idClient,
                 FilterValue = filterValue,
-                AllClient = String.IsNullOrEmpty(idQueryClient) ? true : false,
+                AllClient = String.IsNullOrEmpty(idQueryClient),
                 IdQueryClient = !String.IsNullOrEmpty(idQueryClient) ? idQueryClient : String.Empty
             };
 
@@ -101,59 +101,5 @@ namespace Connection360.Api.Controllers
             ResumenClienteResponse result = await _getClientSummaryUseCase.ExecuteFilterAsync(clientSummaryRequest, cancellationToken);
             return Ok(result); // El ApiResponseFilter lo envuelve automáticamente
         }
-
-        //[HttpGet("totalsRol")]
-        ////[AllowAnonymous]
-        ////[Authorize]
-        //[Authorize(Roles = "Client,Admin")]
-        //[ProducesResponseType(StatusCodes.Status200OK)]
-        //public async Task<IActionResult> GetHomeTotalsV2(CancellationToken cancellationToken)
-        //{
-        //    // 1. Verificar rol mediante helper IsInRole
-        //    bool esAdmin = User.IsInRole("Admin");
-
-        //    // 2. Extraer todos los roles del usuario activo
-        //    var roles = User.Claims
-        //        .Where(c => c.Type == "https://mi-app.com/claims/roles" || c.Type == ClaimTypes.Role)
-        //        .Select(c => c.Value)
-        //        .ToList();
-
-        //    // 3. Extraer el ID del usuario de Auth0
-        //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        //    return Ok(new
-        //    {
-        //        UserId = userId,
-        //        IsAdministrator = esAdmin,
-        //        AssignedRoles = roles
-        //    });
-        //}
-
-        //[HttpGet("totalsRolNoValid")]
-        ////[AllowAnonymous]
-        ////[Authorize]
-        //[Authorize(Roles = "Editor")]
-        //[ProducesResponseType(StatusCodes.Status200OK)]
-        //public async Task<IActionResult> GetHomeTotalsV3(CancellationToken cancellationToken)
-        //{
-        //    // 1. Verificar rol mediante helper IsInRole
-        //    bool esAdmin = User.IsInRole("Editor");
-
-        //    // 2. Extraer todos los roles del usuario activo
-        //    var roles = User.Claims
-        //        .Where(c => c.Type == "https://mi-app.com/claims/roles" || c.Type == ClaimTypes.Role)
-        //        .Select(c => c.Value)
-        //        .ToList();
-
-        //    // 3. Extraer el ID del usuario de Auth0
-        //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        //    return Ok(new
-        //    {
-        //        UserId = userId,
-        //        IsAdministrator = esAdmin,
-        //        AssignedRoles = roles
-        //    });
-        //}
     }
 }

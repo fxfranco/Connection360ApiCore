@@ -62,15 +62,10 @@ namespace Connection360.Infrastructure.Adapters.Output
                 return null;
             }
 
-            foreach (KeyValuePair<String, Object> entry in dictionary)
-            {
-                if (String.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase))
-                {
-                    return entry.Value;
-                }
-            }
-
-            return null;
+            return dictionary
+                .Where(entry => String.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase))
+                .Select(entry => entry.Value)
+                .FirstOrDefault();
         }
 
         private static Object? FindInLegacyDictionary(IDictionary dictionary, String key)

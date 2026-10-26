@@ -12,6 +12,8 @@ namespace Connection360.Infrastructure.Tests.Adapters
     /// </summary>
     public class Auth0UserBasicMapperTests
     {
+        private static readonly String[] ValuesUserIdEmailUserMetadat = { "user_id", "email", "user_metadata" };
+
         private static JsonElement Json(String raw) => JsonDocument.Parse(raw).RootElement.Clone();
 
         private static UserResponseSchema User(Dictionary<String, Object>? metadata = null)
@@ -87,7 +89,7 @@ namespace Connection360.Infrastructure.Tests.Adapters
         [Fact]
         public void RequestedFields_SoloPideElIdElCorreoYElUserMetadata()
         {
-            Auth0UserBasicMapper.RequestedFields.Split(',').Should().BeEquivalentTo(new[] { "user_id", "email", "user_metadata" });
+            Auth0UserBasicMapper.RequestedFields.Split(',').Should().BeEquivalentTo(ValuesUserIdEmailUserMetadat);
         }
     }
 }

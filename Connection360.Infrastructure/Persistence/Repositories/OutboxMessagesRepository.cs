@@ -14,14 +14,14 @@ namespace Connection360.Infrastructure.Persistence.Repositories
         {
             _session = session;
         }
-        public async Task<Guid> CrearAsync(OutboxMessagesRequestDto outboxMessagesRequest, CancellationToken cancellationToken = default)
+        public async Task<Guid> CrearAsync(OutboxMessagesRequestDto outboxMessages, CancellationToken cancellationToken = default)
         {
             await _session.EnsureConnectionOpenAsync(cancellationToken);
             var outboxMessage = new
             {
                 Id = Guid.NewGuid(),
-                EventType = outboxMessagesRequest.EventType,
-                Payload = JsonSerializer.Serialize(outboxMessagesRequest),
+                EventType = outboxMessages.EventType,
+                Payload = JsonSerializer.Serialize(outboxMessages),
                 // created_at es timestamptz: Npgsql exige Kind=Utc, así que la hora de Colombia se marca
                 // como Utc (NowAsUtcKind) para que se guarde tal cual y no se vuelva a desplazar.
                 CreatedAt = ColombiaClock.NowAsUtcKind

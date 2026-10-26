@@ -43,14 +43,14 @@ namespace Connection360.Infrastructure.Messaging
             _producer = new ProducerBuilder<String, String>(config).Build();
         }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             // El intervalo se obtiene de IOptionsMonitor (no IOptions) justamente para poder
             // cambiarlo en caliente: ASP.NET Core recarga el appsettings automáticamente
             // (reloadOnChange) e IOptionsMonitor.CurrentValue siempre refleja el último valor leído
             // del archivo, sin necesidad de recompilar ni reiniciar la aplicación.
             using var timer = new PeriodicTimer(GetPollingInterval());
-            while (!cancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync(cancellationToken))
+            while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
             {
                 // Si el valor configurado cambió desde el ciclo anterior, se reasigna el Period del
                 // propio PeriodicTimer para que el nuevo intervalo tenga efecto a partir del
@@ -63,7 +63,10 @@ namespace Connection360.Infrastructure.Messaging
 
                 // 2. Creación del Scope manual para este ciclo de ejecución
                 DateTime date = ColombiaClock.Now;
-                _logger.LogInformation("Iniciando OutboxPublisherWorker {Date}", date);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("Iniciando OutboxPublisherWorker {Date}", date);
+                }
                 // Se usa CreateAsyncScope + "await using" (y no CreateScope + "using") porque
                 // IUnitOfWork (UnitOfWork) solo implementa IAsyncDisposable: al cerrar un scope
                 // síncrono, el contenedor de DI intenta llamar Dispose() sobre todos los servicios
@@ -79,13 +82,13 @@ namespace Connection360.Infrastructure.Messaging
                     IUnitOfWork _unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                     IOutboxMessagesRepository outboxMessagesRepository = _unitOfWork.GetRepository<IOutboxMessagesRepository>();
                     // 0. Uso explícito de Unit of Work para garantizar la atomicidad transaccional
-                    await _unitOfWork.BeginTransactionAsync(cancellationToken);
+                    await _unitOfWork.BeginTransactionAsync(stoppingToken);
                     try
                     {
                         // 1. Obtener mensajes no procesados (Bloqueo por fila para evitar colisiones si escalas la API)
-                        List<OutboxMessagesResultDto> outboxMessages = await outboxMessagesRepository.GetListAsync(cancellationToken);
+                        List<OutboxMessagesResultDto> outboxMessages = await outboxMessagesRepository.GetListAsync(stoppingToken);
 
-                        if (outboxMessages.Count() > 0)
+                        if (outboxMessages.Count > 0)
                         {
                             foreach (OutboxMessagesResultDto messages in outboxMessages)
                             {
@@ -96,20 +99,20 @@ namespace Connection360.Infrastructure.Messaging
                                 };
 
                                 // 2. Publicar a Apache Kafka de forma síncrona/esperada
-                                await _producer.ProduceAsync(_kafkaSettings.Topic, kafkaMessage, cancellationToken);
+                                await _producer.ProduceAsync(_kafkaSettings.Topic, kafkaMessage, stoppingToken);
 
                                 // 3. Marcar como procesado en la BD
-                                await outboxMessagesRepository.UpdateprocessedAsync(messages.Id, cancellationToken);
+                                await outboxMessagesRepository.UpdateprocessedAsync(messages.Id, stoppingToken);
                                 PublishedMessages.Add(1);
                             }
                         }
-                        await _unitOfWork.CommitAsync(cancellationToken);
+                        await _unitOfWork.CommitAsync(stoppingToken);
                         span?.SetTag("outbox.messages", outboxMessages.Count);
                         PublishCycles.Add(1, new KeyValuePair<String, Object?>("success", true));
                     }
                     catch (Exception ex)
                     {
-                        await _unitOfWork.RollbackAsync(cancellationToken);
+                        await _unitOfWork.RollbackAsync(stoppingToken);
                         span?.AddException(ex);
                         span?.SetStatus(ActivityStatusCode.Error, ex.Message);
                         PublishCycles.Add(1, new KeyValuePair<String, Object?>("success", false));
@@ -141,6 +144,7 @@ namespace Connection360.Infrastructure.Messaging
             // Primero se cancela el token (base.Dispose) para que el bucle deje de usar el cliente.
             base.Dispose();
             _producer.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

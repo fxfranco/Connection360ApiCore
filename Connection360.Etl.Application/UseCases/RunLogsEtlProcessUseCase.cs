@@ -103,7 +103,10 @@ namespace Connection360.Etl.Application.UseCases
 
                     // ---------- Extract ----------
                     result.ExtractedRecordsByApi[LogsApi] = result.ExtractedRecordsByApi.GetValueOrDefault(LogsApi) + page.Rows.Count;
-                    _logger.LogInformation("Extract [{Api}] página {Page}: {Count} registros obtenidos.", LogsApi, pageNumber, page.Rows.Count);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation("Extract [{Api}] página {Page}: {Count} registros obtenidos.", LogsApi, pageNumber, page.Rows.Count);
+                    }
 
                     // ---------- Transform ----------
                     IReadOnlyList<LogStatusTracking> logRows = _mappingService.Map(page);
@@ -122,18 +125,24 @@ namespace Connection360.Etl.Application.UseCases
 
                     result.LoadedRecords += loaded;
 
-                    _logger.LogInformation(
-                        "Página {Page}: {Transformed} filas de log, {Loaded} insertadas en connection360write.log_status_tracking (transacción propia).",
-                        pageNumber, logRows.Count, loaded);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation(
+                            "Página {Page}: {Transformed} filas de log, {Loaded} insertadas en connection360write.log_status_tracking (transacción propia).",
+                            pageNumber, logRows.Count, loaded);
+                    }
                 }
 
                 // Todas las páginas cargaron sin error: recién ahora se marca COMPLETED.
                 await jobControl.CompleteAsync(cancellationToken);
 
                 result.Success = true;
-                _logger.LogInformation(
-                    "Corrida ETL de logs finalizada. Éxito={Success}. Páginas procesadas={Pages}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
-                    result.Success, pageNumber, result.TransformedRecords, result.LoadedRecords, result.Duration);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "Corrida ETL de logs finalizada. Éxito={Success}. Páginas procesadas={Pages}. Transformados={Transformed}. Cargados={Loaded}. Duración={Duration}.",
+                        result.Success, pageNumber, result.TransformedRecords, result.LoadedRecords, result.Duration);
+                }
             }
             catch (Exception ex)
             {

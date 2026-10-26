@@ -23,6 +23,10 @@ namespace Connection360.Api.Controllers
     [Produces("application/json")]
     public sealed class SettingsController : ControllerBase
     {
+        private const String ProcessFailedMessage = "No se pudo realizar el proceso. Intente más tarde.";
+
+        private const String AccessDeniedMessage = "Acceso denegado. No se tiene un rol asignado.";
+
         private readonly IGetUserManagementUseCase _getUserManagementUseCase;
         private readonly ICustomerUseCase _customerUseCase;
         private readonly ICustomerNotificationsSettingsUseCase _customerNotificationsSettingsUseCase;
@@ -60,7 +64,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.GetCustomerNotificationSettings(idClient, role, cancellationToken);
             return Ok(result);
@@ -83,7 +87,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             CustomerNotificationsSettingsResponse result = await _customerNotificationsSettingsUseCase.CreateCustomerNotificationSettings(customerNotificationsSettings, role, cancellationToken);
             return CreatedAtRoute(nameof(CreateNotificationsSettings), new { idClient = result.NotificationChannels?.ClientId ?? result.NotificationEvents?.ClientId, idChannel = result.NotificationChannels?.NotificationChannelId, idEvent = result.NotificationEvents?.NotificationEventId}, result);
@@ -106,9 +110,9 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role == UserRoleApplication.UNASSIGNED)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
-            Boolean result = await _customerNotificationsSettingsUseCase.UpdateCustomerNotificationSettings(customerNotificationsSettings, role, cancellationToken);
+            await _customerNotificationsSettingsUseCase.UpdateCustomerNotificationSettings(customerNotificationsSettings, role, cancellationToken);
             return NoContent();
         }
 
@@ -126,7 +130,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             MasterSettingsResponse MasterSettingsResponse = await _masterSettingsUseCase.GetAsync(cancellationToken);
             return Ok(MasterSettingsResponse);
@@ -151,7 +155,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             MasterSettingsResponseDto masterSettingsResponseDto = await _masterSettingsUseCase.CreateAsync(createMasterSettingsDto, cancellationToken);
             return CreatedAtRoute(nameof(CreateMasterSettings), new { id = masterSettingsResponseDto.IdMasterSettings }, masterSettingsResponseDto);
@@ -174,9 +178,9 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
-            MasterSettingsResponseDto masterSettingsResponseDto = await _masterSettingsUseCase.UpdateAsync(masterSettingsUpdate, cancellationToken);
+            await _masterSettingsUseCase.UpdateAsync(masterSettingsUpdate, cancellationToken);
             return NoContent();
         }
 
@@ -198,7 +202,7 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             try
             {
@@ -221,7 +225,7 @@ namespace Connection360.Api.Controllers
                     };
                     return Ok(pagedResult);
                 }
-                return Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                return Problem(detail: ProcessFailedMessage,
                     statusCode: StatusCodes.Status500InternalServerError,
                     title: "Error al listar usuarios en el servidor");
             }
@@ -251,12 +255,12 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             try
             {
                 Auth0UserDto result = await _getUserManagementUseCase.GetUsersByIdAsync(userId);
-                return result != null ? Ok(result) : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                return result != null ? Ok(result) : Problem(detail: ProcessFailedMessage,
                     statusCode: StatusCodes.Status500InternalServerError,
                     title: "Error al consultando un usuario en el servidor");
             }
@@ -292,12 +296,12 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             try
             {
                 Boolean result = await _getUserManagementUseCase.UpdateUserAsync(userId, UsersUpdate);
-                return result ? NoContent() : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                return result ? NoContent() : Problem(detail: ProcessFailedMessage,
                     statusCode: StatusCodes.Status500InternalServerError,
                     title: "Error al actualizando usuario en el servidor");
             }
@@ -325,12 +329,12 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             try
             {
                 IList<Auth0RoleDto> result = await _getUserManagementUseCase.GetRolesAsync(cancellationToken);
-                return result != null ? Ok(result) : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                return result != null ? Ok(result) : Problem(detail: ProcessFailedMessage,
                     statusCode: StatusCodes.Status500InternalServerError,
                     title: "Error al listar roles en el servidor");
             }
@@ -363,12 +367,12 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             try
             {
                 Boolean result = await _getUserManagementUseCase.SetUserStatusAsync(userId, statusRequest.IsActive);
-                return result ? NoContent() : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                return result ? NoContent() : Problem(detail: ProcessFailedMessage,
                     statusCode: StatusCodes.Status500InternalServerError,
                     title: "Error al cambiar el estado del usuario en el servidor");
             }
@@ -397,12 +401,12 @@ namespace Connection360.Api.Controllers
             UserRoleApplication role = Enum.GetValues<UserRoleApplication>().FirstOrDefault(r => User.IsInRole(r.ToString()));
             if (role != UserRoleApplication.ADMIN)
             {
-                return StatusCode(StatusCodes.Status403Forbidden, "Acceso denegado. No se tiene un rol asignado.");
+                return StatusCode(StatusCodes.Status403Forbidden, AccessDeniedMessage);
             }
             try
             {
                 Boolean result = await _getUserManagementUseCase.DeleteUserAsync(userId);
-                return result ? NoContent() : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+                return result ? NoContent() : Problem(detail: ProcessFailedMessage,
                     statusCode: StatusCodes.Status500InternalServerError,
                     title: "Error al borrar usuario en el servidor");
             }
@@ -532,7 +536,7 @@ namespace Connection360.Api.Controllers
         {
             Boolean result = await _outboxMessagesUseCase.CreateAsync(outboxMessages, cancellationToken);
 
-            return result ? Ok(result) : Problem(detail: "No se pudo realizar el proceso. Intente más tarde.",
+            return result ? Ok(result) : Problem(detail: ProcessFailedMessage,
                    statusCode: StatusCodes.Status500InternalServerError,
                    title: "Error al generar notificacion outbox en el api core");
         }

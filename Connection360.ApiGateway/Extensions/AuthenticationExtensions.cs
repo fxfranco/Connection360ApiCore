@@ -38,23 +38,6 @@ namespace Connection360.ApiGateway.Extensions
                     NameClaimType = ClaimTypes.NameIdentifier
                 };
 
-                //options.RequireHttpsMetadata = true; // OWASP: nunca validar tokens sobre HTTP en produccion
-                //options.SaveToken = false;
-                //options.TokenValidationParameters = new TokenValidationParameters
-                //{
-                //    ValidateIssuer = true,
-                //    ValidIssuer = jwtSettings.Issuer,
-                //    ValidateAudience = true,
-                //    ValidAudience = jwtSettings.Audience,
-                //    ValidateIssuerSigningKey = true,
-                //    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-                //    ValidateLifetime = true,
-                //    ClockSkew = TimeSpan.FromSeconds(30),
-                //    RequireExpirationTime = true,
-                //    RoleClaimType = jwtSettings.Roles,
-                //    NameClaimType = ClaimTypes.NameIdentifier
-                //};
-
                 // Evita filtrar detalles del error de autenticacion al cliente (OWASP A09)
                 options.Events = new JwtBearerEvents
                 {

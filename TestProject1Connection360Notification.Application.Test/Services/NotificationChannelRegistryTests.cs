@@ -92,7 +92,7 @@ namespace Connection360Notification.Application.Tests.Services
         [Fact]
         public void Constructor_DosImplementacionesDelMismoCanal_LanzaInvalidOperationException()
         {
-            Action act = () => new NotificationChannelRegistry(new[] { _app.Object, Canal(NotificationChannelType.Application).Object });
+            Action act = () => _ = new NotificationChannelRegistry(new[] { _app.Object, Canal(NotificationChannelType.Application).Object });
 
             act.Should().Throw<InvalidOperationException>().WithMessage("*Application*");
         }
@@ -100,7 +100,7 @@ namespace Connection360Notification.Application.Tests.Services
         [Fact]
         public void Constructor_ConColeccionNula_LanzaArgumentNullException()
         {
-            Action act = () => new NotificationChannelRegistry(null!);
+            Action act = () => _ = new NotificationChannelRegistry(null!);
 
             act.Should().Throw<ArgumentNullException>();
         }

@@ -31,7 +31,7 @@ namespace Connection360.Etl.Domain.Test.Services
                 FechaComentario = fechaComentario ?? default
             };
 
-        private static IReadOnlyDictionary<String, ApplicationDataSheetChangeSnapshot> Snapshots(params ApplicationDataSheetChangeSnapshot[] snaps)
+        private static Dictionary<String, ApplicationDataSheetChangeSnapshot> Snapshots(params ApplicationDataSheetChangeSnapshot[] snaps)
             => snaps.ToDictionary(s => s.DocumentoTransporteHbl, s => s);
 
         [Fact]
@@ -267,30 +267,32 @@ namespace Connection360.Etl.Domain.Test.Services
 
         // ---------------------------------------------------------------- OtherInfo
 
-        public static IEnumerable<Object[]> CamposDeOtraInformacion()
+        public static TheoryData<String, Action<ApplicationDataSheet>> CamposDeOtraInformacion()
         {
-            static Object[] Caso(String campo, Action<ApplicationDataSheet> cambio) => new Object[] { campo, cambio };
+            var casos = new TheoryData<String, Action<ApplicationDataSheet>>();
 
-            yield return Caso("Transportista", s => s.Transportista = "TCC");
-            yield return Caso("FechaSolicitudAnticipo", s => s.FechaSolicitudAnticipo = new DateTime(2024, 1, 1));
-            yield return Caso("ValorAnticipo", s => s.ValorAnticipo = 150.25m);
-            yield return Caso("FechaPagoAnticipo", s => s.FechaPagoAnticipo = new DateTime(2024, 1, 2));
-            yield return Caso("FechaBodegaOrigen", s => s.FechaBodegaOrigen = new DateTime(2024, 1, 3));
-            yield return Caso("FechaEtd", s => s.FechaEtd = new DateTime(2024, 1, 4));
-            yield return Caso("FechaAtd", s => s.FechaAtd = new DateTime(2024, 1, 5));
-            yield return Caso("FechaEta", s => s.FechaEta = new DateTime(2024, 1, 6));
-            yield return Caso("FechaAta", s => s.FechaAta = new DateTime(2024, 1, 7));
-            yield return Caso("FechaBodegaDestino", s => s.FechaBodegaDestino = new DateTime(2024, 1, 8));
-            yield return Caso("FechaNacionalizacion", s => s.FechaNacionalizacion = new DateTime(2024, 1, 9));
-            yield return Caso("FechaDespachoDestino", s => s.FechaDespachoDestino = new DateTime(2024, 1, 10));
-            yield return Caso("FechaPlanilla", s => s.FechaPlanilla = new DateTime(2024, 1, 11));
-            yield return Caso("FechaEntregaContenedor", s => s.FechaEntregaContenedor = new DateTime(2024, 1, 12));
-            yield return Caso("DiasLibres", s => s.DiasLibres = 7);
-            yield return Caso("DiasRestantesEntrega", s => s.DiasRestantesEntrega = 3);
-            yield return Caso("FechaDevolucionRealContenedor", s => s.FechaDevolucionRealContenedor = new DateTime(2024, 1, 13));
-            yield return Caso("DiasDemoraContenedor", s => s.DiasDemoraContenedor = 2);
-            yield return Caso("ValorDiaDemora", s => s.ValorDiaDemora = 12.5m);
-            yield return Caso("ValorTotalDemora", s => s.ValorTotalDemora = 99.5m);
+            casos.Add("Transportista", s => s.Transportista = "TCC");
+            casos.Add("FechaSolicitudAnticipo", s => s.FechaSolicitudAnticipo = new DateTime(2024, 1, 1));
+            casos.Add("ValorAnticipo", s => s.ValorAnticipo = 150.25m);
+            casos.Add("FechaPagoAnticipo", s => s.FechaPagoAnticipo = new DateTime(2024, 1, 2));
+            casos.Add("FechaBodegaOrigen", s => s.FechaBodegaOrigen = new DateTime(2024, 1, 3));
+            casos.Add("FechaEtd", s => s.FechaEtd = new DateTime(2024, 1, 4));
+            casos.Add("FechaAtd", s => s.FechaAtd = new DateTime(2024, 1, 5));
+            casos.Add("FechaEta", s => s.FechaEta = new DateTime(2024, 1, 6));
+            casos.Add("FechaAta", s => s.FechaAta = new DateTime(2024, 1, 7));
+            casos.Add("FechaBodegaDestino", s => s.FechaBodegaDestino = new DateTime(2024, 1, 8));
+            casos.Add("FechaNacionalizacion", s => s.FechaNacionalizacion = new DateTime(2024, 1, 9));
+            casos.Add("FechaDespachoDestino", s => s.FechaDespachoDestino = new DateTime(2024, 1, 10));
+            casos.Add("FechaPlanilla", s => s.FechaPlanilla = new DateTime(2024, 1, 11));
+            casos.Add("FechaEntregaContenedor", s => s.FechaEntregaContenedor = new DateTime(2024, 1, 12));
+            casos.Add("DiasLibres", s => s.DiasLibres = 7);
+            casos.Add("DiasRestantesEntrega", s => s.DiasRestantesEntrega = 3);
+            casos.Add("FechaDevolucionRealContenedor", s => s.FechaDevolucionRealContenedor = new DateTime(2024, 1, 13));
+            casos.Add("DiasDemoraContenedor", s => s.DiasDemoraContenedor = 2);
+            casos.Add("ValorDiaDemora", s => s.ValorDiaDemora = 12.5m);
+            casos.Add("ValorTotalDemora", s => s.ValorTotalDemora = 99.5m);
+
+            return casos;
         }
 
         [Theory]

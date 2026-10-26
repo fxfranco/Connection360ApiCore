@@ -82,12 +82,14 @@ namespace Connection360Notification.Api.Tests.Middleware
 
             await middleware.InvokeAsync(NewContext());
 
+            #pragma warning disable CA1873 // Prueba: la llamada de registro es el objeto de la prueba; no se protege con IsEnabled.
             logger.Verify(l => l.Log(
                 It.IsAny<LogLevel>(),
                 It.IsAny<EventId>(),
                 It.IsAny<It.IsAnyType>(),
                 It.IsAny<Exception?>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, String>>()), Times.Never);
+            #pragma warning restore CA1873
         }
 
         [Fact]

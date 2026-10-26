@@ -9,6 +9,10 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
 {
     public class CustomerRepositoryTests
     {
+        private static readonly String[] Values900 = { "900" };
+        private static readonly String[] Values900901 = { "900", "901" };
+        private static readonly String[] Values900900Blank901Empty = { "900", "900", " ", "901", "" };
+
         private static List<String> IdentificationParameters(FakeExecution execution)
             => execution.Parameters.Where(p => p.Key.StartsWith("Identifications", StringComparison.OrdinalIgnoreCase))
                 .Select(p => (String)p.Value!).ToList();
@@ -55,7 +59,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.NonQueryResult = _ => 2;
             var sut = new CustomerRepository(scope.Session);
 
-            Int32 result = await sut.InsertMissingAsync(new[] { "900", "900", " ", "901", "" });
+            Int32 result = await sut.InsertMissingAsync(Values900900Blank901Empty);
 
             result.Should().Be(2);
             scope.Connection.OpenCalls.Should().Be(1);
@@ -64,7 +68,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
                 .And.Contain("unnest(")
                 .And.Contain("NOT EXISTS")
                 .And.Contain("c.identificacion = t.identificacion");
-            IdentificationParameters(execution).Should().BeEquivalentTo(new[] { "900", "901" });
+            IdentificationParameters(execution).Should().BeEquivalentTo(Values900901);
         }
 
         [Fact]
@@ -75,7 +79,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Session.Transaction = transaction;
             var sut = new CustomerRepository(scope.Session);
 
-            await sut.InsertMissingAsync(new[] { "900" });
+            await sut.InsertMissingAsync(Values900);
 
             scope.Connection.Executions.Single().Transaction.Should().BeSameAs(transaction);
         }
@@ -87,7 +91,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ThrowOnExecute = new TimeoutException("lento");
             var sut = new CustomerRepository(scope.Session);
 
-            Func<Task> act = () => sut.InsertMissingAsync(new[] { "900" });
+            Func<Task> act = () => sut.InsertMissingAsync(Values900);
 
             await act.Should().ThrowAsync<TimeoutException>();
         }
@@ -95,6 +99,11 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
 
     public class CustomerNotificationChannelsRepositoryTests
     {
+        private static readonly String[] Values900 = { "900" };
+        private static readonly String[] Values900901902 = { "900", "901", "902" };
+        private static readonly String[] Values900901 = { "900", "901" };
+        private static readonly String[] Values900900Blank901 = { "900", "900", " ", "901" };
+
         private static DataTable ChannelsTable(params (String Id, Boolean App, Boolean Email, Boolean Sms)[] rows)
         {
             var table = new DataTable();
@@ -132,7 +141,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => ChannelsTable();
             var sut = new CustomerNotificationChannelsRepository(scope.Session);
 
-            await sut.GetByCustomerIdentificationsAsync(new[] { "900", "900", " ", "901" });
+            await sut.GetByCustomerIdentificationsAsync(Values900900Blank901);
 
             FakeExecution execution = scope.Connection.Executions.Single();
             execution.Kind.Should().Be("Reader");
@@ -140,7 +149,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
                 .And.Contain("INNER JOIN connection360write.customer_notification_channels n ON n.id_customer = c.id_customer")
                 .And.Contain("c.identificacion = ANY(") // con la conexión falsa Dapper expande la lista; con Npgsql viaja como arreglo nativo
                 .And.Contain("n.text_messages");
-            IdentificationParameters(execution).Should().BeEquivalentTo(new[] { "900", "901" });
+            IdentificationParameters(execution).Should().BeEquivalentTo(Values900901);
         }
 
         [Fact]
@@ -150,7 +159,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Connection.ReaderResult = _ => ChannelsTable(("900", true, false, true), ("901", false, true, false));
             var sut = new CustomerNotificationChannelsRepository(scope.Session);
 
-            var result = await sut.GetByCustomerIdentificationsAsync(new[] { "900", "901", "902" });
+            var result = await sut.GetByCustomerIdentificationsAsync(Values900901902);
 
             result.Should().HaveCount(2);
             result["900"].Should().Be(new CustomerNotificationChannelSettings(true, false, true));
@@ -167,7 +176,7 @@ namespace Connection360.Etl.Infrastructure.Tests.Persistence.Repositories
             scope.Session.Transaction = transaction;
             var sut = new CustomerNotificationChannelsRepository(scope.Session);
 
-            await sut.GetByCustomerIdentificationsAsync(new[] { "900" });
+            await sut.GetByCustomerIdentificationsAsync(Values900);
 
             scope.Connection.Executions.Single().Transaction.Should().BeSameAs(transaction);
         }

@@ -114,7 +114,7 @@ namespace Connection360.Application.Tests.UseCases
 
             DetailsShipmentsResponse r = await _sut.ExecuteDetailsShipmentsAsync(request, CancellationToken.None);
 
-            r.ResumenShipments.Id.Should().Be("7");
+            r.ResumenShipments!.Id.Should().Be("7");
             r.ResumenShipments.ClientId.Should().Be("NIT-1");
             r.ResumenShipments.ClientName.Should().Be("Cliente");
             r.ResumenShipments.Supplier.Should().Be("Prov");
@@ -132,12 +132,12 @@ namespace Connection360.Application.Tests.UseCases
             r.ResumenShipments.OperationType.Should().Be("IMPO");
             r.ResumenShipments.ShipmentMode.Should().Be("SEA");
 
-            r.TrackingShipments.State.Should().Be("En transito");
+            r.TrackingShipments!.State.Should().Be("En transito");
             r.TrackingShipments.OriginLongitudCoordinates.Should().Be("-74");
             r.TrackingShipments.DestinationLatitudCoordinates.Should().Be("25");
             r.TrackingShipments.DestinationLongitudCoordinates.Should().Be("-80");
 
-            r.LogisticsDatesShipments.StoreOriginDate.Should().Be(new DateTime(2025, 1, 1));
+            r.LogisticsDatesShipments!.StoreOriginDate.Should().Be(new DateTime(2025, 1, 1));
             r.LogisticsDatesShipments.ETDDate.Should().Be(new DateTime(2025, 1, 2));
             r.LogisticsDatesShipments.ATDDate.Should().Be(new DateTime(2025, 1, 3));
             r.LogisticsDatesShipments.ETADate.Should().Be(new DateTime(2025, 1, 4));
@@ -148,7 +148,7 @@ namespace Connection360.Application.Tests.UseCases
             r.LogisticsDatesShipments.FormDate.Should().Be(new DateTime(2025, 1, 9));
             r.LogisticsDatesShipments.ContainerDeliveryDate.Should().Be(new DateTime(2025, 1, 10));
 
-            r.ContainerShipments.ContainerType.Should().Be("40HC");
+            r.ContainerShipments!.ContainerType.Should().Be("40HC");
             r.ContainerShipments.ContainerAmount.Should().Be("2");
             r.ContainerShipments.ContainerNumber.Should().Be("MSKU1");
             r.ContainerShipments.DaysOff.Should().Be("7");
@@ -159,7 +159,7 @@ namespace Connection360.Application.Tests.UseCases
             r.ContainerShipments.TotalCostContainerDelays.Should().Be("12");
             r.ContainerShipments.ContainerDepot.Should().Be("13");
 
-            r.FinancialInfoShipments.AdvancePaymentRequestDate.Should().Be(new DateTime(2025, 3, 1));
+            r.FinancialInfoShipments!.AdvancePaymentRequestDate.Should().Be(new DateTime(2025, 3, 1));
             r.FinancialInfoShipments.AdvancePaymentDate.Should().Be(new DateTime(2025, 3, 2));
             r.FinancialInfoShipments.AdvancePaymentAmount.Should().Be("a");
             r.FinancialInfoShipments.SupplierInvoice.Should().Be("b");
@@ -172,7 +172,7 @@ namespace Connection360.Application.Tests.UseCases
             r.FinancialInfoShipments.IvaUSD.Should().Be("i");
             r.FinancialInfoShipments.TotalInvoiceUSD.Should().Be("j");
 
-            DetailsHistoryShipmentsResponse h = r.HistoryShipments.DetailsHistoryShipments!.Should().ContainSingle().Subject;
+            DetailsHistoryShipmentsResponse h = r.HistoryShipments!.DetailsHistoryShipments!.Should().ContainSingle().Subject;
             h.ChangeDate.Should().Be(new DateTime(2025, 4, 1));
             h.ChangeUser.Should().Be("user");
             h.Message.Should().Be("msg");

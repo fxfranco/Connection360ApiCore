@@ -272,7 +272,7 @@ namespace Connection360.Application.Tests.UseCases
 
             DetailsShipmentsResponse result = await _sut.ExecuteDetailsShipmentsAsync(request, CancellationToken.None);
 
-            result.TrackingShipments.OriginNameCoordinates.Should().Be("Origen Completo");
+            result.TrackingShipments!.OriginNameCoordinates.Should().Be("Origen Completo");
             result.TrackingShipments.OriginLatitudCoordinates.Should().Be("4.60");
             result.TrackingShipments.DestinationNameCoordinates.Should().Be("Destino Completo");
         }
@@ -285,7 +285,7 @@ namespace Connection360.Application.Tests.UseCases
 
             DetailsShipmentsResponse result = await _sut.ExecuteDetailsShipmentsAsync(request, CancellationToken.None);
 
-            result.HistoryShipments.DetailsHistoryShipments.Should().ContainSingle(x => x.Message == "Cambio registrado");
+            result.HistoryShipments!.DetailsHistoryShipments.Should().ContainSingle(x => x.Message == "Cambio registrado");
         }
 
         [Fact]

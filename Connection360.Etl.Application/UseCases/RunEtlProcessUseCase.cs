@@ -70,7 +70,7 @@ namespace Connection360.Etl.Application.UseCases
     /// únicamente el mensaje de outbox (event_type "Comment"); y si hay cambio en alguno de los campos de OTRA INFORMACIÓN
     /// (transportista, anticipo, fechas logísticas, días libres, demoras) igualmente solo el mensaje
     /// de outbox (event_type "OtherInfo") - ver <see cref="EtlChangeNotifier"/>.
-    /// Todo esto ocurre dentro de la MISMA transacción que el upsert principal y el avance de
+    /// Esto ocurre por completo dentro de la MISMA transacción que el upsert principal y el avance de
     /// etl_job_control de esa ronda (<see cref="EtlTransactionHelper.RunInOwnTransactionAsync{TResult}"/>):
     /// si cualquier inserción falla, toda la ronda (carga + log + outbox + avance) se revierte junto,
     /// garantizando que las 3 tablas siempre queden consistentes entre sí.
@@ -188,7 +188,12 @@ namespace Connection360.Etl.Application.UseCases
                         result.ExtractedRecordsByApi[apiName] = result.ExtractedRecordsByApi.GetValueOrDefault(apiName) + page.Rows.Count;
 
                         if (page.Rows.Count > 0)
-                            _logger.LogInformation("Extract [{Api}] página {Page}: {Count} registros.", apiName, pageNumber, page.Rows.Count);
+                        {
+                            if (_logger.IsEnabled(LogLevel.Information))
+                            {
+                                _logger.LogInformation("Extract [{Api}] página {Page}: {Count} registros.", apiName, pageNumber, page.Rows.Count);
+                            }
+                        }
                     }
 
                     // ---------- Transform ----------
@@ -256,9 +261,12 @@ namespace Connection360.Etl.Application.UseCases
                             result.CommentChangesDetected += changes.Count(c => c.CommentChanged);
                             result.OtherInfoChangesDetected += changes.Count(c => c.OtherInfoChanged);
 
-                            _logger.LogInformation(
-                                "Página {Page}: {StateChanges} cambio(s) de estado, {CommentChanges} cambio(s) de comentario y {OtherInfoChanges} cambio(s) de otra información detectados ({NewDocuments} documento(s) nuevo(s)).",
-                                pageNumber, changes.Count(c => c.StateChanged), changes.Count(c => c.CommentChanged), changes.Count(c => c.OtherInfoChanged), newDocuments.Count);
+                            if (_logger.IsEnabled(LogLevel.Information))
+                            {
+                                _logger.LogInformation(
+                                    "Página {Page}: {StateChanges} cambio(s) de estado, {CommentChanges} cambio(s) de comentario y {OtherInfoChanges} cambio(s) de otra información detectados ({NewDocuments} documento(s) nuevo(s)).",
+                                    pageNumber, changes.Count(c => c.StateChanged), changes.Count(c => c.CommentChanged), changes.Count(c => c.OtherInfoChanged), newDocuments.Count);
+                            }
                         }
 
                         await jobControl.RegisterPageProgressAsync(pageNumber, affected, cancellationToken);
@@ -268,9 +276,12 @@ namespace Connection360.Etl.Application.UseCases
 
                     result.LoadedRecords += loaded;
 
-                    _logger.LogInformation(
-                        "Página {Page}: {Transformed} filas unificadas, {Loaded} cargadas en connection360write.application_data_sheet (transacción propia).",
-                        pageNumber, sheets.Count, loaded);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation(
+                            "Página {Page}: {Transformed} filas unificadas, {Loaded} cargadas en connection360write.application_data_sheet (transacción propia).",
+                            pageNumber, sheets.Count, loaded);
+                    }
                 }
 
                 // Todas las páginas/rondas cargaron sin error: recién ahora se marca COMPLETED.
@@ -287,9 +298,12 @@ namespace Connection360.Etl.Application.UseCases
 
                 result.IsInitialMigrationRun = isInitialMigration;
                 result.Success = true;
-                _logger.LogInformation(
-                    "Corrida ETL finalizada. Éxito={Success}. MigraciónInicial={IsInitialMigration}. Páginas procesadas={Pages}. Transformados={Transformed}. Cargados={Loaded}. Cambios de estado={StateChanges}. Cambios de comentario={CommentChanges}. Cambios de otra información={OtherInfoChanges}. Duración={Duration}.",
-                    result.Success, result.IsInitialMigrationRun, pageNumber, result.TransformedRecords, result.LoadedRecords, result.StateChangesDetected, result.CommentChangesDetected, result.OtherInfoChangesDetected, result.Duration);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "Corrida ETL finalizada. Éxito={Success}. MigraciónInicial={IsInitialMigration}. Páginas procesadas={Pages}. Transformados={Transformed}. Cargados={Loaded}. Cambios de estado={StateChanges}. Cambios de comentario={CommentChanges}. Cambios de otra información={OtherInfoChanges}. Duración={Duration}.",
+                        result.Success, result.IsInitialMigrationRun, pageNumber, result.TransformedRecords, result.LoadedRecords, result.StateChangesDetected, result.CommentChangesDetected, result.OtherInfoChangesDetected, result.Duration);
+                }
             }
             catch (Exception ex)
             {
@@ -336,7 +350,12 @@ namespace Connection360.Etl.Application.UseCases
             Int32 inserted = await customerRepository.InsertMissingAsync(sheets.Select(s => s.NitCliente), cancellationToken);
 
             if (inserted > 0)
-                _logger.LogInformation("{Inserted} cliente(s) nuevo(s) insertado(s) en connection360write.customers.", inserted);
+            {
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("{Inserted} cliente(s) nuevo(s) insertado(s) en connection360write.customers.", inserted);
+                }
+            }
         }
     }
 }

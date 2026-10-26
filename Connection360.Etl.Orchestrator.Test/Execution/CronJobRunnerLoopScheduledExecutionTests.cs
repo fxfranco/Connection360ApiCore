@@ -78,12 +78,12 @@ namespace Connection360.Etl.Orchestrator.Test.Execution
             await Failure.Logs.WaitForAsync(e => e.Message.Contains("finalizada con errores"), TimeSpan.FromSeconds(10));
         }
 
-        private void Start(Scenario scenario, CancellationToken token)
+        private static void Start(Scenario scenario, CancellationToken token)
         {
             var job = JobFactory.Valid("job", cron: "* * * * *");
             var schedule = new CronJobSchedule(CronExpression.Parse(job.CronExpression), TimeZoneInfo.Utc);
             var loop = new CronJobRunnerLoop(job, schedule, scenario.Runner, scenario.Logs.CreateLogger("loop"));
-            scenario.Loop = Task.Run(() => loop.RunAsync(token));
+            scenario.Loop = Task.Run(() => loop.RunAsync(token), CancellationToken.None);
         }
 
         public async Task DisposeAsync()

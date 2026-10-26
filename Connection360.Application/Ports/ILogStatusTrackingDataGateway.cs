@@ -17,7 +17,7 @@ namespace Connection360.Application.Ports
         /// <summary>
         /// Reemplazo directo de IExternalDataGateway.FetchDataAsync(apiName, filters, cancellationToken):
         /// si <paramref name="filters"/> trae la clave Connection360.Domain.Constans.ExternalDataFields.DocumentNumber,
-        /// filtra por ese documento_transporte_hbl; si no, trae todo el historial.
+        /// filtra por ese documento_transporte_hbl; si no, trae el historial completo.
         /// </summary>
         Task<DynamicDataSet> FetchDataAsync(IDictionary<String, String> filters, CancellationToken cancellationToken);
 

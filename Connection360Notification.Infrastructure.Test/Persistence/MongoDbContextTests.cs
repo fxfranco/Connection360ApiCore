@@ -16,7 +16,7 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
         [InlineData("   ")]
         public void Constructor_ConConnectionStringVacia_LanzaInvalidOperationException(String connection)
         {
-            Action act = () => new MongoDbContext(Opciones(connection, "db"));
+            Action act = () => _ = new MongoDbContext(Opciones(connection, "db"));
 
             act.Should().Throw<InvalidOperationException>().WithMessage("*ConnectionString*");
         }
@@ -26,7 +26,7 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
         [InlineData("   ")]
         public void Constructor_ConDatabaseNameVacio_LanzaInvalidOperationException(String database)
         {
-            Action act = () => new MongoDbContext(Opciones("mongodb://127.0.0.1:27017", database));
+            Action act = () => _ = new MongoDbContext(Opciones("mongodb://127.0.0.1:27017", database));
 
             act.Should().Throw<InvalidOperationException>().WithMessage("*DatabaseName*");
         }
@@ -34,7 +34,7 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
         [Fact]
         public void Constructor_ConConfiguracionValida_NoCreaElClienteHastaQueSePideLaBase()
         {
-            Action act = () => new MongoDbContext(Opciones("mongodb://127.0.0.1:27017", "db"));
+            Action act = () => _ = new MongoDbContext(Opciones("mongodb://127.0.0.1:27017", "db"));
 
             act.Should().NotThrow();
         }

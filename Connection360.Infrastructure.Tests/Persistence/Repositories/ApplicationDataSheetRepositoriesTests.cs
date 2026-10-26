@@ -13,10 +13,15 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
     /// </summary>
     public class ApplicationDataSheetRepositoriesTests
     {
-        public static IEnumerable<Object[]> Variantes()
+        private static readonly String[] ValuesId = { "id" };
+        private static readonly String[] ValuesClienteFechaEta = { "cliente", "fecha_eta" };
+        private static readonly String[] ValuesIdNitCliente = { "id", "nit_cliente" };
+        private static readonly String[] ValuesIdEstado = { "id", "estado" };
+        private static readonly String[] ValuesIdFechaCreaciTipoOperaciNitCli = { "id", "fecha_creacion", "tipo_operacion", "nit_cliente", "peso_kg" };
+
+        public static TheoryData<String> Variantes()
         {
-            yield return new Object[] { "entregados" };
-            yield return new Object[] { "no_entregados" };
+            return new TheoryData<String> { "entregados", "no_entregados" };
         }
 
         private static (IApplicationDataSheetViewRepositoryAdapter Sut, FakeDbConnection Connection, String ViewName) Build(String variant)
@@ -69,7 +74,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         {
             var (sut, connection, view) = Build(variant);
             connection.ReaderResult = FakeDbConnection.Table(
-                new[] { "id", "fecha_creacion", "tipo_operacion", "nit_cliente", "peso_kg" },
+                ValuesIdFechaCreaciTipoOperaciNitCli,
                 new Object?[] { 1L, new DateTime(2026, 3, 4), "IMPORTACION", "900", 12.5m },
                 new Object?[] { 2L, new DateTime(2026, 3, 5), "EXPORTACION", "901", 7m });
 
@@ -90,7 +95,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task GetAllAsync_ConSeleccion_SoloConsultaLasColumnasPedidas(String variant)
         {
             var (sut, connection, view) = Build(variant);
-            connection.ReaderResult = FakeDbConnection.Table(new[] { "id", "estado" }, new Object?[] { 3L, "ENTREGADO" });
+            connection.ReaderResult = FakeDbConnection.Table(ValuesIdEstado, new Object?[] { 3L, "ENTREGADO" });
             var selection = new ApplicationDataSheetViewFieldsSelectionDto
             {
                 Fields = { ApplicationDataSheetViewField.Estado, ApplicationDataSheetViewField.Id }
@@ -118,7 +123,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task GetByNitClienteAsync_FiltraPorNitConParametro(String variant)
         {
             var (sut, connection, view) = Build(variant);
-            connection.ReaderResult = FakeDbConnection.Table(new[] { "id", "nit_cliente" }, new Object?[] { 4L, "900123" });
+            connection.ReaderResult = FakeDbConnection.Table(ValuesIdNitCliente, new Object?[] { 4L, "900123" });
 
             List<ApplicationDataSheetViewResultDto> result = await sut.GetByNit("900123");
 
@@ -133,7 +138,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task GetByNitClienteAsync_ConSeleccion_UsaSoloLasColumnasPedidas(String variant)
         {
             var (sut, connection, view) = Build(variant);
-            connection.ReaderResult = FakeDbConnection.Table(new[] { "cliente", "fecha_eta" }, new Object?[] { "ACME", new DateTime(2026, 1, 1) });
+            connection.ReaderResult = FakeDbConnection.Table(ValuesClienteFechaEta, new Object?[] { "ACME", new DateTime(2026, 1, 1) });
             var selection = new ApplicationDataSheetViewFieldsSelectionDto
             {
                 Fields = { ApplicationDataSheetViewField.FechaEta, ApplicationDataSheetViewField.Cliente }
@@ -164,7 +169,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task GetAllAsync_SinFilas_RetornaListaVacia(String variant)
         {
             var (sut, connection, _) = Build(variant);
-            connection.ReaderResult = FakeDbConnection.Table(new[] { "id" });
+            connection.ReaderResult = FakeDbConnection.Table(ValuesId);
 
             (await sut.GetAll()).Should().BeEmpty();
         }

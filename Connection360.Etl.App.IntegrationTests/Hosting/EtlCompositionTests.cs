@@ -26,6 +26,9 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
     /// </summary>
     public class EtlCompositionTests
     {
+        private static readonly String[] Values900123900456900789 = { "900123", "900456", "900789" };
+        private static readonly String[] Values900123900456 = { "900123", "900456" };
+
         private static readonly String[] OperationalFields =
         {
             ExternalDataFields.DocumentNumber, ExternalDataFields.State, ExternalDataFields.Comment,
@@ -279,14 +282,14 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
                 (await first.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync()).Success.Should().BeTrue();
             }
 
-            store.Customers.Should().BeEquivalentTo(new[] { "900123", "900456" }, "los clientes que ya existían se omiten");
+            store.Customers.Should().BeEquivalentTo(Values900123900456, "los clientes que ya existían se omiten");
 
             run = 2;
             await using var second = provider.CreateAsyncScope();
             var result = await second.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync();
 
             result.Success.Should().BeTrue(result.ErrorMessage);
-            store.Customers.Should().BeEquivalentTo(new[] { "900123", "900456", "900789" });
+            store.Customers.Should().BeEquivalentTo(Values900123900456900789);
             store.Customers.Should().OnlyHaveUniqueItems();
 
             using JsonDocument withChannels = JsonDocument.Parse(store.Outbox.Single(o => o.Payload.Contains("\"HBL-001\"")).Payload);

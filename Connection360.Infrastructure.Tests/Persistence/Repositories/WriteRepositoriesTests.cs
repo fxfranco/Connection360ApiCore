@@ -15,6 +15,15 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
     /// </summary>
     public class WriteRepositoriesTests
     {
+        private static readonly String[] ValuesIdEventTypePayload = { "id", "event_type", "payload" };
+        private static readonly String[] ValuesIdMasterSe = { "id_master_settings" };
+        private static readonly String[] ValuesIdMasterSeAutomaticTrRequireDo = { "id_master_settings", "automatic_tracking_update", "require_document_upload", "public_monitoring", "currency_type", "language", "time_zone", "data_retention_days" };
+        private static readonly String[] ValuesIdCollabora = { "id_collaborator" };
+        private static readonly String[] ValuesIdentificaciIdentificaci = { "identificacionCustomer", "identificacionCollaborator" };
+        private static readonly String[] ValuesIdentificaci = { "Identificacion" };
+        private static readonly String[] ValuesIdCollaboraIdentificaciIdCustome = { "id_collaborator", "identificacion_collaborator", "id_customer", "identificacion_customer" };
+        private static readonly String[] ValuesIdCustomer = { "id_customer" };
+
         private readonly FakeDbConnection _connection = new();
         private readonly DbSession _session;
 
@@ -42,7 +51,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task CustomerRepository_GetCustomerByIdAsync_RetornaElId()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_customer" }, new Object?[] { 8L });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdCustomer, new Object?[] { 8L });
 
             Int64? id = await new CustomerRepository(_session).GetCustomerByIdAsync("900123");
 
@@ -54,7 +63,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task CustomerRepository_GetCustomerByIdAsync_SinFilas_RetornaNull()
         {
             // QueryFirstOrDefaultAsync<Int64?> devuelve null (no 0) cuando no hay fila.
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_customer" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdCustomer);
 
             Int64? id = await new CustomerRepository(_session).GetCustomerByIdAsync("NO-EXISTE");
 
@@ -65,7 +74,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task CustomerRepository_ListAsync_RetornaLaIdentificacionDeCadaCliente()
         {
             _connection.ReaderResult = FakeDbConnection.Table(
-                new[] { "Identificacion" },
+                ValuesIdentificaci,
                 new Object?[] { "900111" },
                 new Object?[] { "900222" });
 
@@ -81,7 +90,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task CustomerRepository_ListAsync_SinFilas_RetornaListaVacia()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "Identificacion" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdentificaci);
 
             List<CustomerDtoResult> result = await new CustomerRepository(_session).ListAsync();
 
@@ -106,7 +115,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task CollaboratorRepository_GetCollaboratorByIdAsync_RetornaElId()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_collaborator" }, new Object?[] { 21L });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdCollabora, new Object?[] { 21L });
 
             Int64? id = await new CollaboratorRepository(_session).GetCollaboratorByIdAsync("COL-1");
 
@@ -117,7 +126,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task CollaboratorRepository_GetCollaboratorByIdAsync_SinFilas_RetornaNull()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_collaborator" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdCollabora);
 
             Int64? id = await new CollaboratorRepository(_session).GetCollaboratorByIdAsync("X");
 
@@ -161,7 +170,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task CustomersOfCollaboratorsRepository_ListCustomersByCollaboratorAsync_MapeaLasFilas()
         {
             _connection.ReaderResult = FakeDbConnection.Table(
-                new[] { "id_collaborator", "identificacion_collaborator", "id_customer", "identificacion_customer" },
+                ValuesIdCollaboraIdentificaciIdCustome,
                 new Object?[] { 1L, "COL-1", 10L, "CUS-10" },
                 new Object?[] { 1L, "COL-1", 11L, "CUS-11" });
 
@@ -179,7 +188,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task CollaboratorRepository_ListAsync_RetornaLaIdentificacionDeCadaColaborador()
         {
             _connection.ReaderResult = FakeDbConnection.Table(
-                new[] { "Identificacion" },
+                ValuesIdentificaci,
                 new Object?[] { "COL-1" },
                 new Object?[] { "COL-2" });
 
@@ -194,7 +203,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task CollaboratorRepository_ListAsync_SinFilas_RetornaListaVacia()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "Identificacion" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdentificaci);
 
             List<CollaboratorDtoResult> result = await new CollaboratorRepository(_session).ListAsync();
 
@@ -205,7 +214,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task CustomersOfCollaboratorsRepository_ListAllAsync_RelacionaClienteYColaboradorConSusAlias()
         {
             _connection.ReaderResult = FakeDbConnection.Table(
-                new[] { "identificacionCustomer", "identificacionCollaborator" },
+                ValuesIdentificaciIdentificaci,
                 new Object?[] { "CUS-10", "COL-1" },
                 new Object?[] { "CUS-11", "COL-2" });
 
@@ -228,7 +237,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task CustomersOfCollaboratorsRepository_ListAllAsync_SinFilas_RetornaListaVacia()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "identificacionCustomer", "identificacionCollaborator" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdentificaciIdentificaci);
 
             List<CustomerCollaboratorRelationDtoResult> result = await new CustomersOfCollaboratorsRepository(_session).ListAllAsync();
 
@@ -238,7 +247,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task CustomersOfCollaboratorsRepository_ListCustomersByCollaboratorAsync_SinFilas_RetornaListaVacia()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_collaborator" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdCollabora);
 
             List<CustomersOfCollaboratorDtoResult> result = await new CustomersOfCollaboratorsRepository(_session).ListCustomersByCollaboratorAsync("COL-X");
 
@@ -272,7 +281,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         public async Task MasterSettingsRepository_GetAsync_MapeaLaFilaALaEntidad()
         {
             _connection.ReaderResult = FakeDbConnection.Table(
-                new[] { "id_master_settings", "automatic_tracking_update", "require_document_upload", "public_monitoring", "currency_type", "language", "time_zone", "data_retention_days" },
+                ValuesIdMasterSeAutomaticTrRequireDo,
                 new Object?[] { 2L, true, false, true, "USD", "en", "UTC", (Int16)90 });
 
             MasterSettings result = await new MasterSettingsRepository(_session).GetAsync();
@@ -290,7 +299,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task MasterSettingsRepository_GetAsync_SinFilas_RetornaNull()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id_master_settings" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdMasterSe);
 
             MasterSettings? result = await new MasterSettingsRepository(_session).GetAsync();
 
@@ -534,7 +543,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         {
             Guid first = Guid.NewGuid();
             Guid second = Guid.NewGuid();
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id", "event_type", "payload" },
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdEventTypePayload,
                 new Object?[] { first, "A", "{}" },
                 new Object?[] { second, "B", "{\"x\":1}" });
 
@@ -550,7 +559,7 @@ namespace Connection360.Infrastructure.Tests.Persistence.Repositories
         [Fact]
         public async Task OutboxRepository_GetListAsync_SinFilas_RetornaListaVacia()
         {
-            _connection.ReaderResult = FakeDbConnection.Table(new[] { "id", "event_type", "payload" });
+            _connection.ReaderResult = FakeDbConnection.Table(ValuesIdEventTypePayload);
 
             (await new OutboxMessagesRepository(_session).GetListAsync()).Should().BeEmpty();
         }

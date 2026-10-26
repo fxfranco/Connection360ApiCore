@@ -28,7 +28,7 @@ namespace Connection360.Domain.Services
             {
                 List<DynamicRecord> clientRecords = clientGroup.ToList();
 
-                Int64 totalClientRecords = clientRecords.Count();
+                Int64 totalClientRecords = clientRecords.Count;
                 Int64 totalWithIssuesStatus = clientRecords.Count(r => r[ExternalDataFields.State] == ExternalDataValues.WithIssuesState);
                 Int64 totalDeliveredStatus = clientRecords.Count(r => r[ExternalDataFields.State] == ExternalDataValues.DeliveredState);
                 Int64 totalDestinationCustomsStatus = clientRecords.Count(r => r[ExternalDataFields.State] == ExternalDataValues.DestinationCustomsState);

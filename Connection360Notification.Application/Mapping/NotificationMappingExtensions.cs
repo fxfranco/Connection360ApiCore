@@ -30,19 +30,19 @@ namespace Connection360Notification.Application.Mapping
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Tipo de notificación no soportado.")
         };
 
+        public static DomainNotificationStatus ToDomain(this AppNotificationStatus status) => status switch
+        {
+            AppNotificationStatus.Unread => DomainNotificationStatus.Unread,
+            AppNotificationStatus.Read => DomainNotificationStatus.Read,
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Estado de notificación no soportado.")
+        };
+
         public static AppNotificationType ToDto(this DomainNotificationType type) => type switch
         {
             DomainNotificationType.ChangeState => AppNotificationType.ChangeState,
             DomainNotificationType.Comment => AppNotificationType.Comment,
             DomainNotificationType.OtherInfo => AppNotificationType.OtherInfo,
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Tipo de notificación no soportado.")
-        };
-
-        public static DomainNotificationStatus ToDomain(this AppNotificationStatus status) => status switch
-        {
-            AppNotificationStatus.Unread => DomainNotificationStatus.Unread,
-            AppNotificationStatus.Read => DomainNotificationStatus.Read,
-            _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Estado de notificación no soportado.")
         };
 
         public static AppNotificationStatus ToDto(this DomainNotificationStatus status) => status switch

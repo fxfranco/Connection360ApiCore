@@ -11,7 +11,7 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
     /// "MongoDB" (o no está configurado, que es el valor por defecto).
     ///
     /// IMongoDbContext se registra como Singleton: es la clase responsable de que exista una única
-    /// instancia de MongoClient (y su pool de conexiones) para todo el proceso, compartida por todos
+    /// instancia de MongoClient (y su pool de conexiones) para el proceso completo, compartida por todos
     /// los repositorios/generadores de Mongo sin importar cuántas veces se resuelvan como Scoped.
     ///
     /// Para agregar un proveedor nuevo (p.ej. DynamoDB) el patrón a seguir es el mismo: un método

@@ -15,6 +15,8 @@ namespace Connection360.Etl.Application.Tests.UseCases
 {
     public class RunEtlProcessUseCaseTests
     {
+        private static readonly String[] ValuesNitHbl1 = { "NIT-HBL1" };
+
         private static readonly String[] OperationalApis = { "BPMS", "SIM", "OPENCOMEX", "ASISCOMEX", "SYSTEMCARRIER" };
 
         private static ApplicationDataSheetChange Change(
@@ -441,7 +443,7 @@ namespace Connection360.Etl.Application.Tests.UseCases
             await h.CreateUseCase().ExecuteAsync();
 
             h.ChannelsRepository.Verify(r => r.GetByCustomerIdentificationsAsync(
-                It.Is<IEnumerable<String>>(ids => ids.SequenceEqual(new[] { "NIT-HBL1" })), It.IsAny<CancellationToken>()), Times.Once);
+                It.Is<IEnumerable<String>>(ids => ids.SequenceEqual(ValuesNitHbl1)), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

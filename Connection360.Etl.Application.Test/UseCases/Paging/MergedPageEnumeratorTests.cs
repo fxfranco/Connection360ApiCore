@@ -8,6 +8,8 @@ namespace Connection360.Etl.Application.Tests.UseCases.Paging
 {
     public class MergedPageEnumeratorTests
     {
+        private static readonly String[] ValuesABC = { "A", "B", "C" };
+
         /// <summary>Fuente asíncrona que registra el token recibido y si el enumerador fue liberado.</summary>
         private sealed class TrackingSource : IAsyncEnumerable<DynamicDataSet>
         {
@@ -155,7 +157,7 @@ namespace Connection360.Etl.Application.Tests.UseCases.Paging
 
             var round = await sut.MoveNextRoundAsync();
 
-            round!.Keys.Should().BeEquivalentTo(new[] { "A", "B", "C" });
+            round!.Keys.Should().BeEquivalentTo(ValuesABC);
         }
 
         [Fact]

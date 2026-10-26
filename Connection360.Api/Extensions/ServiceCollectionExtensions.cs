@@ -79,49 +79,11 @@ namespace Connection360.Api.Extensions
         public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSection = configuration.GetSection("Jwt");
-            var secretKey = jwtSection["Secret"]
+            _ = jwtSection["Secret"]
                 ?? throw new InvalidOperationException("Falta configurar Jwt:Secret");
 
             var roles = jwtSection["Roles"]
                 ?? throw new InvalidOperationException("Falta configurar Jwt:Role");
-
-            //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            //.AddJwtBearer(options =>
-            //{
-            //    options.RequireHttpsMetadata = true; // OWASP: nunca aceptar tokens sobre HTTP en produccion
-            //    options.SaveToken = false; // no persistir el token innecesariamente
-            //    options.TokenValidationParameters = new TokenValidationParameters
-            //    {
-            //        ValidateIssuer = true,
-            //        ValidIssuer = jwtSection["Issuer"],
-            //        ValidateAudience = true,
-            //        ValidAudience = jwtSection["Audience"],
-            //        ValidateIssuerSigningKey = true,
-            //        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secretKey)),
-            //        ValidateLifetime = true,
-            //        ClockSkew = TimeSpan.FromSeconds(30), // margen minimo, no los 5 min por defecto
-            //        RoleClaimType = roles,
-            //        NameClaimType = ClaimTypes.NameIdentifier
-            //    };
-
-            //    options.Events = new JwtBearerEvents
-            //    {
-            //        OnMessageReceived = context =>
-            //        {
-            //            var accessToken = context.Request.Query["access_token"];
-            //            //var idClient = context.Request.Query["idClient"];
-            //            var path = context.HttpContext.Request.Path;
-
-            //            // Si la petición va dirigida al Hub de SignalR, extraemos el token de la query string
-            //            if (!String.IsNullOrEmpty(accessToken) && path.Value?.Contains("/hubs/notifications") == true)
-            //            {
-            //                context.Token = accessToken;
-            //                //context.idClient = idClient;
-            //            }
-            //            return Task.CompletedTask;
-            //        }
-            //    };
-            //});
 
             //1.Add Authentication Services
 

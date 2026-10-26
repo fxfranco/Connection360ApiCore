@@ -46,9 +46,12 @@ namespace Connection360.Etl.Orchestrator.Execution
 
         public async Task RunAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation(
-                "[{Job}] Programado con expresión cron '{Cron}' (zona horaria: {TimeZone}).",
-                _settings.Name, _settings.CronExpression, _schedule.TimeZone.Id);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "[{Job}] Programado con expresión cron '{Cron}' (zona horaria: {TimeZone}).",
+                    _settings.Name, _settings.CronExpression, _schedule.TimeZone.Id);
+            }
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -56,9 +59,12 @@ namespace Connection360.Etl.Orchestrator.Execution
                 DateTimeOffset nextRun = _schedule.GetNextOccurrenceUtc(now);
                 TimeSpan delay = nextRun - now;
 
-                _logger.LogInformation(
-                    "[{Job}] Próxima ejecución: {NextRun:yyyy-MM-dd HH:mm:ss zzz} (en {Delay}).",
-                    _settings.Name, TimeZoneInfo.ConvertTime(nextRun, _schedule.TimeZone), delay);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation(
+                        "[{Job}] Próxima ejecución: {NextRun:yyyy-MM-dd HH:mm:ss zzz} (en {Delay}).",
+                        _settings.Name, TimeZoneInfo.ConvertTime(nextRun, _schedule.TimeZone), delay);
+                }
 
                 try
                 {
@@ -69,7 +75,10 @@ namespace Connection360.Etl.Orchestrator.Execution
                     break; // Apagado del host mientras esperaba: no hay corrida que registrar.
                 }
 
-                _logger.LogInformation("[{Job}] Iniciando ejecución programada...", _settings.Name);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("[{Job}] Iniciando ejecución programada...", _settings.Name);
+                }
 
                 ProcessRunResult result;
                 try
@@ -83,7 +92,10 @@ namespace Connection360.Etl.Orchestrator.Execution
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("[{Job}] Ejecución finalizada correctamente en {Duration}.", _settings.Name, result.Duration);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        _logger.LogInformation("[{Job}] Ejecución finalizada correctamente en {Duration}.", _settings.Name, result.Duration);
+                    }
                 }
                 else
                 {

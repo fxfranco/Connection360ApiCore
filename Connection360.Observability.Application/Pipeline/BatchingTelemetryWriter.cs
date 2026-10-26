@@ -17,11 +17,11 @@ namespace Connection360.Observability.Application.Pipeline
     public sealed class BatchingTelemetryWriter<TItem, TRecord> : IObservabilityComponent, IDisposable
         where TRecord : TelemetryRecord
     {
-        private static readonly TimeSpan WarningInterval = TimeSpan.FromSeconds(60);
+        private static TimeSpan WarningInterval => TimeSpan.FromSeconds(60);
 
         private readonly TelemetryQueue<TItem> _queue;
         private readonly Func<TItem, TRecord?> _map;
-        private readonly IReadOnlyList<ITelemetryStore<TRecord>> _stores;
+        private readonly List<ITelemetryStore<TRecord>> _stores;
         private readonly Int32 _batchSize;
         private readonly TimeSpan _flushInterval;
         private readonly TimeSpan _shutdownTimeout;
@@ -65,7 +65,7 @@ namespace Connection360.Observability.Application.Pipeline
 
         private async Task RunAsync()
         {
-            // Todo lo que haga este escritor (incluidas las llamadas al almacenamiento) no debe generar trazas.
+            // Ninguna operación de este escritor (incluidas las llamadas al almacenamiento) debe generar trazas.
             using IDisposable suppression = TelemetrySuppression.Begin();
 
             var batch = new List<TRecord>(_batchSize);
@@ -176,14 +176,14 @@ namespace Connection360.Observability.Application.Pipeline
             };
 
             // Se escribe una copia de solo lectura: el lote se reutiliza para el siguiente ciclo.
-            IReadOnlyList<TRecord> snapshot = batch.ToArray();
+            TRecord[] snapshot = batch.ToArray();
 
             for (Int32 attempt = 1; attempt <= 2; attempt++)
             {
                 try
                 {
                     await store.WriteBatchAsync(snapshot, _abort.Token).ConfigureAwait(false);
-                    ObservabilityMetrics.Exported.Add(snapshot.Count, tags);
+                    ObservabilityMetrics.Exported.Add(snapshot.Length, tags);
                     return;
                 }
                 catch (OperationCanceledException) when (_abort.IsCancellationRequested)
@@ -195,7 +195,7 @@ namespace Connection360.Observability.Application.Pipeline
                     if (attempt == 2)
                     {
                         ObservabilityMetrics.ExportFailures.Add(1, tags);
-                        Warn(ex, $"No fue posible escribir {snapshot.Count} registro(s) de {{Signal}} en '{store.Name}'; el lote se descarta.");
+                        Warn(ex, $"No fue posible escribir {snapshot.Length} registro(s) de {{Signal}} en '{store.Name}'; el lote se descarta.");
                         return;
                     }
 

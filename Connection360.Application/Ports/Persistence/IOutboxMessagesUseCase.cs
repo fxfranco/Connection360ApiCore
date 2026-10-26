@@ -4,6 +4,6 @@ namespace Connection360.Application.Ports.Persistence
 {
     public interface IOutboxMessagesUseCase
     {
-        Task<Boolean> CreateAsync(CreateOutboxMessagesDto OutboxMessages, CancellationToken cancellationToken = default);
+        Task<Boolean> CreateAsync(CreateOutboxMessagesDto outboxMessages, CancellationToken cancellationToken = default);
     }
 }

@@ -33,7 +33,10 @@ namespace Connection360.Application.UseCases
             };
 
             List<CustomersOfCollaboratorDtoResult> customersByCollaborators = await _clientAccessResolver.ResolveAsync(resolveRequest);
-            request.IdClient = (request.RoleName == UserRoleApplication.ADMIN.ToString()) ? (String.IsNullOrEmpty(request.IdQueryClient) ? String.Empty : request.IdQueryClient) : request.IdClient;
+            if (request.RoleName == UserRoleApplication.ADMIN.ToString())
+            {
+                request.IdClient = request.IdQueryClient ?? String.Empty;
+            }
 
             var filters = new Dictionary<String, String>();
             DynamicDataSet dataSet = await _applicationDataSheetDataGateway.FetchDataAsync(filters, cancellationToken);
@@ -58,7 +61,7 @@ namespace Connection360.Application.UseCases
                 TotalExports = reports.TotalExports,
                 TotalAirShipments = reports.TotalAirShipments,
                 TotalOceanShipments = reports.TotalOceanShipments,
-                FrequentRoutes = reports.FrequentRoutes.Select(x => new ReportsFrequentRoutesResponse
+                FrequentRoutes = reports.FrequentRoutes!.Select(x => new ReportsFrequentRoutesResponse
                 {
                     Origin = x.Origin,
                     Destination = x.Destination,

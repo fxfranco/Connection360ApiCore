@@ -53,7 +53,7 @@ namespace Connection360.Application.UseCases.Persistence
             // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
             IMasterSettingsRepository masterSettingsRepository = _unitOfWork.GetRepository<IMasterSettingsRepository>();
 
-            MasterSettings masterSettings = await masterSettingsRepository.GetAsync(cancellationToken);
+            MasterSettings? masterSettings = await masterSettingsRepository.GetAsync(cancellationToken);
 
             if (masterSettings == null)
             {

@@ -157,8 +157,8 @@ namespace Connection360.Application.Tests.UseCases.Persistence
 
             var result = await _useCase.GetAsync(CancellationToken.None);
 
-            result.Location.CurrencyType.Should().Be(String.Empty);
-            result.System.TimeZone.Should().Be(String.Empty);
+            result.Location!.CurrencyType.Should().Be(String.Empty);
+            result.System!.TimeZone.Should().Be(String.Empty);
         }
 
         [Fact]
@@ -170,9 +170,9 @@ namespace Connection360.Application.Tests.UseCases.Persistence
             var result = await _useCase.GetAsync(CancellationToken.None);
 
             result.IdMasterSettings.Should().Be(1);
-            result.GeneralParameters.AutomaticTrackingUpdate.Should().BeTrue();
-            result.Location.CurrencyType.Should().Be("USD");
-            result.System.DataRetentionDays.Should().Be(60);
+            result.GeneralParameters!.AutomaticTrackingUpdate.Should().BeTrue();
+            result.Location!.CurrencyType.Should().Be("USD");
+            result.System!.DataRetentionDays.Should().Be(60);
         }
 
         [Fact]

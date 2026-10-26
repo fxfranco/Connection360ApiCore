@@ -1,7 +1,7 @@
 ﻿namespace Connection360.Observability.Domain.Settings
 {
     /// <summary>
-    /// Configuración de la sección "Observability" del appsettings. Todo es opcional: los valores
+    /// Configuración de la sección "Observability" del appsettings. Cada valor es opcional: los valores
     /// por defecto ya son razonables para producción.
     /// </summary>
     public sealed class ObservabilityOptions

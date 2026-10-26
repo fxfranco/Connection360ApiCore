@@ -40,14 +40,14 @@
                 throw new ArgumentException("El fragmento SQL no puede estar vacío.", parameterName);
             }
 
-            foreach (Char c in value)
+            Char? invalid = value
+                .Select(c => (Char?)c)
+                .FirstOrDefault(c => !Char.IsAsciiLetterOrDigit(c.GetValueOrDefault()) && c != '_' && !allowed.Contains(c.GetValueOrDefault()));
+            if (invalid is not null)
             {
-                if (!Char.IsAsciiLetterOrDigit(c) && c != '_' && !allowed.Contains(c))
-                {
-                    throw new ArgumentException(
-                        $"El fragmento SQL contiene un carácter no permitido ('{c}'); solo se aceptan identificadores y marcadores de parámetro.",
-                        parameterName);
-                }
+                throw new ArgumentException(
+                    $"El fragmento SQL contiene un carácter no permitido ('{invalid}'); solo se aceptan identificadores y marcadores de parámetro.",
+                    parameterName);
             }
         }
     }

@@ -77,6 +77,7 @@ namespace Connection360.Observability.Application.Metrics
                 }
                 catch (OperationCanceledException)
                 {
+                    // La cancelación es el flujo normal de cierre: no es un error.
                 }
             }
 
@@ -105,6 +106,7 @@ namespace Connection360.Observability.Application.Metrics
             }
             catch (OperationCanceledException)
             {
+                // La cancelación es el flujo normal de cierre: no es un error.
             }
         }
 

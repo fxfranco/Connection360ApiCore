@@ -23,6 +23,8 @@ namespace Connection360.Observability.Application.DependencyInjection
         /// de .NET. Lee la sección "Observability" del appsettings. Después se conecta un
         /// almacenamiento con el builder devuelto (por ejemplo <c>.AddMongoObservabilityStores()</c>).
         /// </summary>
+        /// <param name="services">Colección de servicios de la aplicación.</param>
+        /// <param name="configuration">Configuración de la aplicación (se lee la sección "Observability").</param>
         /// <param name="serviceName">Una de <see cref="ObservedServices"/>: ApiCore, ApiNotification o Etl.</param>
         public static IObservabilityBuilder AddConnection360Observability(
             this IServiceCollection services,

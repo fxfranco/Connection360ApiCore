@@ -105,10 +105,10 @@ namespace Connection360.Infrastructure.Adapters.Output
                         Email = user.Email ?? String.Empty,
                         UserName = user.Name ?? String.Empty,
                         PhoneNumber = user.PhoneNumber ?? String.Empty,
-                        CreatedDate = (DateTime)(user.CreatedAt ?? DateTime.MinValue),
-                        UpdatedDate = (DateTime)(user.UpdatedAt ?? DateTime.MinValue),
+                        CreatedDate = user.CreatedAt ?? DateTime.MinValue,
+                        UpdatedDate = user.UpdatedAt ?? DateTime.MinValue,
                         Nickname = user.Nickname ?? String.Empty,
-                        IsBlocked = (Boolean)(user.Blocked ?? false)
+                        IsBlocked = user.Blocked ?? false
                     };
 
                     // company, document, fullName y phone.number salen de user_metadata.
@@ -123,13 +123,13 @@ namespace Connection360.Infrastructure.Adapters.Output
             });
         }
 
-        public async Task<Boolean> UpdateUserAsync(String userId, Auth0UserDto auth0User)
+        public async Task<Boolean> UpdateUserAsync(String userId, Auth0UserDto updateUser)
         {
             return await ExecuteAsync(async client =>
             {
                 // 1. Si se pide un cambio de rol, se verifica que el rol exista ANTES de modificar nada
                 //    (GET /roles/{id} responde 404 si no existe), para no dejar el usuario a medio actualizar.
-                String? newRoleId = String.IsNullOrWhiteSpace(auth0User.RoleId) ? null : auth0User.RoleId.Trim();
+                String? newRoleId = String.IsNullOrWhiteSpace(updateUser.RoleId) ? null : updateUser.RoleId.Trim();
                 if (newRoleId != null)
                 {
                     await client.Roles.GetAsync(newRoleId);
@@ -143,42 +143,19 @@ namespace Connection360.Infrastructure.Adapters.Output
 
                 // 3. Correo y teléfono se envían en peticiones SEPARADAS: Auth0 restringe actualizar a la vez
                 //    ciertos atributos de identidad (email, phone_number, username, password) junto con otros.
-                if (Auth0UserUpdatePlanner.HasChanged(auth0User.Email, current.Email, ignoreCase: true))
+                if (Auth0UserUpdatePlanner.HasChanged(updateUser.Email, current.Email, ignoreCase: true))
                 {
-                    await client.Users.UpdateAsync(userId, new UpdateUserRequestContent { Email = auth0User.Email!.Trim() });
+                    await client.Users.UpdateAsync(userId, new UpdateUserRequestContent { Email = updateUser.Email!.Trim() });
                 }
 
-                if (Auth0UserUpdatePlanner.HasChanged(auth0User.PhoneNumber, current.PhoneNumber, ignoreCase: false))
+                if (Auth0UserUpdatePlanner.HasChanged(updateUser.PhoneNumber, current.PhoneNumber, ignoreCase: false))
                 {
-                    await client.Users.UpdateAsync(userId, new UpdateUserRequestContent { PhoneNumber = auth0User.PhoneNumber!.Trim() });
+                    await client.Users.UpdateAsync(userId, new UpdateUserRequestContent { PhoneNumber = updateUser.PhoneNumber!.Trim() });
                 }
 
                 // 4. Resto de atributos de perfil, en una sola petición y solo si cambian.
-                UpdateUserRequestContent profileUpdate = new UpdateUserRequestContent();
-                Boolean hasProfileChanges = false;
-
-                // UserName se expone a partir de "name" (ver GetUsersAsync), por eso un valor igual al
-                // nombre o al username actual se considera "sin cambios".
-                if (Auth0UserUpdatePlanner.HasChanged(auth0User.UserName, current.Name, ignoreCase: false)
-                    && Auth0UserUpdatePlanner.HasChanged(auth0User.UserName, current.Username, ignoreCase: false))
-                {
-                    profileUpdate.Username = auth0User.UserName!.Trim();
-                    hasProfileChanges = true;
-                }
-
-                if (Auth0UserUpdatePlanner.HasChanged(auth0User.Nickname, current.Nickname, ignoreCase: false))
-                {
-                    profileUpdate.Nickname = auth0User.Nickname!.Trim();
-                    hasProfileChanges = true;
-                }
-
-                if (auth0User.IsBlocked != null && auth0User.IsBlocked != (current.Blocked ?? false))
-                {
-                    profileUpdate.Blocked = auth0User.IsBlocked;
-                    hasProfileChanges = true;
-                }
-
-                if (hasProfileChanges)
+                UpdateUserRequestContent? profileUpdate = BuildProfileUpdate(updateUser, current.Name, current.Username, current.Nickname, current.Blocked);
+                if (profileUpdate != null)
                 {
                     await client.Users.UpdateAsync(userId, profileUpdate);
                 }
@@ -186,7 +163,7 @@ namespace Connection360.Infrastructure.Adapters.Output
                 // 5. Datos de negocio de user_metadata (company, document, fullName y phone.number): solo si cambian,
                 //    en una petición aparte. Auth0 reemplaza cada propiedad de primer nivel completa, por eso el
                 //    objeto phone se reenvía con las demás propiedades que ya tenía (ver Auth0UserMetadataUpdater).
-                Dictionary<String, Object>? metadataPatch = Auth0UserMetadataUpdater.BuildPatch(auth0User, current.UserMetadata);
+                Dictionary<String, Object>? metadataPatch = Auth0UserMetadataUpdater.BuildPatch(updateUser, current.UserMetadata);
                 if (metadataPatch != null)
                 {
                     await client.Users.UpdateAsync(userId, new UpdateUserRequestContent { UserMetadata = metadataPatch });
@@ -198,21 +175,48 @@ namespace Connection360.Infrastructure.Adapters.Output
                     await ReplaceUserRoleAsync(client, userId, newRoleId);
                 }
 
-                // Nada que cambiar (todo igual a lo que ya tiene Auth0): la operación se considera exitosa.
+                // Nada que cambiar (igual a lo que ya tiene Auth0): la operación se considera exitosa.
                 return true;
             });
+        }
+
+        /// <summary>
+        /// Arma la petición con los atributos de perfil (username, nickname, bloqueo) que realmente cambian,
+        /// o <c>null</c> si ninguno cambia.
+        /// </summary>
+        private static UpdateUserRequestContent? BuildProfileUpdate(Auth0UserDto updateUser, String? currentName, String? currentUsername, String? currentNickname, Boolean? currentBlocked)
+        {
+            UpdateUserRequestContent profileUpdate = new UpdateUserRequestContent();
+            Boolean hasProfileChanges = false;
+
+            // UserName se expone a partir de "name" (ver GetUsersAsync), por eso un valor igual al
+            // nombre o al username actual se considera "sin cambios".
+            if (Auth0UserUpdatePlanner.HasChanged(updateUser.UserName, currentName, ignoreCase: false)
+                && Auth0UserUpdatePlanner.HasChanged(updateUser.UserName, currentUsername, ignoreCase: false))
+            {
+                profileUpdate.Username = updateUser.UserName!.Trim();
+                hasProfileChanges = true;
+            }
+
+            if (Auth0UserUpdatePlanner.HasChanged(updateUser.Nickname, currentNickname, ignoreCase: false))
+            {
+                profileUpdate.Nickname = updateUser.Nickname!.Trim();
+                hasProfileChanges = true;
+            }
+
+            if (updateUser.IsBlocked != null && updateUser.IsBlocked != (currentBlocked ?? false))
+            {
+                profileUpdate.Blocked = updateUser.IsBlocked;
+                hasProfileChanges = true;
+            }
+
+            return hasProfileChanges ? profileUpdate : null;
         }
 
         public async Task<Auth0UserDto> GetUsersByIdAsync(String userId)
         {
             return await ExecuteAsync(async client =>
             {
-                //GetUserRequestParameters requestParams = new GetUserRequestParameters
-                //{
-                //    Fields = "user_id",
-                //    IncludeFields = false
-                //};
-
                 var userrResponse = await client.Users.GetAsync(userId, new GetUserRequestParameters());
 
                 Auth0UserDto user = new Auth0UserDto
@@ -221,10 +225,10 @@ namespace Connection360.Infrastructure.Adapters.Output
                     Email = userrResponse.Email ?? String.Empty,
                     UserName = userrResponse.Name ?? String.Empty,
                     PhoneNumber = userrResponse.PhoneNumber ?? String.Empty,
-                    CreatedDate = (DateTime)(userrResponse.CreatedAt ?? DateTime.MinValue),
-                    UpdatedDate = (DateTime)(userrResponse.UpdatedAt ?? DateTime.MinValue),
+                    CreatedDate = userrResponse.CreatedAt ?? DateTime.MinValue,
+                    UpdatedDate = userrResponse.UpdatedAt ?? DateTime.MinValue,
                     Nickname = userrResponse.Nickname ?? String.Empty,
-                    IsBlocked = (Boolean)(userrResponse.Blocked ?? false)
+                    IsBlocked = userrResponse.Blocked ?? false
                 };
 
                 // company, document, fullName y phone.number salen de user_metadata.
@@ -357,7 +361,8 @@ namespace Connection360.Infrastructure.Adapters.Output
         private static async Task<Auth0.ManagementApi.Role?> GetAssignedRoleAsync(ManagementClient client, String userId)
         {
             var pager = await client.Users.Roles.ListAsync(userId, new ListUserRolesRequestParameters { Page = 0, PerPage = 50 });
-            return pager.CurrentPage.Items.FirstOrDefault();
+            IReadOnlyList<Auth0.ManagementApi.Role> roles = pager.CurrentPage.Items;
+            return roles.Count > 0 ? roles[0] : null;
         }
 
         /// <summary>

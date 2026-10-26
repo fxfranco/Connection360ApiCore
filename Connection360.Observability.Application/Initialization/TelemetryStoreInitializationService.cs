@@ -11,7 +11,7 @@ namespace Connection360.Observability.Application.Initialization
     /// </summary>
     public sealed class TelemetryStoreInitializationService : IObservabilityComponent
     {
-        private readonly IReadOnlyList<ITelemetryStoreInitializer> _initializers;
+        private readonly List<ITelemetryStoreInitializer> _initializers;
         private readonly ILogger _logger;
         private Task _work = Task.CompletedTask;
 
