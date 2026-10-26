@@ -13,7 +13,7 @@
 #                                  falla si alguna falló.
 #   continue_on_failure = false -> si una fase falla, las siguientes no se ejecutan.
 # =====================================================================================
-name: CI Fases DevSecOps (reutilizable)
+name: Connection360 CI Fases DevSecOps (reutilizable)
 
 on:
   workflow_call:
