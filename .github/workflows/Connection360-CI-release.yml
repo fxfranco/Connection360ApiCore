@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Rama a construir y publicar'
+        description: 'Rama a analizar'
         required: true
         type: string
         default: 'release'
