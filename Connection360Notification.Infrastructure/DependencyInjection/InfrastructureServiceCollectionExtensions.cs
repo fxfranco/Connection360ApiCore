@@ -7,6 +7,7 @@ using Connection360Notification.Infrastructure.Adapters.Output;
 using Connection360Notification.Infrastructure.Email;
 using Connection360Notification.Infrastructure.Messaging;
 using Connection360Notification.Infrastructure.Persistence.Mongo;
+using Connection360Notification.Infrastructure.Sms;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,6 +59,9 @@ namespace Connection360Notification.Infrastructure.DependencyInjection
             // Para agregar un canal nuevo: implementar INotificationChannel y registrarlo aquí.
             services.Configure<SmtpSettings>(configuration.GetSection(SmtpSettings.SectionName));
             services.AddSingleton<IEmailSender, MailKitEmailSender>();
+            // SMS con Brevo (sección "BrevoSettingsSMS"): ISmsSender es el puerto; BrevoSmsSender es el adaptador HTTP.
+            services.Configure<BrevoSmsSettings>(configuration.GetSection(BrevoSmsSettings.SectionName));
+            services.AddHttpClient<ISmsSender, BrevoSmsSender>();
             // Datos del destinatario de la notificación en curso (los llena ProcessIncomingNotificationUseCase y los lee el
             // canal de correo). Es "scoped": una instancia por mensaje procesado.
             services.AddScoped<INotificationRecipientContext, NotificationRecipientContext>();

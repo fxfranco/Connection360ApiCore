@@ -252,6 +252,13 @@ services:
       SmtpSettings__Conexion360Url: ${SMTP_CONEXION360_URL:-https://conexion360.space}
       SmtpSettings__TimeoutSeconds: ${SMTP_TIMEOUT_SECONDS:-30}
       SmtpSettings__CheckCertificateRevocation: ${SMTP_CHECK_CERT_REVOCATION:-true}
+      # SMS con Brevo (canal de mensajes de texto). La API key va en el .env; el remitente admite hasta 11 caracteres alfanumericos.
+      BrevoSettingsSMS__BaseUrl: ${BREVO_SMS_BASE_URL:-https://api.brevo.com/v3/}
+      BrevoSettingsSMS__ApiKey: ${BREVO_SMS_API_KEY:-}
+      BrevoSettingsSMS__Sender: ${BREVO_SMS_SENDER:-Conexion360}
+      BrevoSettingsSMS__Conexion360Url: ${BREVO_SMS_CONEXION360_URL:-https://conexion360.space}
+      BrevoSettingsSMS__DefaultCountryCode: ${BREVO_SMS_DEFAULT_COUNTRY_CODE:-57}
+      BrevoSettingsSMS__TimeoutSeconds: ${BREVO_SMS_TIMEOUT_SECONDS:-30}
     healthcheck:
       <<: *api-healthcheck
     networks:

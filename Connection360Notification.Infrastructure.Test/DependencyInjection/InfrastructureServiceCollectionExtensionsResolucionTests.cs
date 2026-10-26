@@ -10,6 +10,7 @@ using Connection360Notification.Infrastructure.DependencyInjection;
 using Connection360Notification.Infrastructure.Email;
 using Connection360Notification.Infrastructure.Messaging;
 using Connection360Notification.Infrastructure.Persistence.Mongo;
+using Connection360Notification.Infrastructure.Sms;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
@@ -195,6 +196,39 @@ namespace Connection360Notification.Infrastructure.Tests.DependencyInjection
             smtp.SenderEmail.Should().Be("tucorreo@gmail.com");
             smtp.Password.Should().Be("clave");
             smtp.RecipientEmail.Should().Be("destino@ejemplo.com");
+        }
+
+        [Fact]
+        public void AddInfrastructure_ConContenedorReal_ResuelveElEnviadorDeSmsDeBrevoYSuConfiguracion()
+        {
+            var valores = ConfigBase.Concat(new[]
+            {
+                ("BrevoSettingsSMS:ApiKey", "clave-brevo"),
+                ("BrevoSettingsSMS:Sender", "Conexion360"),
+                ("BrevoSettingsSMS:Conexion360Url", "https://conexion360.space"),
+                ("BrevoSettingsSMS:DefaultCountryCode", "57")
+            }).ToArray();
+            using var provider = Construir(Config(valores));
+            using var scope = provider.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<ISmsSender>().Should().BeOfType<BrevoSmsSender>();
+            var brevo = scope.ServiceProvider.GetRequiredService<IOptions<BrevoSmsSettings>>().Value;
+            brevo.ApiKey.Should().Be("clave-brevo");
+            brevo.Sender.Should().Be("Conexion360");
+            brevo.Conexion360Url.Should().Be("https://conexion360.space");
+            brevo.DefaultCountryCode.Should().Be("57");
+            scope.ServiceProvider.GetServices<INotificationChannel>().OfType<SmsNotificationChannel>().Should().ContainSingle();
+        }
+
+        [Fact]
+        public void AddInfrastructure_SinSeccionBrevo_ResuelveElCanalDeSmsConLaConfiguracionPorDefecto()
+        {
+            using var provider = Construir(Config(ConfigBase));
+            using var scope = provider.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<IOptions<BrevoSmsSettings>>().Value.ApiKey.Should().BeEmpty();
+            scope.ServiceProvider.GetRequiredService<IOptions<BrevoSmsSettings>>().Value.BaseUrl.Should().Be(BrevoSmsSettings.DefaultBaseUrl);
+            scope.ServiceProvider.GetServices<INotificationChannel>().OfType<SmsNotificationChannel>().Should().ContainSingle();
         }
 
         [Fact]
