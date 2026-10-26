@@ -68,7 +68,7 @@ namespace Connection360.Infrastructure.ExternalApi
             }
             catch (Exception ex)
             {
-                _logger.LogError(" Error {Exception} ", ex);
+                _logger.LogError(ex, "Error al consultar las coordenadas del API externo");
                 throw;
             }
         }
