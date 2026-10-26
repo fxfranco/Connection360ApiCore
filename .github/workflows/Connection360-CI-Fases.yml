@@ -1,0 +1,455 @@
+# =====================================================================================
+# Fases DevSecOps reutilizables (Connection360ApiCore)
+#   1. Detección de secretos      (pre-build)
+#   2. Pruebas unitarias + cobertura
+#   3. SCA (vulnerabilidades en dependencias NuGet)
+#   4. Pruebas de integración (proyectos *.IntegrationTests)
+#   5. SAST con SonarCloud (importa la cobertura de las fases 2 y 4)
+#   6. Verificación del Quality Gate (Go / No-Go)
+#   7. Resultado final
+#
+# Este archivo NO se lanza solo: lo invocan ci-develop.yml y ci-release.yml.
+#   continue_on_failure = true  -> cada fase corre aunque la anterior falle; al final el pipeline
+#                                  falla si alguna falló.
+#   continue_on_failure = false -> si una fase falla, las siguientes no se ejecutan.
+# =====================================================================================
+name: CI Fases DevSecOps (reutilizable)
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Rama/ref a analizar. Vacío = la ref que disparó el workflow (en un PR, el merge del PR).'
+        type: string
+        required: false
+        default: ''
+      continue_on_failure:
+        description: 'true = ejecutar todas las fases aunque alguna falle'
+        type: boolean
+        required: false
+        default: false
+    secrets:
+      SONAR_TOKEN:
+        required: false
+      GITLEAKS_LICENSE:
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  SOLUTION: Connection360ApiCore.slnx
+  DOTNET_VERSION: '10.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # ---------------------------------------------------------------------------------
+  # 1. SECRET DETECTION (pre-build)
+  # ---------------------------------------------------------------------------------
+  secretos:
+    name: "1. Secret Detection (Gitleaks)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar el repositorio (historial completo)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Solo es obligatoria si el repositorio pertenece a una ORGANIZACIÓN de GitHub.
+          # En cuentas personales puede quedar vacía.
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+
+  # ---------------------------------------------------------------------------------
+  # 2. PRUEBAS UNITARIAS + COBERTURA (build/test)
+  # ---------------------------------------------------------------------------------
+  unitarias:
+    name: "2. Pruebas unitarias y cobertura"
+    needs: [secretos]
+    if: ${{ !cancelled() && (inputs.continue_on_failure || needs.secretos.result == 'success') }}
+    runs-on: windows-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Configurar el SDK de .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache de paquetes NuGet
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Compilar la solución
+        shell: pwsh
+        run: dotnet build $env:SOLUTION --configuration Debug /p:DebugSymbols=true /p:DebugType=portable
+        # Las pruebas necesitan los binarios; si no compila, no hay nada que probar.
+
+      - name: Ejecutar pruebas unitarias (todos los proyectos que NO son IntegrationTests)
+        shell: pwsh
+        run: |
+          $projects = Get-ChildItem -Path . -Recurse -Filter *.csproj |
+            Where-Object { $_.BaseName -match 'Tests?$' -and $_.BaseName -notmatch 'IntegrationTests?$' } |
+            Sort-Object FullName
+          if (-not $projects) { Write-Error 'No se encontraron proyectos de pruebas unitarias.'; exit 1 }
+          Write-Host "Proyectos de pruebas unitarias: $($projects.Count)"
+
+          $failed = @()
+          foreach ($p in $projects) {
+            Write-Host "::group::$($p.BaseName)"
+            dotnet test $p.FullName --configuration Debug --no-build `
+              --logger "trx;LogFileName=$($p.BaseName).trx" `
+              --collect:"XPlat Code Coverage" --results-directory ./TestResults/unit `
+              -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover `
+                 DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*Test*]*"
+            if ($LASTEXITCODE -ne 0) { $failed += $p.BaseName }
+            Write-Host "::endgroup::"
+          }
+
+          $reports = @(Get-ChildItem -Path ./TestResults/unit -Filter coverage.opencover.xml -Recurse)
+          Write-Host "Reportes de cobertura generados: $($reports.Count)"
+
+          if ($failed.Count -gt 0) {
+            Write-Host "::error::Proyectos con pruebas fallidas: $($failed -join ', ')"
+            exit 1
+          }
+
+      - name: Publicar cobertura y resultados
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: TestResults/unit/**
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------
+  # 3. SCA - Software Composition Analysis (dependencias)
+  # ---------------------------------------------------------------------------------
+  sca:
+    name: "3. SCA (dependencias vulnerables)"
+    needs: [unitarias]
+    if: ${{ !cancelled() && (inputs.continue_on_failure || needs.unitarias.result == 'success') }}
+    runs-on: ubuntu-latest
+    env:
+      # Severidades que hacen fallar la fase. Las demás se reportan como advertencia.
+      SCA_FAIL_SEVERITIES: 'High,Critical'
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Configurar el SDK de .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache de paquetes NuGet
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Restaurar paquetes
+        run: dotnet restore "$SOLUTION"
+
+      - name: Buscar paquetes vulnerables (directos y transitivos)
+        shell: pwsh
+        run: |
+          dotnet list $env:SOLUTION package --vulnerable --include-transitive --format json > sca.json
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path sca.json) -or (Get-Item sca.json).Length -eq 0) {
+            Write-Host '::error::dotnet list package falló o no generó resultados.'
+            exit 1
+          }
+
+          $data = Get-Content sca.json -Raw | ConvertFrom-Json -Depth 30
+          $findings = foreach ($proj in @($data.projects)) {
+            foreach ($fw in @($proj.frameworks)) {
+              foreach ($pkg in (@($fw.topLevelPackages) + @($fw.transitivePackages))) {
+                if ($pkg -and $pkg.vulnerabilities) {
+                  foreach ($v in @($pkg.vulnerabilities)) {
+                    [pscustomobject]@{
+                      Proyecto  = Split-Path $proj.path -Leaf
+                      Paquete   = $pkg.id
+                      Version   = $pkg.resolvedVersion
+                      Severidad = $v.severity
+                      Aviso     = $v.advisoryurl
+                    }
+                  }
+                }
+              }
+            }
+          }
+          $findings = @($findings | Sort-Object Proyecto, Paquete, Severidad -Unique)
+
+          $blocking = $env:SCA_FAIL_SEVERITIES -split ',' | ForEach-Object { $_.Trim() }
+          $summary = @('### SCA - dependencias vulnerables', '')
+          if ($findings.Count -eq 0) {
+            $summary += 'Sin vulnerabilidades conocidas.'
+            Write-Host 'Sin vulnerabilidades conocidas.'
+          } else {
+            $summary += '| Proyecto | Paquete | Versión | Severidad | Aviso |', '|---|---|---|---|---|'
+            foreach ($f in $findings) { $summary += "| $($f.Proyecto) | $($f.Paquete) | $($f.Version) | $($f.Severidad) | $($f.Aviso) |" }
+            $findings | Format-Table -AutoSize | Out-String -Width 250 | Write-Host
+          }
+          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+          $bad = @($findings | Where-Object { $blocking -contains $_.Severidad })
+          if ($bad.Count -gt 0) {
+            Write-Host "::error::$($bad.Count) vulnerabilidad(es) con severidad $($env:SCA_FAIL_SEVERITIES). Actualiza los paquetes indicados."
+            exit 1
+          }
+          if ($findings.Count -gt 0) { Write-Host "::warning::Hay $($findings.Count) vulnerabilidad(es) de severidad menor (no bloquean)." }
+
+      - name: Publicar reporte SCA
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-report
+          path: sca.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------
+  # 4. PRUEBAS DE INTEGRACIÓN (post-build): proyectos *.IntegrationTests
+  # ---------------------------------------------------------------------------------
+  integracion:
+    name: "4. Pruebas de integración"
+    needs: [sca]
+    if: ${{ !cancelled() && (inputs.continue_on_failure || needs.sca.result == 'success') }}
+    runs-on: windows-latest
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Configurar el SDK de .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache de paquetes NuGet
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Compilar la solución
+        shell: pwsh
+        run: dotnet build $env:SOLUTION --configuration Debug /p:DebugSymbols=true /p:DebugType=portable
+
+      - name: Ejecutar pruebas de integración (proyectos *.IntegrationTests)
+        shell: pwsh
+        run: |
+          $projects = Get-ChildItem -Path . -Recurse -Filter *.csproj |
+            Where-Object { $_.BaseName -match 'IntegrationTests?$' } |
+            Sort-Object FullName
+          if (-not $projects) { Write-Error 'No se encontraron proyectos *.IntegrationTests.'; exit 1 }
+          Write-Host "Proyectos de integración: $($projects.Count)"
+
+          $failed = @()
+          foreach ($p in $projects) {
+            Write-Host "::group::$($p.BaseName)"
+            dotnet test $p.FullName --configuration Debug --no-build `
+              --logger "trx;LogFileName=$($p.BaseName).trx" `
+              --collect:"XPlat Code Coverage" --results-directory ./TestResults/integration `
+              -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover `
+                 DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*Test*]*"
+            if ($LASTEXITCODE -ne 0) { $failed += $p.BaseName }
+            Write-Host "::endgroup::"
+          }
+
+          if ($failed.Count -gt 0) {
+            Write-Host "::error::Proyectos de integración con pruebas fallidas: $($failed -join ', ')"
+            exit 1
+          }
+
+      - name: Publicar cobertura y resultados
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: TestResults/integration/**
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------
+  # 5. SAST con SonarCloud (compila de nuevo bajo el scanner e importa la cobertura)
+  # ---------------------------------------------------------------------------------
+  sast:
+    name: "5. SAST (SonarCloud)"
+    needs: [integracion]
+    if: ${{ !cancelled() && (inputs.continue_on_failure || needs.integracion.result == 'success') }}
+    runs-on: windows-latest
+    steps:
+      - name: Verificar SONAR_TOKEN
+        shell: pwsh
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if ([string]::IsNullOrEmpty($env:SONAR_TOKEN)) {
+            Write-Host '::error::SONAR_TOKEN no está disponible (¿PR desde un fork o secreto sin configurar?).'
+            exit 1
+          }
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          java-version: 21
+          distribution: 'zulu'
+
+      - name: Clonar el repositorio (historial completo)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Configurar el SDK de .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache de paquetes NuGet
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Cache SonarQube Cloud packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~\sonar\cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache SonarQube Cloud scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}\scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
+
+      - name: Install SonarQube Cloud scanner
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          New-Item -Path ${{ runner.temp }}\scanner -ItemType Directory
+          dotnet tool update dotnet-sonarscanner --tool-path ${{ runner.temp }}\scanner
+
+      # Los reportes OpenCover de las fases 2 y 4 se generaron en un runner Windows con la misma ruta
+      # de trabajo, así que Sonar puede asociarlos con los archivos de este checkout.
+      - name: Descargar cobertura (fases 2 y 4)
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: coverage-*
+          path: TestResults
+
+      - name: Analizar con SonarCloud
+        shell: powershell
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          $reports = @(Get-ChildItem -Path ./TestResults -Filter coverage.opencover.xml -Recurse -ErrorAction SilentlyContinue)
+          Write-Host "Reportes de cobertura a importar: $($reports.Count)"
+          $reports | ForEach-Object { Write-Host $_.FullName }
+
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"fxfranco_Connection360ApiCore" /o:"fxfranco" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" /d:sonar.coverage.exclusions="**Test*/**, **/Migrations/**, **/*.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          dotnet build $env:SOLUTION --configuration Debug /p:DebugSymbols=true /p:DebugType=portable
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
+          exit $LASTEXITCODE
+
+      # El quality gate (fase 6) corre en otro job: se le pasa el archivo con la referencia del análisis.
+      - name: Publicar referencia del análisis
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-report-task
+          path: .sonarqube/out/.sonar/report-task.txt
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------------
+  # 6. QUALITY GATE (Go / No-Go)
+  # ---------------------------------------------------------------------------------
+  quality-gate:
+    name: "6. Quality Gate (Go / No-Go)"
+    needs: [sast]
+    if: ${{ !cancelled() && (inputs.continue_on_failure || needs.sast.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar la referencia del análisis
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: sonar-report-task
+          path: .sonarqube/out/.sonar
+
+      - name: Verificar que existe el análisis
+        shell: bash
+        run: |
+          if [ ! -f .sonarqube/out/.sonar/report-task.txt ]; then
+            echo "::error::No hay análisis de SonarCloud que evaluar (la fase 5 falló antes de publicarlo)."
+            exit 1
+          fi
+
+      - name: SonarQube Quality Gate check
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          scanMetadataReportFile: .sonarqube/out/.sonar/report-task.txt
+
+  # ---------------------------------------------------------------------------------
+  # 7. RESULTADO FINAL: el pipeline solo pasa si TODAS las fases pasaron
+  # ---------------------------------------------------------------------------------
+  resultado:
+    name: "7. Resultado final"
+    needs: [secretos, unitarias, sca, integracion, sast, quality-gate]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    env:
+      NEEDS_JSON: ${{ toJSON(needs) }}
+    steps:
+      - name: Evaluar fases
+        shell: bash
+        run: |
+          {
+            echo "### Resultado por fase"
+            echo
+            echo "| Fase | Resultado |"
+            echo "|---|---|"
+            echo "$NEEDS_JSON" | jq -r 'to_entries[] | "| \(.key) | \(.value.result) |"'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          NOT_OK=$(echo "$NEEDS_JSON" | jq -r 'to_entries[] | select(.value.result != "success") | "\(.key)=\(.value.result)"')
+          if [ -n "$NOT_OK" ]; then
+            echo "::error::Fases que no pasaron: $(echo "$NOT_OK" | tr '\n' ' ')"
+            exit 1
+          fi
+          echo "Todas las fases pasaron."
