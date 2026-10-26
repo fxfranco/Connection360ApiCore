@@ -32,7 +32,7 @@ jobs:
   # Fases 1-6 (+ resultado de las fases): estrictas, cada una exige que la anterior haya pasado.
   ci:
     name: CI
-    uses: ./.github/workflows/ci-fases.yml
+    uses: fxfranco/Connection360ApiCore/.github/workflows/Connection360-CI-Fases.yml@main
     with:
       ref: ${{ inputs.branch }}
       continue_on_failure: false
