@@ -1,0 +1,39 @@
+# =====================================================================================
+# CI DevSecOps - Release
+#   - Automático: cada Pull Request hacia la rama "release".
+#   - Manual: workflow_dispatch (por defecto sobre "release").
+#   - Mismas fases que ci-develop.yml, pero ESTRICTAS: si una falla, no se ejecuta la siguiente.
+#
+# Secretos del repositorio necesarios (Settings > Secrets and variables > Actions):
+#   SONAR_TOKEN
+# =====================================================================================
+name: Connection360 CI Release (DevSecOps)
+
+on:
+  pull_request:
+    branches: [release]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Rama a construir y publicar'
+        required: true
+        type: string
+        default: 'release'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-release-${{ github.event.pull_request.number || inputs.branch || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Fases 1-6 (+ resultado de las fases): estrictas, cada una exige que la anterior haya pasado.
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci-fases.yml
+    with:
+      ref: ${{ inputs.branch }}
+      continue_on_failure: false
+    secrets: inherit
