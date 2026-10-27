@@ -52,6 +52,12 @@ namespace Connection360.Api.IntegrationTests.Infrastructure
         {
             builder.UseEnvironment("Development");
 
+            // La cadena de conexión real no se versiona (appsettings.json la trae vacía y el appsettings.Development.json
+            // versionado tampoco la incluye), así que sin este valor NpgsqlDataSource.Create("") lanza ArgumentException ("Host can't be
+            // null") al resolver cualquier controlador que dependa de repositorios (p. ej. SettingsController -> IOutboxMessagesUseCase),
+            // y el middleware global lo convierte en 400. Es solo un valor de prueba: los casos de uso están simulados y nunca se abre conexión.
+            builder.UseSetting("ConnectionStrings:PostgresConnection", "Host=localhost;Database=connection360_tests;Username=tests");
+
             // El Auth0UserSyncWorker (hospedado) consultaría Auth0 real y publicaría en Kafka al arrancar: se
             // deshabilita para que las pruebas de integración no dependan de servicios externos.
             builder.UseSetting("Auth0UserSync:Enabled", "false");

@@ -102,9 +102,30 @@ namespace Connection360Notification.Api.IntegrationTests.Infrastructure
         /// </summary>
         protected virtual IDictionary<String, String?> ExtraSettings => new Dictionary<String, String?>();
 
+        /// <summary>Valores no sensibles de prueba para las secciones que los appsettings versionados dejan en blanco.</summary>
+        private static readonly Dictionary<String, String?> BaseTestSettings = new()
+        {
+            ["KafkaSettings:BootstrapServers"] = "localhost:9092",
+            ["KafkaSettings:GroupId"] = "connection360-notification-tests",
+            ["KafkaSettings:Topic"] = "notifications-tests",
+            ["MongoDbSettings:DatabaseName"] = "connection360_notification_tests",
+            ["MongoDbSettings:CollectionName"] = "notifications_tests",
+            ["Jwt:Issuer"] = "https://issuer.tests.local/",
+            ["Jwt:Audience"] = "connection360-tests",
+            ["Jwt:Roles"] = "https://tests.local/roles"
+        };
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment(EnvironmentName);
+
+            // Configuración base de prueba: los appsettings versionados no traen valores reales (se mantienen en blanco para no
+            // versionar credenciales), pero las pruebas de binding necesitan valores no vacíos. Se aplican primero para que
+            // ExtraSettings (que se aplica después) pueda sobrescribirlos.
+            foreach (KeyValuePair<String, String?> setting in BaseTestSettings)
+            {
+                builder.UseSetting(setting.Key, setting.Value);
+            }
 
             foreach (KeyValuePair<String, String?> setting in ExtraSettings)
             {
