@@ -394,10 +394,10 @@ jobs:
           retention-days: 1
 
   # ---------------------------------------------------------------------------------
-  # 6. QUALITY GATE (Go / No-Go)
+  # 6. QUALITY GATE SONAR
   # ---------------------------------------------------------------------------------
   quality-gate:
-    name: "6. Quality Gate (Go / No-Go)"
+    name: "6. Quality Gate SONAR"
     needs: [sast]
     if: ${{ !cancelled() && (inputs.continue_on_failure || needs.sast.result == 'success') }}
     runs-on: ubuntu-latest
