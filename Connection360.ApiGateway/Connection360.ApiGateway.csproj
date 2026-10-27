@@ -13,6 +13,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+		<PackageReference Include="Microsoft.OpenApi" Version="2.13.0" />
 		<!-- YARP: reverse proxy / enrutamiento hacia los microservicios internos -->
 		<PackageReference Include="Yarp.ReverseProxy" Version="2.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
