@@ -277,7 +277,7 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
                     });
                 },
                 $"--ConnectionStrings:PostgresConnection={ValidConnection}",
-                "--ExternalApi:PaginationEnabled=true",
+                "--ExternalApi:PaginationEnabled=true", // gitleaks:allow (valor de configuración de prueba, no es una credencial)
                 "--ExternalApi:PageSize=123",
                 "--ExternalApi:Apis:SIM:ApiKey=clave-sim");
 
