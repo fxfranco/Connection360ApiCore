@@ -20,3 +20,6 @@ e4056ebeff7083094b3fc2b626486ea7faad672b:Connection360.Api/appsettings.json:gene
 d0d2907b4c074153e8c25130b15e1adfb25d420f:Connection360.Api/appsettings.json:generic-api-key:12
 31c385480408d037022e26ea707fce38ed3be501:Connection360.Api/appsettings.json:generic-api-key:12
 9be18fb2efd5547c1b9140e80711990f09b7a398:Connection360.Api/appsettings.json:generic-api-key:12
+
+# Falso positivo: argumento de configuración de una prueba (no es una credencial). Commit que introdujo la línea.
+4221200d315fc84ca3cdde0ebb270c04ddbd94b9:Connection360.Etl.App.IntegrationTests/Hosting/ProgramTests.cs:generic-api-key:224
