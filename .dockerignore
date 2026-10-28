@@ -1,0 +1,42 @@
+# Contexto de build = RAÍZ de la solución (todas las imágenes se construyen desde aquí).
+# Se excluye lo que no debe entrar a una imagen: binarios locales, pruebas, secretos y documentación.
+
+# Compilación local / IDE
+**/bin/
+**/obj/
+**/.vs/
+.vs/
+**/.idea/
+**/*.user
+**/*.suo
+**/TestResults/
+**/.sonarqube/
+.sonarqube/
+
+# Control de versiones y CI
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Proyectos de pruebas (no forman parte de ninguna imagen)
+**/*.Test/
+**/*.Tests/
+**/*.IntegrationTests/
+TestProject1*/
+
+# Secretos y configuración local: NUNCA deben quedar dentro de una imagen
+**/appsettings.Development.json
+**/appsettings.*.local.json
+**/*.pfx
+**/*.pem
+**/*.key
+.env
+.env.*
+certs/
+deploy/versions.env
+
+# Documentación / scripts auxiliares
+Documents/
+**/*.md
+**/*.http

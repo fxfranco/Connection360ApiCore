@@ -1,0 +1,58 @@
+<Solution>
+  <Folder Name="/ETL/">
+    <Project Path="Connection360.Etl.App/Connection360.Etl.App.csproj" Id="4cb002eb-51da-4367-8a61-e655c848754f" />
+    <Project Path="Connection360.Etl.Application/Connection360.Etl.Application.csproj" Id="591090b2-8108-4f3e-9dbf-1c7dd64ba223" />
+    <Project Path="Connection360.Etl.Domain/Connection360.Etl.Domain.csproj" Id="928fe18e-5e50-496c-a1a5-b6bbb3828349" />
+    <Project Path="Connection360.Etl.Infrastructure/Connection360.Etl.Infrastructure.csproj" Id="9a7ae85b-a551-46f3-ad20-ebccd81a22f9" />
+    <Project Path="Connection360.Etl.Orchestrator/Connection360.Etl.Orchestrator.csproj" Id="17413b14-5040-4c4d-a305-42fb838588ab" />
+  </Folder>
+  <Folder Name="/Notifications/">
+    <Project Path="Connection360Notification.Api/Connection360Notification.Api.csproj" Id="de037868-2d58-4b6d-a20b-dc856c699028" />
+    <Project Path="Connection360Notification.Application/Connection360Notification.Application.csproj" Id="ae72951d-36ab-43d4-b38c-b293b5283ae9" />
+    <Project Path="Connection360Notification.Domain/Connection360Notification.Domain.csproj" Id="4673e52c-3638-43b1-8b44-a7e95c4d061a" />
+    <Project Path="Connection360Notification.Infrastructure/Connection360Notification.Infrastructure.csproj" Id="86f79de8-b219-4378-9f7f-7cd683e4923f" />
+  </Folder>
+  <Folder Name="/Observability/">
+    <Project Path="Connection360.Observability.Application/Connection360.Observability.Application.csproj" />
+    <Project Path="Connection360.Observability.AspNetCore/Connection360.Observability.AspNetCore.csproj" />
+    <Project Path="Connection360.Observability.Domain/Connection360.Observability.Domain.csproj" />
+    <Project Path="Connection360.Observability.Infrastructure.Mongo/Connection360.Observability.Infrastructure.Mongo.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yml" />
+    <File Path="Documents/StartApis_Connection360.bat" />
+    <File Path="Documents/StopApis_Connection360.bat" />
+    <File Path="Documents/swaggerConnection360ApiCore.json" />
+    <File Path="Documents/swaggerConnection360ApiNotifications.json" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Connection360.Observability.Application.Test/Connection360.Observability.Application.Test.csproj" />
+    <Project Path="Connection360.Observability.AspNetCore.Test/Connection360.Observability.AspNetCore.Test.csproj" />
+    <Project Path="Connection360.Observability.Domain.Test/Connection360.Observability.Domain.Test.csproj" />
+    <Project Path="Connection360.Observability.Infrastructure.Mongo.Test/Connection360.Observability.Infrastructure.Mongo.Test.csproj" />
+    <Project Path="Connection360.Api.IntegrationTests/Connection360.Api.IntegrationTests.csproj" />
+    <Project Path="Connection360.Api.Tests/Connection360.Api.Tests.csproj" />
+    <Project Path="Connection360.ApiGateway.IntegrationTests/Connection360.ApiGateway.IntegrationTests.csproj" />
+    <Project Path="Connection360.ApiGateway.Tests/Connection360.ApiGateway.Tests.csproj" />
+    <Project Path="Connection360.Application.Tests/Connection360.Application.Tests.csproj" />
+    <Project Path="Connection360.Domain.Tests/Connection360.Domain.Tests.csproj" />
+    <Project Path="Connection360.Etl.App.IntegrationTests/Connection360.Etl.App.IntegrationTests.csproj" Id="6e055fde-9af0-434d-a4f0-21e8b5b41c43" />
+    <Project Path="Connection360.Etl.App.Test/Connection360.Etl.App.Test.csproj" Id="8916786e-c29f-47dc-94c9-2ea26ed0a4b5" />
+    <Project Path="Connection360.Etl.Application.Test/Connection360.Etl.Application.Test.csproj" Id="33c7bea0-6c3d-46a2-bebf-74004f811f3d" />
+    <Project Path="Connection360.Etl.Domain.Test/Connection360.Etl.Domain.Test.csproj" Id="4434c937-54e5-4a62-8246-68513d11b9d4" />
+    <Project Path="Connection360.Etl.Infrastructure.Test/Connection360.Etl.Infrastructure.Test.csproj" Id="13f56b6d-17e9-455f-b51c-fe10279ea505" />
+    <Project Path="Connection360.Etl.Orchestrator.IntegrationTests/Connection360.Etl.Orchestrator.IntegrationTests.csproj" Id="7d6e06c2-41aa-4f40-9fa8-f38977de9b0d" />
+    <Project Path="Connection360.Etl.Orchestrator.Test/Connection360.Etl.Orchestrator.Test.csproj" Id="6362a25e-dda9-4e29-944b-4d1b9f874727" />
+    <Project Path="Connection360.Infrastructure.Tests/Connection360.Infrastructure.Tests.csproj" />
+    <Project Path="Connection360Notification.Api.IntegrationTests/Connection360Notification.Api.IntegrationTests.csproj" Id="83fe249c-b18f-4679-9a7d-85171ff4da7e" />
+    <Project Path="Connection360Notification.Api.Test/Connection360Notification.Api.Test.csproj" Id="bf52942f-405f-485f-b51a-01e8e7e95f04" />
+    <Project Path="Connection360Notification.Domain.Test/Connection360Notification.Domain.Test.csproj" Id="daef4583-86cf-41fe-b8c6-f024bd42d447" />
+    <Project Path="Connection360Notification.Infrastructure.Test/Connection360Notification.Infrastructure.Test.csproj" Id="5101a3ff-aa7e-4c32-9c96-1fb39ca0f48f" />
+    <Project Path="TestProject1Connection360Notification.Application.Test/Connection360Notification.Application.Test.csproj" Id="4b0631b5-133d-4c20-ae39-6297f02b73ac" />
+  </Folder>
+  <Project Path="Connection360.Api/Connection360.Api.csproj" Id="07643ac8-533a-4a88-bd7f-10effe43e4aa" />
+  <Project Path="Connection360.ApiGateway/Connection360.ApiGateway.csproj" />
+  <Project Path="Connection360.Application/Connection360.Application.csproj" Id="396f0c4b-6ba6-4a77-9416-a43653e037d8" />
+  <Project Path="Connection360.Domain/Connection360.Domain.csproj" Id="113c6118-843d-4134-adc0-59d998ac7652" />
+  <Project Path="Connection360.Infrastructure/Connection360.Infrastructure.csproj" Id="dddf4e33-2e23-4b64-a9ea-a6c0ba93b4b5" />
+</Solution>
