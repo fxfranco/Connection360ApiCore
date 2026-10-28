@@ -1,0 +1,25 @@
+# Hallazgos de Gitleaks en el HISTORIAL de git (commits antiguos de Connection360.Api/appsettings.json).
+# Formato: <commit>:<archivo>:<regla>:<línea>  (el mismo "Fingerprint" que imprime Gitleaks en el log del pipeline).
+#
+# IMPORTANTE: este archivo solo silencia la alerta, NO elimina el secreto del historial.
+# Agregar estas líneas únicamente DESPUÉS de rotar las credenciales que estuvieron expuestas:
+#   - Jwt:Secret (aparece en estos commits en la línea 12 o 15)
+#   - Auth0Management:ClientSecret (commit 0b41991, línea 18)
+f0c39138690300776ecc9681bbb6a433493218c2:Connection360.Api/appsettings.json:generic-api-key:15
+0e39aa624c4b35b44724bc78fccc3e83d71fc7c1:Connection360.Api/appsettings.json:generic-api-key:15
+1fc6f9d573c576354a399d490f466e07c71102db:Connection360.Api/appsettings.json:generic-api-key:15
+1fc7573c13596677cce03483a16497c388e519f0:Connection360.Api/appsettings.json:generic-api-key:15
+d0e1e0303675eac29ede32594f6015a0215e5504:Connection360.Api/appsettings.json:generic-api-key:12
+0b419917511e57c4a6d479ca11e853fd99fead52:Connection360.Api/appsettings.json:generic-api-key:12
+0b419917511e57c4a6d479ca11e853fd99fead52:Connection360.Api/appsettings.json:generic-api-key:18
+a74bf6cc5953a4e802a64a2c001b99b7f42c4a03:Connection360.Api/appsettings.json:generic-api-key:12
+abc45b39abfee55449ee08103929bd1f3f4fb28e:Connection360.Api/appsettings.json:generic-api-key:12
+59aa2af23cb9ef4eadf09dae098b36d8ccd253f7:Connection360.Api/appsettings.json:generic-api-key:12
+e4056ebeff7083094b3fc2b626486ea7faad672b:Connection360.Api/appsettings.json:generic-api-key:12
+71709e7763e5b5191e7975d12074fe412cb15a42:Connection360.Api/appsettings.json:generic-api-key:12
+d0d2907b4c074153e8c25130b15e1adfb25d420f:Connection360.Api/appsettings.json:generic-api-key:12
+31c385480408d037022e26ea707fce38ed3be501:Connection360.Api/appsettings.json:generic-api-key:12
+9be18fb2efd5547c1b9140e80711990f09b7a398:Connection360.Api/appsettings.json:generic-api-key:12
+
+# Falso positivo: argumento de configuración de una prueba (no es una credencial). Commit que introdujo la línea.
+4221200d315fc84ca3cdde0ebb270c04ddbd94b9:Connection360.Etl.App.IntegrationTests/Hosting/ProgramTests.cs:generic-api-key:224

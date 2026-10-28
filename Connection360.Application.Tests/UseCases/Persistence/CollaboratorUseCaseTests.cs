@@ -1,0 +1,193 @@
+using Connection360.Application.UseCases.Persistence;
+using Connection360.Domain.Exceptions;
+using Connection360.Domain.Ports.Persistence;
+using FluentAssertions;
+using Moq;
+using Xunit;
+
+namespace Connection360.Application.Tests.UseCases.Persistence
+{
+    public class CollaboratorUseCaseTests
+    {
+        private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
+        private readonly Mock<ICollaboratorRepository> _collaboratorRepositoryMock = new();
+        private readonly Mock<ICustomerRepository> _customerRepositoryMock = new();
+        private readonly Mock<ICustomersOfCollaboratorsRepository> _customersOfCollaboratorsRepositoryMock = new();
+        private readonly CollaboratorUseCase _sut;
+
+        public CollaboratorUseCaseTests()
+        {
+            _unitOfWorkMock.Setup(u => u.GetRepository<ICollaboratorRepository>()).Returns(_collaboratorRepositoryMock.Object);
+            _unitOfWorkMock.Setup(u => u.GetRepository<ICustomerRepository>()).Returns(_customerRepositoryMock.Object);
+            _unitOfWorkMock.Setup(u => u.GetRepository<ICustomersOfCollaboratorsRepository>()).Returns(_customersOfCollaboratorsRepositoryMock.Object);
+
+            _sut = new CollaboratorUseCase(_unitOfWorkMock.Object);
+        }
+
+        [Fact]
+        public async Task CreateAsync_DebeIniciarYConfirmarLaTransaccionYRetornarId()
+        {
+            _collaboratorRepositoryMock.Setup(r => r.CrearAsync("COL-1", It.IsAny<CancellationToken>())).ReturnsAsync(15);
+
+            Int64 result = await _sut.CreateAsync("COL-1", CancellationToken.None);
+
+            result.Should().Be(15);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateAsync_SiRepositorioFalla_DebeHacerRollbackYPropagar()
+        {
+            _collaboratorRepositoryMock
+                .Setup(r => r.CrearAsync(It.IsAny<String>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException());
+
+            Func<Task> act = () => _sut.CreateAsync("COL-1", CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+            _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateAsync_ConIdentificacionYaExistente_LanzaDuplicateRecordExceptionSinCrearNiAbrirTransaccion()
+        {
+            _collaboratorRepositoryMock.Setup(r => r.GetCollaboratorByIdAsync("COL-1", It.IsAny<CancellationToken>())).ReturnsAsync(15L);
+
+            Func<Task> act = () => _sut.CreateAsync("COL-1", CancellationToken.None);
+
+            (await act.Should().ThrowAsync<DuplicateRecordException>()).Which.Message.Should().Contain("COL-1");
+            _collaboratorRepositoryMock.Verify(r => r.CrearAsync(It.IsAny<String>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateCustomerCollaboratorAsync_ConRelacionYaExistente_LanzaDuplicateRecordExceptionSinCrearNiAbrirTransaccion()
+        {
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("CUS-1", It.IsAny<CancellationToken>())).ReturnsAsync(10L);
+            _collaboratorRepositoryMock.Setup(r => r.GetCollaboratorByIdAsync("COL-1", It.IsAny<CancellationToken>())).ReturnsAsync(20L);
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.ExistsAsync(10, 20, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+            Func<Task> act = () => _sut.CreateCustomerCollaboratorAsync("CUS-1", "COL-1", CancellationToken.None);
+
+            var exception = (await act.Should().ThrowAsync<DuplicateRecordException>()).Which;
+            exception.Message.Should().Contain("COL-1").And.Contain("CUS-1");
+            _customersOfCollaboratorsRepositoryMock.Verify(r => r.CrearAsync(It.IsAny<Int64>(), It.IsAny<Int64>(), It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateCustomerCollaboratorAsync_ConRelacionNueva_ConsultaSiExisteAntesDeCrear()
+        {
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("CUS-1", It.IsAny<CancellationToken>())).ReturnsAsync(10L);
+            _collaboratorRepositoryMock.Setup(r => r.GetCollaboratorByIdAsync("COL-1", It.IsAny<CancellationToken>())).ReturnsAsync(20L);
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.ExistsAsync(10, 20, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.CrearAsync(10, 20, It.IsAny<CancellationToken>())).ReturnsAsync(99);
+
+            Int64 result = await _sut.CreateCustomerCollaboratorAsync("CUS-1", "COL-1", CancellationToken.None);
+
+            result.Should().Be(99);
+            _customersOfCollaboratorsRepositoryMock.Verify(r => r.ExistsAsync(10, 20, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateCustomerCollaboratorAsync_ConClienteInexistente_LanzaArgumentException()
+        {
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("CUS-1", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
+
+            Func<Task> act = () => _sut.CreateCustomerCollaboratorAsync("CUS-1", "COL-1", CancellationToken.None);
+
+            (await act.Should().ThrowAsync<ArgumentException>()).Which.ParamName.Should().Be("customerId");
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateCustomerCollaboratorAsync_ConColaboradorInexistente_LanzaArgumentException()
+        {
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("CUS-1", It.IsAny<CancellationToken>())).ReturnsAsync(10L);
+            _collaboratorRepositoryMock.Setup(r => r.GetCollaboratorByIdAsync("COL-1", It.IsAny<CancellationToken>())).ReturnsAsync((Int64?)null);
+
+            Func<Task> act = () => _sut.CreateCustomerCollaboratorAsync("CUS-1", "COL-1", CancellationToken.None);
+
+            (await act.Should().ThrowAsync<ArgumentException>()).Which.ParamName.Should().Be("collaboratorId");
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateCustomerCollaboratorAsync_ConDatosValidos_CreaLaRelacionYConfirmaLaTransaccion()
+        {
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("CUS-1", It.IsAny<CancellationToken>())).ReturnsAsync(10L);
+            _collaboratorRepositoryMock.Setup(r => r.GetCollaboratorByIdAsync("COL-1", It.IsAny<CancellationToken>())).ReturnsAsync(20L);
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.CrearAsync(10, 20, It.IsAny<CancellationToken>())).ReturnsAsync(99);
+
+            Int64 result = await _sut.CreateCustomerCollaboratorAsync("CUS-1", "COL-1", CancellationToken.None);
+
+            result.Should().Be(99);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateCustomerCollaboratorAsync_SiRepositorioFalla_HaceRollbackYPropaga()
+        {
+            _customerRepositoryMock.Setup(r => r.GetCustomerByIdAsync("CUS-1", It.IsAny<CancellationToken>())).ReturnsAsync(10L);
+            _collaboratorRepositoryMock.Setup(r => r.GetCollaboratorByIdAsync("COL-1", It.IsAny<CancellationToken>())).ReturnsAsync(20L);
+            _customersOfCollaboratorsRepositoryMock
+                .Setup(r => r.CrearAsync(It.IsAny<Int64>(), It.IsAny<Int64>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException());
+
+            Func<Task> act = () => _sut.CreateCustomerCollaboratorAsync("CUS-1", "COL-1", CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+            _unitOfWorkMock.Verify(u => u.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ListAsync_DelegaAlRepositorioYRetornaLosColaboradores_SinAbrirTransaccion()
+        {
+            var collaborators = new List<Connection360.Domain.Dtos.CollaboratorDtoResult>
+            {
+                new() { Identificacion = "COL-1" },
+                new() { Identificacion = "COL-2" }
+            };
+            _collaboratorRepositoryMock.Setup(r => r.ListAsync(It.IsAny<CancellationToken>())).ReturnsAsync(collaborators);
+
+            List<Connection360.Domain.Dtos.CollaboratorDtoResult> result = await _sut.ListAsync(CancellationToken.None);
+
+            result.Should().BeSameAs(collaborators);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ListCustomerCollaboratorAsync_DelegaAlRepositorioDeRelacionesYRetornaElListado_SinAbrirTransaccion()
+        {
+            var relations = new List<Connection360.Domain.Dtos.CustomerCollaboratorRelationDtoResult>
+            {
+                new() { IdentificacionCustomer = "CUS-1", IdentificacionCollaborator = "COL-1" }
+            };
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.ListAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(relations);
+
+            List<Connection360.Domain.Dtos.CustomerCollaboratorRelationDtoResult> result = await _sut.ListCustomerCollaboratorAsync(CancellationToken.None);
+
+            result.Should().BeSameAs(relations);
+            _unitOfWorkMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ListCustomerCollaboratorAsync_SiElRepositorioFalla_PropagaLaExcepcion()
+        {
+            _customersOfCollaboratorsRepositoryMock.Setup(r => r.ListAllAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException());
+
+            Func<Task> act = () => _sut.ListCustomerCollaboratorAsync(CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+        }
+    }
+}

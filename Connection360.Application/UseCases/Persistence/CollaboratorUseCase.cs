@@ -1,0 +1,122 @@
+﻿using Connection360.Application.Ports.Persistence;
+using Connection360.Domain.Dtos;
+using Connection360.Domain.Exceptions;
+using Connection360.Domain.Ports.Persistence;
+
+namespace Connection360.Application.UseCases.Persistence
+{
+    public class CollaboratorUseCase : ICollaboratorUseCase
+    {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public CollaboratorUseCase(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        public async Task<Int64> CreateAsync(String collaboratorId, CancellationToken cancellationToken = default)
+        {
+            // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
+            ICollaboratorRepository collaboratorRepository = _unitOfWork.GetRepository<ICollaboratorRepository>();
+
+            // 1. No se permiten colaboradores con la misma identificación
+            if (await collaboratorRepository.GetCollaboratorByIdAsync(collaboratorId, cancellationToken) != null)
+            {
+                throw new DuplicateRecordException($"Ya existe un colaborador con la identificación '{collaboratorId}'.");
+            }
+
+            try
+            {
+                // 2. Uso explícito de Unit of Work para garantizar la atomicidad transaccional
+                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+                Int64 idResult = await collaboratorRepository.CrearAsync(collaboratorId, cancellationToken);
+
+                await _unitOfWork.CommitAsync(cancellationToken);
+
+                return idResult;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
+
+        public async Task<Int64> CreateCustomerCollaboratorAsync(String customerId, String collaboratorId, CancellationToken cancellationToken = default)
+        {
+            Int64 customerIdDb = await this.GetCustomerId(customerId, cancellationToken);
+            if (customerIdDb == 0)
+            {
+                throw new ArgumentException("No existe un cliente identificado.", nameof(customerId));
+            }
+            Int64 collaboratorIdDb = await this.GetCollaboratorId(collaboratorId, cancellationToken);
+            if (collaboratorIdDb == 0)
+            {
+                throw new ArgumentException("No existe un colaborador identificado.", nameof(collaboratorId));
+            }
+
+            ICustomersOfCollaboratorsRepository customersOfCollaboratorsRepository = _unitOfWork.GetRepository<ICustomersOfCollaboratorsRepository>();
+
+            // No se permite repetir la relación cliente - colaborador
+            if (await customersOfCollaboratorsRepository.ExistsAsync(customerIdDb, collaboratorIdDb, cancellationToken))
+            {
+                throw new DuplicateRecordException($"El colaborador '{collaboratorId}' ya está asociado al cliente '{customerId}'.");
+            }
+
+            try
+            {
+                // 2. Uso explícito de Unit of Work para garantizar la atomicidad transaccional
+                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+                Int64 idResult = await customersOfCollaboratorsRepository.CrearAsync(customerIdDb, collaboratorIdDb, cancellationToken);
+
+                await _unitOfWork.CommitAsync(cancellationToken);
+
+                return idResult;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
+
+        public async Task<List<CollaboratorDtoResult>> ListAsync(CancellationToken cancellationToken = default)
+        {
+            // Consulta de solo lectura: no requiere transacción.
+            ICollaboratorRepository collaboratorRepository = _unitOfWork.GetRepository<ICollaboratorRepository>();
+
+            return await collaboratorRepository.ListAsync(cancellationToken);
+        }
+
+        public async Task<List<CustomerCollaboratorRelationDtoResult>> ListCustomerCollaboratorAsync(CancellationToken cancellationToken = default)
+        {
+            // Consulta de solo lectura: no requiere transacción.
+            ICustomersOfCollaboratorsRepository customersOfCollaboratorsRepository = _unitOfWork.GetRepository<ICustomersOfCollaboratorsRepository>();
+
+            return await customersOfCollaboratorsRepository.ListAllAsync(cancellationToken);
+        }
+
+        private async Task<Int64> GetCustomerId(String clientId, CancellationToken cancellationToken = default)
+        {
+            // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
+            ICustomerRepository customerRepository = _unitOfWork.GetRepository<ICustomerRepository>();
+
+            Int64? idResult = await customerRepository.GetCustomerByIdAsync(clientId, cancellationToken);
+
+            return (Int64)(idResult == null ? 0 : idResult);
+        }
+
+        private async Task<Int64> GetCollaboratorId(String collaboratorId, CancellationToken cancellationToken = default)
+        {
+            // Se resuelve el repositorio de productos SOLAMENTE si se invoca esta línea
+            ICollaboratorRepository collaboratorRepository = _unitOfWork.GetRepository<ICollaboratorRepository>();
+
+            Int64? idResult = await collaboratorRepository.GetCollaboratorByIdAsync(collaboratorId, cancellationToken);
+
+            return (Int64)(idResult == null ? 0 : idResult);
+        }
+
+    }
+}
