@@ -1,0 +1,122 @@
+# =====================================================================================
+# CD Release - construir y publicar imágenes Docker
+#   - Automático: SOLO cuando un Pull Request ya aprobado se mergea (push) en la rama "release".
+#     El PR fue validado antes por ci-release.yml (fases 1-6).
+#   - Manual: workflow_dispatch para reconstruir/publicar desde una rama (por defecto "release").
+#   - Cada fase exige que la anterior haya pasado.
+#
+# Secretos del repositorio (Settings > Secrets and variables > Actions):
+#   DOCKERHUB_USERNAME (namespace de Docker Hub, p. ej. fxfranco13)
+#   DOCKERHUB_TOKEN    (Access Token de Docker Hub con permiso Read & Write)
+# =====================================================================================
+name: Connection360 CD Release (Docker Hub)
+
+on:
+  push:
+    branches: [release]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Rama a construir y publicar'
+        required: true
+        type: string
+        default: 'release'
+      push_latest:
+        description: 'Publicar además el tag "latest"'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cd-release
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------------
+  # 1. CONSTRUIR IMÁGENES DOCKER (con deploy/build-images.sh; versión = <Version> de cada .csproj)
+  # ---------------------------------------------------------------------------------
+  docker-build:
+    name: "1. Construir imágenes Docker"
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ${{ secrets.DOCKERHUB_USERNAME }}
+    steps:
+      - name: Verificar DOCKERHUB_USERNAME
+        run: |
+          if [ -z "$REGISTRY" ]; then
+            echo "::error::El secreto DOCKERHUB_USERNAME no está configurado."
+            exit 1
+          fi
+
+      - name: Clonar el repositorio
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.branch }}   # vacío en un push: se usa la ref del merge
+
+      - name: Construir las 5 imágenes
+        run: bash deploy/build-images.sh --registry "$REGISTRY" --platform linux/amd64 --no-latest
+
+      - name: Empaquetar las imágenes para la fase de publicación
+        run: |
+          docker images --format '{{.Repository}}:{{.Tag}}' | grep "^${REGISTRY}/connection360" | sort -u > images.txt
+          echo "Imágenes construidas:"; cat images.txt
+          [ "$(wc -l < images.txt)" -eq 5 ] || { echo "::error::Se esperaban 5 imágenes."; exit 1; }
+          docker save $(cat images.txt) | gzip > images.tar.gz
+          ls -lh images.tar.gz
+
+      - name: Publicar imágenes como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: |
+            images.tar.gz
+            images.txt
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------------
+  # 2. SUBIR IMÁGENES A DOCKER HUB
+  # ---------------------------------------------------------------------------------
+  docker-push:
+    name: "2. Publicar en Docker Hub"
+    needs: [docker-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar imágenes
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images
+
+      - name: Cargar imágenes
+        run: gunzip -c images.tar.gz | docker load
+
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Etiquetar y publicar
+        env:
+          # En un merge (push) se publica "latest"; en una ejecución manual depende del input.
+          PUSH_LATEST: ${{ github.event_name == 'push' || inputs.push_latest }}
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          for img in $(cat images.txt); do
+            repo="${img%:*}"
+            docker tag "$img" "$repo:sha-$SHORT_SHA"
+            if [ "$PUSH_LATEST" = "true" ]; then docker tag "$img" "$repo:latest"; fi
+          done
+
+          for repo in $(sed 's/:.*$//' images.txt | sort -u); do
+            echo "=== Publicando $repo"
+            docker push --all-tags "$repo"
+          done
+
+          {
+            echo "### Imágenes publicadas en Docker Hub"
+            echo
+            docker images --format '- `{{.Repository}}:{{.Tag}}`' | grep "connection360" | sort -u
+          } >> "$GITHUB_STEP_SUMMARY"
