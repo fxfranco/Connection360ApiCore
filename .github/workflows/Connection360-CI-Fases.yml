@@ -373,7 +373,7 @@ jobs:
           Write-Host "Reportes de cobertura a importar: $($reports.Count)"
           $reports | ForEach-Object { Write-Host $_.FullName }
 
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"fxfranco_Connection360ApiCore" /o:"fxfranco" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" /d:sonar.coverage.exclusions="**Test*/**, **/Migrations/**, **/*.json"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"fxfranco_Connection360ApiCore" /o:"fxfranco" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" /d:sonar.coverage.exclusions="**Test*/**, **/Migrations/**, **/*.json" /d:sonar.exclusions="**/.github/**"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           dotnet build $env:SOLUTION --configuration Debug /p:DebugSymbols=true /p:DebugType=portable
