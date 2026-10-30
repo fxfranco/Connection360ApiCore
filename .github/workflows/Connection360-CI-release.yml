@@ -22,7 +22,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
   group: ci-release-${{ github.event.pull_request.number || inputs.branch || github.ref }}
@@ -32,6 +31,9 @@ jobs:
   # Fases 1-6 (+ resultado de las fases): estrictas, cada una exige que la anterior haya pasado.
   ci:
     name: CI
+    permissions:
+      contents: read
+      pull-requests: read    
     uses: fxfranco/Connection360ApiCore/.github/workflows/Connection360-CI-Fases.yml@main
     with:
       ref: ${{ inputs.branch }}

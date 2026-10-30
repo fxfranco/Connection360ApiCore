@@ -66,7 +66,7 @@ jobs:
         run: |
           # CAMBIO CLAVE: el patrón ahora busca coverage.opencover.xml en CUALQUIER subcarpeta de TestResults
           # (cada proyecto de pruebas genera ./TestResults/<guid>/coverage.opencover.xml).
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"fxfranco_Connection360ApiCore" /o:"fxfranco" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" /d:sonar.coverage.exclusions="**Test*/**, **/Migrations/**, **/*.json"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"fxfranco_Connection360ApiCore" /o:"fxfranco" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" /d:sonar.coverage.exclusions="**Test*/**, **/Migrations/**, **/*.json"
 
           dotnet build Connection360ApiCore.slnx --configuration Debug /p:DebugSymbols=true /p:DebugType=portable
 
@@ -79,10 +79,10 @@ jobs:
           Write-Host "Reportes de cobertura encontrados: $($reports.Count)"
           $reports | ForEach-Object { Write-Host $_.FullName }
 
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
           
       - name: SonarQube Quality Gate check
-        uses: SonarSource/sonarqube-quality-gate-action@v1
+        uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

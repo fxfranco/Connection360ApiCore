@@ -19,7 +19,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
   group: ci-develop-${{ github.event.pull_request.number || inputs.branch || github.ref }}
@@ -28,6 +27,9 @@ concurrency:
 jobs:
   ci:
     name: CI
+    permissions:
+      contents: read
+      pull-requests: read    
     uses: fxfranco/Connection360ApiCore/.github/workflows/Connection360-CI-Fases.yml@main
     with:
       ref: ${{ inputs.branch }}
