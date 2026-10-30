@@ -36,7 +36,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 env:
   SOLUTION: Connection360ApiCore.slnx
@@ -51,6 +50,9 @@ jobs:
   secretos:
     name: "1. Secret Detection (Gitleaks)"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read    
     steps:
       - name: Clonar el repositorio (historial completo)
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -59,7 +61,7 @@ jobs:
           fetch-depth: 0
 
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Solo es obligatoria si el repositorio pertenece a una ORGANIZACIÓN de GitHub.
@@ -418,7 +420,7 @@ jobs:
           fi
 
       - name: SonarQube Quality Gate check
-        uses: SonarSource/sonarqube-quality-gate-action@v1
+        uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
