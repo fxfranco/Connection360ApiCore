@@ -72,7 +72,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
             message.Recipient.Should().Be("573113232323");
             message.Content.Should().Be(
                 "Conexión360\n"
-                + "Tu envío internacional con número de guía HBL-123 ha actualizado su estado a En puerto. Consulta los detalles y seguimiento en https://conexion360.space\n"
+                + "Tu envío internacional con número de guía HBL-123 ha actualizado su estado a En puerto. Consulta los detalles y seguimiento en nuestro sitio web.\n"
                 + "“Visibilidad total. Decisiones inteligentes”");
         }
 
@@ -85,7 +85,7 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
 
             _enviados.Single().Message.Content.Should().Be(
                 "Conexión360\n"
-                + "Tu envío internacional con número de guía HBL-123 ha actualizado su información. Consulta los detalles y seguimiento en https://conexion360.space\n"
+                + "Tu envío internacional con número de guía HBL-123 ha actualizado su información. Consulta los detalles y seguimiento en nuestro sitio web.\n"
                 + "“Visibilidad total. Decisiones inteligentes”");
         }
 
@@ -98,18 +98,8 @@ namespace Connection360Notification.Infrastructure.Tests.Adapters
 
             _enviados.Single().Message.Content.Should().Be(
                 "Conexión360\n"
-                + "Tu envío internacional con número de guía HBL-123 se le ha registrado un comentario. Consulta los detalles y seguimiento en https://conexion360.space\n"
+                + "Tu envío internacional con número de guía HBL-123 se le ha registrado un comentario. Consulta los detalles y seguimiento en nuestro sitio web.\n"
                 + "“Visibilidad total. Decisiones inteligentes”");
-        }
-
-        [Fact]
-        public async Task SendAsync_UsaLaUrlDeLaConfiguracionDelCanal()
-        {
-            _context.Set(Usuario());
-
-            await Crear(Configuracion(s => s.Conexion360Url = "https://otra.url")).SendAsync(Notificacion(), CancellationToken.None);
-
-            _enviados.Single().Message.Content.Should().Contain("seguimiento en https://otra.url").And.NotContain("conexion360.space");
         }
 
         [Fact]

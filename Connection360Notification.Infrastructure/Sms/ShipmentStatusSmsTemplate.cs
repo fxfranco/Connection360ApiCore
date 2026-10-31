@@ -25,10 +25,10 @@ namespace Connection360Notification.Infrastructure.Sms
         /// <summary>Texto cuando falta el número de guía o el nuevo estado.</summary>
         public const String EmptyValue = "-";
 
-        public static String Render(NotificationType eventType, String? documentNumber, String? newStatus, String? conexion360Url)
+        public static String Render(NotificationType eventType, String? documentNumber, String? newStatus)
         {
             String guide = Clean(documentNumber);
-            String link = String.IsNullOrWhiteSpace(conexion360Url) ? Brand : Clean(conexion360Url);
+            String link = "nuestro sitio web.";
 
             String body = eventType switch
             {
