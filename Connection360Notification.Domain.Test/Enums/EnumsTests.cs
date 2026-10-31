@@ -20,13 +20,15 @@ namespace Connection360Notification.Domain.Tests.Enums
             ((Int32)NotificationType.ChangeState).Should().Be(0);
             ((Int32)NotificationType.Comment).Should().Be(1);
             ((Int32)NotificationType.OtherInfo).Should().Be(2);
-            Enum.GetValues<NotificationType>().Should().HaveCount(3);
+            ((Int32)NotificationType.Alert).Should().Be(3);
+            Enum.GetValues<NotificationType>().Should().HaveCount(4);
         }
 
         [Theory]
         [InlineData("ChangeState", NotificationType.ChangeState)]
         [InlineData("Comment", NotificationType.Comment)]
         [InlineData("OtherInfo", NotificationType.OtherInfo)]
+        [InlineData("Alert", NotificationType.Alert)]
         public void NotificationType_SeParseaPorNombre(String nombre, NotificationType esperado)
         {
             Enum.Parse<NotificationType>(nombre).Should().Be(esperado);

@@ -22,6 +22,13 @@
         /// </summary>
         Task<BasicUserData?> GetByDocumentAsync(String document, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Busca todos los usuarios cuyo <see cref="BasicUserData.RoleName"/> es igual a <paramref name="roleName"/> (sin
+        /// distinguir mayúsculas de minúsculas ni espacios en los extremos). Devuelve una lista vacía si el rol está vacío o si
+        /// nadie lo tiene; nunca devuelve <c>null</c> ni lanza por "no encontrado".
+        /// </summary>
+        Task<IReadOnlyList<BasicUserData>> GetByRoleAsync(String roleName, CancellationToken cancellationToken);
+
         /// <summary>Cuenta los registros marcados con <paramref name="syncId"/> (los que ya se guardaron en esa sincronización).</summary>
         Task<Int64> CountBySyncAsync(Guid syncId, CancellationToken cancellationToken);
 

@@ -283,6 +283,84 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
                 Times.Never);
         }
 
+        // ---------------------------------------------------------------- GetByRoleAsync
+
+        [Fact]
+        public async Task GetByRoleAsync_FiltraPorElCampoRoleNameSinDistinguirMayusculas()
+        {
+            ConfigurarBusqueda();
+
+            await _sut.GetByRoleAsync("ADMIN", CancellationToken.None);
+
+            BsonValue filtro = MongoRender.Filter(_filtroDeBusqueda!)["RoleName"];
+            filtro.IsBsonRegularExpression.Should().BeTrue();
+            filtro.AsBsonRegularExpression.Pattern.Should().Be("^ADMIN$");
+            filtro.AsBsonRegularExpression.Options.Should().Be("i");
+        }
+
+        [Fact]
+        public async Task GetByRoleAsync_RecortaLosEspaciosYEscapaElNombreDelRol()
+        {
+            ConfigurarBusqueda();
+
+            await _sut.GetByRoleAsync("  AD.MIN  ", CancellationToken.None);
+
+            MongoRender.Filter(_filtroDeBusqueda!)["RoleName"].AsBsonRegularExpression.Pattern.Should().Be(@"^AD\.MIN$");
+        }
+
+        [Fact]
+        public async Task GetByRoleAsync_DevuelveTodosLosUsuariosDelRolConSusDatos()
+        {
+            ConfigurarBusqueda(
+                new BasicUserDataDocument { Id = "auth0|1", Document = "900", FullName = "Ana Admin", Phone = "3001112233", Email = "ana@correo.com", RoleName = "ADMIN" },
+                new BasicUserDataDocument { Id = "auth0|2", Document = "901", FullName = "Luis Admin", Phone = "3004445566", Email = "luis@correo.com", RoleName = "admin" });
+
+            IReadOnlyList<BasicUserData> usuarios = await _sut.GetByRoleAsync("ADMIN", CancellationToken.None);
+
+            usuarios.Should().Equal(
+                new BasicUserData("auth0|1", "900", "Ana Admin", "3001112233", "ana@correo.com", "ADMIN"),
+                new BasicUserData("auth0|2", "901", "Luis Admin", "3004445566", "luis@correo.com", "admin"));
+        }
+
+        [Fact]
+        public async Task GetByRoleAsync_SinUsuariosConEseRol_DevuelveListaVacia()
+        {
+            ConfigurarBusqueda();
+
+            IReadOnlyList<BasicUserData> usuarios = await _sut.GetByRoleAsync("ADMIN", CancellationToken.None);
+
+            usuarios.Should().NotBeNull().And.BeEmpty();
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task GetByRoleAsync_ConRolVacio_DevuelveListaVaciaSinConsultarMongo(String? rol)
+        {
+            IReadOnlyList<BasicUserData> usuarios = await _sut.GetByRoleAsync(rol!, CancellationToken.None);
+
+            usuarios.Should().BeEmpty();
+            _collectionMock.Verify(
+                c => c.FindAsync(It.IsAny<FilterDefinition<BasicUserDataDocument>>(), It.IsAny<FindOptions<BasicUserDataDocument, BasicUserDataDocument>>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task GetByRoleAsync_ErrorDeMongo_SePropaga()
+        {
+            _collectionMock
+                .Setup(c => c.FindAsync(
+                    It.IsAny<FilterDefinition<BasicUserDataDocument>>(),
+                    It.IsAny<FindOptions<BasicUserDataDocument, BasicUserDataDocument>>(),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("mongo caído"));
+
+            Func<Task> act = () => _sut.GetByRoleAsync("ADMIN", CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("mongo caído");
+        }
+
         [Fact]
         public async Task GetByDocumentAsync_ErrorDeMongo_SePropaga()
         {

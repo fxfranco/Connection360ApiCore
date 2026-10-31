@@ -22,6 +22,10 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
     /// TEXTO: número de guía = <see cref="NotificationMessage.DocumentNumber"/>, nuevo estado =
     /// <see cref="NotificationMessage.NuevoEstado"/> y URL = <see cref="BrevoSmsSettings.Conexion360Url"/>.
     ///
+    /// ALERTAS (<see cref="NotificationType.Alert"/>): el caso de uso deja en el contexto a cada administrador (rol ADMIN) y el SMS
+    /// va a su celular con el texto "Alerta en el proceso de sincronización de la ETL: {mensaje}" (sin enlace). Si no hay
+    /// administradores no hay a quién escribir y solo se registra la advertencia (la alerta sale por el correo por defecto).
+    ///
     /// Si la configuración está incompleta o Brevo falla, lanza la excepción: el despachador la aísla, así que el resto
     /// de los canales (p. ej. la aplicación) se entrega igual.
     /// </summary>
@@ -78,7 +82,7 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
                 return;
             }
 
-            String content = ShipmentStatusSmsTemplate.Render(notification.EventType, notification.DocumentNumber, notification.NuevoEstado);
+            String content = ShipmentStatusSmsTemplate.Render(notification.EventType, notification.DocumentNumber, notification.NuevoEstado, notification.Message);
 
             String? messageId = await _smsSender.SendAsync(new SmsMessage(phone, content), cancellationToken);
 

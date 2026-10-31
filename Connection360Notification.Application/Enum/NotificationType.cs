@@ -15,5 +15,8 @@
 
         /// <summary>La notificación corresponde a un cambio en la información general del envío (se agrega al final para no alterar los valores numéricos existentes).</summary>
         OtherInfo,
+
+        /// <summary>La notificación es una alerta del sistema, sin cliente destinatario (se agrega al final para no alterar los valores numéricos existentes).</summary>
+        Alert,
     }
 }

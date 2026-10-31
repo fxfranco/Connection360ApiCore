@@ -27,6 +27,10 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
     /// <see cref="NotificationMessage.FechaComentario"/>); según <see cref="NotificationMessage.EventType"/> la plantilla muestra
     /// el cambio de estado, el comentario o la actualización de información general.
     ///
+    /// ALERTAS (<see cref="NotificationType.Alert"/>): no tienen cliente; el caso de uso deja en el contexto a cada administrador
+    /// (rol ADMIN) y se envía un correo a su Email. Si no hay administradores el contexto queda vacío y se usa
+    /// <see cref="SmtpSettings.RecipientEmail"/>; la plantilla muestra el mensaje de la alerta (ver <see cref="ShipmentStatusEmailTemplate"/>).
+    ///
     /// Si la configuración está incompleta o el servidor falla, lanza la excepción: el despachador la aísla, así que
     /// el resto de los canales (p. ej. la aplicación) se entrega igual.
     /// </summary>
@@ -73,7 +77,8 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
                 Comment: notification.Comentario,
                 CommentDate: notification.FechaComentario,
                 UpdatedAt: notification.MessageDate,
-                Conexion360Url: _settings.Conexion360Url));
+                Conexion360Url: _settings.Conexion360Url,
+                Message: notification.Message));
 
             var email = new EmailMessage(
                 To: clientEmail ?? _settings.RecipientEmail,

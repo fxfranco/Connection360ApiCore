@@ -22,7 +22,14 @@ namespace Connection360.Etl.Domain.Enums
         /// días libres/demora, etc.; ver ApplicationDataSheetChange.OtherInfoChanged). Solo genera un
         /// mensaje en outbox_messages (no en log_status_tracking).
         /// </summary>
-        OtherInfo
+        OtherInfo,
+
+        /// <summary>
+        /// Alerta del propio proceso ETL (no de un documento): por ejemplo, un error que impidió consultar las APIs
+        /// externas. No pertenece a ningún cliente (ClientId vacío) y se notifica por todos los canales a los
+        /// administradores; solo genera un mensaje en outbox_messages.
+        /// </summary>
+        Alert
     }
 
     /// <summary>Conversión explícita entre <see cref="EtlChangeEventType"/> y el valor persistido en event_type/payload.EventType.</summary>
@@ -38,6 +45,7 @@ namespace Connection360.Etl.Domain.Enums
             EtlChangeEventType.ChangeState => "ChangeState",
             EtlChangeEventType.Comment => "Comment",
             EtlChangeEventType.OtherInfo => "OtherInfo",
+            EtlChangeEventType.Alert => "Alert",
             _ => throw new ArgumentOutOfRangeException(nameof(eventType), eventType, "EtlChangeEventType sin valor de base de datos asignado.")
         };
     }

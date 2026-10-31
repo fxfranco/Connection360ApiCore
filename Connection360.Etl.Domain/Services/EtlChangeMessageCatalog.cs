@@ -50,5 +50,16 @@ namespace Connection360.Etl.Domain.Services
                 Message: "Se registró un cambio en la información general de tu envío"
             );
         }
+
+        public (String Title, String Message) GetEtlAlertMessage(String errorCapturado)
+        {
+            var error = (errorCapturado ?? String.Empty).Trim();
+
+            // El título es fijo; el mensaje incluye el error (que el llamador ya sanitizó).
+            return (
+                Title: "Alerta en proceso de ETL",
+                Message: $"Se generó un error '{error}' en el proceso de ETL"
+            );
+        }
     }
 }
