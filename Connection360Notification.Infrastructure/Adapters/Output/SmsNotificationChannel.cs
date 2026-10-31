@@ -78,8 +78,7 @@ namespace Connection360Notification.Infrastructure.Adapters.Output
                 return;
             }
 
-            String content = ShipmentStatusSmsTemplate.Render(
-                notification.EventType, notification.DocumentNumber, notification.NuevoEstado, _settings.Conexion360Url);
+            String content = ShipmentStatusSmsTemplate.Render(notification.EventType, notification.DocumentNumber, notification.NuevoEstado);
 
             String? messageId = await _smsSender.SendAsync(new SmsMessage(phone, content), cancellationToken);
 
