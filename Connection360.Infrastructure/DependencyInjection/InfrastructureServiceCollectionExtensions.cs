@@ -2,12 +2,14 @@
 using Connection360.Domain.Interfaces;
 using Connection360.Domain.Ports.Persistence;
 using Connection360.Infrastructure.Adapters.Output;
+using Connection360.Infrastructure.Caching;
 using Connection360.Infrastructure.ExternalApi;
 using Connection360.Infrastructure.Messaging;
 using Connection360.Infrastructure.Persistence;
 using Connection360.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Connection360.Infrastructure.DependencyInjection
 {
@@ -55,7 +57,7 @@ namespace Connection360.Infrastructure.DependencyInjection
                     });
                 }
             }
-            services.AddScoped<IExternalApiOpenStreetMap, ExternalApiOpenStreetMap>();
+            AddCoordinatesCache(services, configuration);
 
             // Auth0 UserManagements
             services.AddScoped<IAuth0UserService, Auth0UserService>();
@@ -87,6 +89,33 @@ namespace Connection360.Infrastructure.DependencyInjection
             services.AddHostedService<Auth0UserSyncWorker>();
 
             return services;
+        }
+
+        /// <summary>
+        /// Registra el adaptador de OpenStreetMap. Si la caché está habilitada (sección "CoordinatesCache",
+        /// habilitada por defecto) lo envuelve con <see cref="CachedExternalApiOpenStreetMap"/>: el caso de uso
+        /// sigue dependiendo solo del puerto <see cref="IExternalApiOpenStreetMap"/>. La caché es singleton
+        /// (se comparte entre peticiones) y el adaptador real sigue siendo scoped.
+        /// </summary>
+        private static void AddCoordinatesCache(IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddScoped<ExternalApiOpenStreetMap>();
+
+            IConfigurationSection cacheSection = configuration.GetSection(CoordinatesCacheSettings.SectionName);
+            Boolean cacheEnabled = cacheSection.GetValue<Boolean?>(nameof(CoordinatesCacheSettings.Enabled)) ?? true;
+
+            if (!cacheEnabled)
+            {
+                services.AddScoped<IExternalApiOpenStreetMap>(sp => sp.GetRequiredService<ExternalApiOpenStreetMap>());
+                return;
+            }
+
+            services.AddSingleton<IValidateOptions<CoordinatesCacheSettings>, CoordinatesCacheSettingsValidator>();
+            services.AddOptions<CoordinatesCacheSettings>().Bind(cacheSection).ValidateOnStart();
+            services.AddSingleton<ICoordinatesCache, MemoryCoordinatesCache>();
+            services.AddScoped<IExternalApiOpenStreetMap>(sp => new CachedExternalApiOpenStreetMap(
+                sp.GetRequiredService<ExternalApiOpenStreetMap>(),
+                sp.GetRequiredService<ICoordinatesCache>()));
         }
     }
 }

@@ -70,7 +70,7 @@ namespace Connection360.Infrastructure.Tests.DependencyInjection
             sp.GetRequiredService<ILogStatusTrackingViewRepository>().Should().BeOfType<LogStatusTrackingViewRepository>();
             sp.GetRequiredService<IUnitOfWork>().Should().BeOfType<UnitOfWork>();
             sp.GetRequiredService<IAuth0UserService>().Should().BeOfType<Auth0UserService>();
-            sp.GetRequiredService<IExternalApiOpenStreetMap>().Should().BeOfType<ExternalApiOpenStreetMap>();
+            sp.GetRequiredService<IExternalApiOpenStreetMap>().Should().BeOfType<CachedExternalApiOpenStreetMap>();
         }
 
         [Fact]
