@@ -18,7 +18,7 @@ namespace Connection360.Infrastructure.Messaging
     /// Sincroniza los usuarios de Auth0 hacia Connection360Notification.Api. Se ejecuta UNA vez al arrancar la
     /// aplicación y luego de forma periódica (<see cref="Auth0UserSyncSettings.PollingIntervalMinutes"/>): lista
     /// los usuarios con <see cref="IAuth0UserService.GetBasicUsersAsync"/> (solo id, documento, nombre
-    /// completo, teléfono y correo) y los publica en el tópico <see cref="Auth0UserSyncSettings.Topic"/> de Kafka, en lotes.
+    /// completo, teléfono, correo y nombre del rol) y los publica en el tópico <see cref="Auth0UserSyncSettings.Topic"/> de Kafka, en lotes.
     /// El consumidor de Notification los guarda en la colección <c>basicUserData</c> sin duplicados.
     /// Está modelado sobre <see cref="OutboxPublisherWorker"/>.
     /// </summary>

@@ -47,6 +47,7 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
                         FullName = user.FullName,
                         Phone = user.Phone,
                         Email = user.Email,
+                        RoleName = user.RoleName,
                         SyncId = sync,
                         UpdatedAtUtc = now
                     })
@@ -69,7 +70,7 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
 
             return found == null
                 ? null
-                : new BasicUserData(found.Id, found.Document, found.FullName, found.Phone, found.Email);
+                : new BasicUserData(found.Id, found.Document, found.FullName, found.Phone, found.Email, found.RoleName ?? String.Empty);
         }
 
         public async Task<Int64> CountBySyncAsync(Guid syncId, CancellationToken cancellationToken)

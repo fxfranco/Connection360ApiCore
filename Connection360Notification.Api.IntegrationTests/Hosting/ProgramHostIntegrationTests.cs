@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using System.Text.Json;
 using Xunit;
 
 namespace Connection360Notification.Api.IntegrationTests.Hosting
@@ -115,6 +116,30 @@ namespace Connection360Notification.Api.IntegrationTests.Hosting
             _factory.BasicUserDataRepositoryMock.Verify(
                 r => r.UpsertBatchAsync(It.Is<IReadOnlyCollection<BasicUserData>>(u => u.Count == 1), syncId, It.IsAny<CancellationToken>()), Times.Once);
             _factory.BasicUserDataRepositoryMock.Verify(r => r.DeleteNotInSyncAsync(syncId, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SyncBasicUsersUseCase_ResueltoDesdeElHost_PropagaElRolDelJsonQuePublicaElApiAlPuertoDeSalida()
+        {
+            // Mismo JSON (camelCase) que publica Auth0UserSyncWorker, con el nombre del rol de cada usuario.
+            Guid syncId = Guid.NewGuid();
+            String json = "{\"syncId\":\"" + syncId + "\",\"batchIndex\":0,\"batchCount\":1,\"totalUsers\":3,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
+                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900123\",\"fullName\":\"Ana Perez\",\"phone\":\"+573001112233\",\"email\":\"a@b.com\",\"roleName\":\"ADMIN\"},"
+                + "{\"id\":\"auth0|2\",\"document\":\"800456\",\"fullName\":\"Beto Dos\",\"phone\":\"+573004445566\",\"email\":\"b@b.com\",\"roleName\":\"CLIENT\"},"
+                + "{\"id\":\"auth0|3\",\"document\":\"700789\",\"fullName\":\"Carla Tres\",\"phone\":\"+573007778899\",\"email\":\"c@b.com\",\"roleName\":\"\"}]}";
+            BasicUsersSyncMessage message = JsonSerializer.Deserialize<BasicUsersSyncMessage>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+
+            IReadOnlyCollection<BasicUserData>? guardados = null;
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.UpsertBatchAsync(It.IsAny<IReadOnlyCollection<BasicUserData>>(), syncId, It.IsAny<CancellationToken>()))
+                .Callback<IReadOnlyCollection<BasicUserData>, Guid, CancellationToken>((users, _, _) => guardados = users)
+                .Returns(Task.CompletedTask);
+            using IServiceScope scope = _factory.Services.CreateScope();
+
+            await scope.ServiceProvider.GetRequiredService<ISyncBasicUsersUseCase>().ExecuteAsync(message, CancellationToken.None);
+
+            guardados.Should().NotBeNull();
+            guardados!.Select(u => (u.Id, u.RoleName)).Should().Equal(("auth0|1", "ADMIN"), ("auth0|2", "CLIENT"), ("auth0|3", String.Empty));
         }
 
         [Fact]

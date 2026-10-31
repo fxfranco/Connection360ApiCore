@@ -2,7 +2,8 @@
 {
     /// <summary>
     /// Datos básicos de un usuario de Auth0 que se sincronizan hacia Connection360Notification.Api
-    /// (colección <c>basicUserData</c>). Document, FullName y Phone salen de <c>user_metadata</c>; Id y Email son atributos del usuario.
+    /// (colección <c>basicUserData</c>). Document, FullName y Phone salen de <c>user_metadata</c>; Id y Email son atributos del usuario
+    /// y RoleName es el nombre del rol asignado en Auth0 (se consulta por usuario).
     /// </summary>
     public class Auth0UserBasicDto
     {
@@ -20,5 +21,11 @@
 
         /// <summary>Correo electrónico del usuario (atributo <c>email</c> de Auth0).</summary>
         public String Email { get; set; } = String.Empty;
+
+        /// <summary>
+        /// Nombre del rol asignado al usuario en Auth0 (por ejemplo <c>ADMIN</c> o <c>CLIENT</c>). Queda vacío si el usuario
+        /// no tiene rol o si la aplicación M2M no tiene permiso para consultar roles (<c>read:roles</c>).
+        /// </summary>
+        public String RoleName { get; set; } = String.Empty;
     }
 }

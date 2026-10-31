@@ -18,9 +18,9 @@ namespace Connection360Notification.Application.Tests.UseCases
             _sut = new SyncBasicUsersUseCase(_repositoryMock.Object);
         }
 
-        private static BasicUserItem Usuario(String id, String document = "900123", String fullName = "Ana Perez", String phone = "+573001112233", String email = "a@b.com")
+        private static BasicUserItem Usuario(String id, String document = "900123", String fullName = "Ana Perez", String phone = "+573001112233", String email = "a@b.com", String roleName = "")
         {
-            return new BasicUserItem { Id = id, Document = document, FullName = fullName, Phone = phone, Email = email };
+            return new BasicUserItem { Id = id, Document = document, FullName = fullName, Phone = phone, Email = email, RoleName = roleName };
         }
 
         private static BasicUsersSyncMessage Mensaje(Guid syncId, Int32 batchIndex, Int32 batchCount, Int32 totalUsers, params BasicUserItem[] users)
@@ -171,6 +171,53 @@ namespace Connection360Notification.Application.Tests.UseCases
             await _sut.ExecuteAsync(Mensaje(Guid.NewGuid(), 0, 2, 2, usuario), CancellationToken.None);
 
             guardados.Should().ContainSingle().Which.Should().Be(new BasicUserData("auth0|1", String.Empty, String.Empty, String.Empty, String.Empty));
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConRolDelUsuario_LoGuardaEnElUsuarioBasico()
+        {
+            IReadOnlyCollection<BasicUserData>? guardados = null;
+            _repositoryMock
+                .Setup(r => r.UpsertBatchAsync(It.IsAny<IReadOnlyCollection<BasicUserData>>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Callback<IReadOnlyCollection<BasicUserData>, Guid, CancellationToken>((users, _, _) => guardados = users)
+                .Returns(Task.CompletedTask);
+
+            await _sut.ExecuteAsync(
+                Mensaje(Guid.NewGuid(), 0, 2, 3, Usuario("auth0|1", roleName: "ADMIN"), Usuario("auth0|2", roleName: "CLIENT"), Usuario("auth0|3")),
+                CancellationToken.None);
+
+            guardados!.Select(u => (u.Id, u.RoleName)).Should().Equal(("auth0|1", "ADMIN"), ("auth0|2", "CLIENT"), ("auth0|3", String.Empty));
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConRolNulo_SeGuardaComoCadenaVacia()
+        {
+            IReadOnlyCollection<BasicUserData>? guardados = null;
+            _repositoryMock
+                .Setup(r => r.UpsertBatchAsync(It.IsAny<IReadOnlyCollection<BasicUserData>>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Callback<IReadOnlyCollection<BasicUserData>, Guid, CancellationToken>((users, _, _) => guardados = users)
+                .Returns(Task.CompletedTask);
+            var usuario = new BasicUserItem { Id = "auth0|1", RoleName = null! };
+
+            await _sut.ExecuteAsync(Mensaje(Guid.NewGuid(), 0, 2, 2, usuario), CancellationToken.None);
+
+            guardados.Should().ContainSingle().Which.RoleName.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_UsuarioRepetidoEnElLote_ConservaElRolDeLaUltimaAparicion()
+        {
+            IReadOnlyCollection<BasicUserData>? guardados = null;
+            _repositoryMock
+                .Setup(r => r.UpsertBatchAsync(It.IsAny<IReadOnlyCollection<BasicUserData>>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .Callback<IReadOnlyCollection<BasicUserData>, Guid, CancellationToken>((users, _, _) => guardados = users)
+                .Returns(Task.CompletedTask);
+
+            await _sut.ExecuteAsync(
+                Mensaje(Guid.NewGuid(), 0, 2, 2, Usuario("auth0|1", roleName: "CLIENT"), Usuario("auth0|1", roleName: "ADMIN")),
+                CancellationToken.None);
+
+            guardados.Should().ContainSingle().Which.RoleName.Should().Be("ADMIN");
         }
 
         [Fact]

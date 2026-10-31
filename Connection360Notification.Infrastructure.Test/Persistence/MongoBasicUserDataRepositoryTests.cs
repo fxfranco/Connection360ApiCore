@@ -86,8 +86,8 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
             Guid syncId = Guid.NewGuid();
             var usuarios = new List<BasicUserData>
             {
-                new("auth0|1", "900123", "Ana Uno", "+573001112233", "uno@correo.com"),
-                new("auth0|2", "800456", "Beto Dos", "+573004445566", "dos@correo.com")
+                new("auth0|1", "900123", "Ana Uno", "+573001112233", "uno@correo.com", "ADMIN"),
+                new("auth0|2", "800456", "Beto Dos", "+573004445566", "dos@correo.com", "CLIENT")
             };
 
             DateTime antes = DateTime.UtcNow;
@@ -108,10 +108,22 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
             primero.FullName.Should().Be("Ana Uno");
             primero.Phone.Should().Be("+573001112233");
             primero.Email.Should().Be("uno@correo.com");
+            primero.RoleName.Should().Be("ADMIN");
             primero.SyncId.Should().Be(syncId.ToString());
             primero.UpdatedAtUtc.Should().BeOnOrAfter(antes).And.BeOnOrBefore(despues);
 
+            reemplazos[1].Replacement.RoleName.Should().Be("CLIENT");
             reemplazos[1].Replacement.SyncId.Should().Be(syncId.ToString());
+        }
+
+        [Fact]
+        public async Task UpsertBatchAsync_UsuarioSinRol_GuardaElRolVacio()
+        {
+            List<WriteModel<BasicUserDataDocument>> escritos = CapturarBulkWrite(out _);
+
+            await _sut.UpsertBatchAsync(new[] { new BasicUserData("auth0|1", "1", "Ana", "+57", "a@b.c") }, Guid.NewGuid(), CancellationToken.None);
+
+            ((ReplaceOneModel<BasicUserDataDocument>)escritos.Single()).Replacement.RoleName.Should().BeEmpty();
         }
 
         [Fact]
@@ -224,6 +236,27 @@ namespace Connection360Notification.Infrastructure.Tests.Persistence
             BasicUserData? usuario = await _sut.GetByDocumentAsync("900123", CancellationToken.None);
 
             usuario.Should().Be(new BasicUserData("auth0|1", "900123", "Ana Uno", "3001112233", "uno@correo.com"));
+        }
+
+        [Fact]
+        public async Task GetByDocumentAsync_SiExiste_DevuelveTambienSuRol()
+        {
+            ConfigurarBusqueda(new BasicUserDataDocument { Id = "auth0|1", Document = "900123", FullName = "Ana Uno", Phone = "3001112233", Email = "uno@correo.com", RoleName = "ANALISTAOPE" });
+
+            BasicUserData? usuario = await _sut.GetByDocumentAsync("900123", CancellationToken.None);
+
+            usuario.Should().Be(new BasicUserData("auth0|1", "900123", "Ana Uno", "3001112233", "uno@correo.com", "ANALISTAOPE"));
+            usuario!.RoleName.Should().Be("ANALISTAOPE");
+        }
+
+        [Fact]
+        public async Task GetByDocumentAsync_ConDocumentoSinRolNulo_DevuelveElRolVacio()
+        {
+            ConfigurarBusqueda(new BasicUserDataDocument { Id = "auth0|1", Document = "900123", RoleName = null! });
+
+            BasicUserData? usuario = await _sut.GetByDocumentAsync("900123", CancellationToken.None);
+
+            usuario!.RoleName.Should().BeEmpty();
         }
 
         [Fact]

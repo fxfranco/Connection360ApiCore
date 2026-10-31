@@ -5,6 +5,7 @@ using Connection360.Domain.Dtos;
 using Connection360.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 
 namespace Connection360.Infrastructure.Adapters.Output
 {
@@ -304,9 +305,11 @@ namespace Connection360.Infrastructure.Adapters.Output
 
         /// <summary>
         /// Lista los usuarios de Auth0 pidiendo solo los campos necesarios (<c>fields</c>) y los
-        /// reduce a id, documento, nombre completo, teléfono y correo. Documento, nombre y teléfono salen de
+        /// reduce a id, documento, nombre completo, teléfono, correo y rol. Documento, nombre y teléfono salen de
         /// <c>user_metadata</c> (<c>document</c>, <c>fullName</c> y <c>phone.number</c>; ver <see cref="Auth0UserBasicMapper"/>).
-        /// No consulta roles, así que no necesita los permisos de roles.
+        /// El nombre del rol se consulta por usuario (<c>GET /users/{id}/roles</c>) con la misma lógica que
+        /// <see cref="GetUsersAsync"/> (<see cref="LookupRolesAsync"/>): requiere el permiso <c>read:roles</c>, pero si Auth0
+        /// responde 403 la sincronización continúa con el rol vacío y se registra una advertencia.
         /// </summary>
         public async Task<IList<Auth0UserBasicDto>> GetBasicUsersAsync(CancellationToken cancellationToken = default)
         {
@@ -349,6 +352,12 @@ namespace Connection360.Infrastructure.Adapters.Output
                         break;
                     }
                 }
+
+                // El rol tampoco viene en /users: se consulta por usuario, igual que en GetUsersAsync.
+                IReadOnlyDictionary<String, Auth0.ManagementApi.Role?> assignedRoles = await LookupRolesAsync(client, users.Keys, cancellationToken);
+                Auth0UserBasicMapper.ApplyRoleNames(
+                    users.Values,
+                    assignedRoles.ToDictionary(entry => entry.Key, entry => entry.Value?.Name, StringComparer.Ordinal));
 
                 return users.Values.ToList();
             });
@@ -400,34 +409,52 @@ namespace Connection360.Infrastructure.Adapters.Output
         }
 
         /// <summary>
-        /// Completa <see cref="Auth0UserDto.RoleId"/> y <see cref="Auth0UserDto.RoleName"/> de cada usuario,
-        /// con un máximo de <see cref="MaxConcurrentRoleLookups"/> consultas simultáneas para no saturar
-        /// el límite de peticiones de la Management API.
+        /// Consulta el rol asignado a cada usuario (<paramref name="userIds"/>, sin repetidos ni vacíos), con un máximo de
+        /// <see cref="MaxConcurrentRoleLookups"/> consultas simultáneas para no saturar el límite de peticiones de la
+        /// Management API. Devuelve, por id de usuario, su rol o <c>null</c> si no tiene ninguno o si Auth0 respondió 403
+        /// (la advertencia de permisos se registra una sola vez; ver <see cref="GetAssignedRoleOrNullAsync"/>).
         /// </summary>
-        private async Task FillRolesAsync(ManagementClient client, IList<Auth0UserDto> users)
+        private async Task<IReadOnlyDictionary<String, Auth0.ManagementApi.Role?>> LookupRolesAsync(ManagementClient client, IEnumerable<String> userIds, CancellationToken cancellationToken = default)
         {
             using SemaphoreSlim gate = new SemaphoreSlim(MaxConcurrentRoleLookups);
             ForbiddenWarning warning = new ForbiddenWarning();
+            ConcurrentDictionary<String, Auth0.ManagementApi.Role?> roles = new ConcurrentDictionary<String, Auth0.ManagementApi.Role?>(StringComparer.Ordinal);
 
-            await Task.WhenAll(users.Select(async user =>
+            await Task.WhenAll(userIds
+                .Where(id => !String.IsNullOrEmpty(id))
+                .Distinct(StringComparer.Ordinal)
+                .Select(async id =>
+                {
+                    await gate.WaitAsync(cancellationToken);
+                    try
+                    {
+                        roles[id] = await GetAssignedRoleOrNullAsync(client, id, warning);
+                    }
+                    finally
+                    {
+                        gate.Release();
+                    }
+                }));
+
+            return roles;
+        }
+
+        /// <summary>
+        /// Completa <see cref="Auth0UserDto.RoleId"/> y <see cref="Auth0UserDto.RoleName"/> de cada usuario
+        /// (ver <see cref="LookupRolesAsync"/>).
+        /// </summary>
+        private async Task FillRolesAsync(ManagementClient client, IList<Auth0UserDto> users)
+        {
+            IReadOnlyDictionary<String, Auth0.ManagementApi.Role?> roles = await LookupRolesAsync(client, users.Select(user => user.UserId));
+
+            foreach (Auth0UserDto user in users)
             {
-                if (String.IsNullOrEmpty(user.UserId))
+                if (!String.IsNullOrEmpty(user.UserId) && roles.TryGetValue(user.UserId, out Auth0.ManagementApi.Role? assignedRole))
                 {
-                    return;
-                }
-
-                await gate.WaitAsync();
-                try
-                {
-                    Auth0.ManagementApi.Role? assignedRole = await GetAssignedRoleOrNullAsync(client, user.UserId, warning);
                     user.RoleId = assignedRole?.Id;
                     user.RoleName = assignedRole?.Name;
                 }
-                finally
-                {
-                    gate.Release();
-                }
-            }));
+            }
         }
 
         /// <summary>

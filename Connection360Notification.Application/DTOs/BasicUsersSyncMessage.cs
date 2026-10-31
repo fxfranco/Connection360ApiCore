@@ -37,5 +37,11 @@
         public String Phone { get; set; } = String.Empty;
 
         public String Email { get; set; } = String.Empty;
+
+        /// <summary>
+        /// Nombre del rol del usuario en Auth0 (JSON <c>roleName</c>). Los mensajes publicados por una versión anterior de
+        /// Connection360.Api no lo traen: en ese caso queda vacío.
+        /// </summary>
+        public String RoleName { get; set; } = String.Empty;
     }
 }

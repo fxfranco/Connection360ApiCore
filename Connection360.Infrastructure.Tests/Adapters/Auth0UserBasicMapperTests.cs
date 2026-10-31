@@ -8,7 +8,7 @@ using Xunit;
 namespace Connection360.Infrastructure.Tests.Adapters
 {
     /// <summary>
-    /// Extracción de id, documento, nombre completo, teléfono y correo de un usuario de Auth0 (sin red).
+    /// Extracción de id, documento, nombre completo, teléfono y correo de un usuario de Auth0, y asignación del rol (sin red).
     /// </summary>
     public class Auth0UserBasicMapperTests
     {
@@ -84,6 +84,95 @@ namespace Connection360.Infrastructure.Tests.Adapters
             result.FullName.Should().BeEmpty();
             result.Phone.Should().BeEmpty();
             result.Email.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void ToBasicDto_ElRolArrancaVacio_PorqueNoVieneEnLaRespuestaDeUsers()
+        {
+            Auth0UserBasicDto result = Auth0UserBasicMapper.ToBasicDto(User(new Dictionary<String, Object> { ["document"] = "1" }));
+
+            result.RoleName.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void ApplyRoleName_AsignaElNombreDelRol()
+        {
+            var user = new Auth0UserBasicDto { Id = "auth0|1" };
+
+            Auth0UserBasicMapper.ApplyRoleName(user, "ADMIN");
+
+            user.RoleName.Should().Be("ADMIN");
+        }
+
+        [Fact]
+        public void ApplyRoleName_RecortaLosEspacios()
+        {
+            var user = new Auth0UserBasicDto { Id = "auth0|1" };
+
+            Auth0UserBasicMapper.ApplyRoleName(user, "  CLIENT  ");
+
+            user.RoleName.Should().Be("CLIENT");
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void ApplyRoleName_SinNombre_DejaElRolVacio(String? roleName)
+        {
+            var user = new Auth0UserBasicDto { Id = "auth0|1", RoleName = "ANTERIOR" };
+
+            Auth0UserBasicMapper.ApplyRoleName(user, roleName);
+
+            user.RoleName.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void ApplyRoleName_UsuarioNulo_LanzaArgumentNullException()
+        {
+            System.Action act = () => Auth0UserBasicMapper.ApplyRoleName(null!, "ADMIN");
+
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Fact]
+        public void ApplyRoleNames_AsignaACadaUsuarioSuRolPorId()
+        {
+            var ana = new Auth0UserBasicDto { Id = "auth0|ana" };
+            var beto = new Auth0UserBasicDto { Id = "auth0|beto" };
+            var carla = new Auth0UserBasicDto { Id = "auth0|carla" };
+            var roles = new Dictionary<String, String?>
+            {
+                ["auth0|ana"] = "ADMIN",
+                ["auth0|beto"] = "CLIENT",
+                ["auth0|carla"] = null
+            };
+
+            Auth0UserBasicMapper.ApplyRoleNames(new[] { ana, beto, carla }, roles);
+
+            ana.RoleName.Should().Be("ADMIN");
+            beto.RoleName.Should().Be("CLIENT");
+            carla.RoleName.Should().BeEmpty("el usuario no tiene rol");
+        }
+
+        [Fact]
+        public void ApplyRoleNames_UsuarioSinConsultaDeRol_ConservaSuRolActual()
+        {
+            var user = new Auth0UserBasicDto { Id = "auth0|1", RoleName = "ANALISTAOPE" };
+
+            Auth0UserBasicMapper.ApplyRoleNames(new[] { user }, new Dictionary<String, String?> { ["auth0|otro"] = "ADMIN" });
+
+            user.RoleName.Should().Be("ANALISTAOPE");
+        }
+
+        [Fact]
+        public void ApplyRoleNames_ConArgumentosNulos_LanzaArgumentNullException()
+        {
+            System.Action sinUsuarios = () => Auth0UserBasicMapper.ApplyRoleNames(null!, new Dictionary<String, String?>());
+            System.Action sinRoles = () => Auth0UserBasicMapper.ApplyRoleNames(Array.Empty<Auth0UserBasicDto>(), null!);
+
+            sinUsuarios.Should().Throw<ArgumentNullException>();
+            sinRoles.Should().Throw<ArgumentNullException>();
         }
 
         [Fact]

@@ -23,6 +23,12 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
 
         public String Email { get; set; } = String.Empty;
 
+        /// <summary>
+        /// Nombre del rol del usuario en Auth0. Los documentos guardados antes de este campo no lo tienen: al leerlos
+        /// queda vacío hasta la siguiente sincronización.
+        /// </summary>
+        public String RoleName { get; set; } = String.Empty;
+
         /// <summary>Identificador (GUID, como texto) de la sincronización que escribió por última vez este registro.</summary>
         public String SyncId { get; set; } = String.Empty;
 

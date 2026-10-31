@@ -19,7 +19,7 @@ namespace Connection360.Domain.Interfaces
 
         /// <summary>
         /// Lista todos los usuarios de Auth0 extrayendo solo los datos básicos necesarios para
-        /// notificar (id, identificación, correo y teléfono). Lo usa el worker de sincronización.
+        /// notificar (id, identificación, nombre, teléfono, correo y nombre del rol). Lo usa el worker de sincronización.
         /// </summary>
         Task<IList<Auth0UserBasicDto>> GetBasicUsersAsync(CancellationToken cancellationToken = default);
     }

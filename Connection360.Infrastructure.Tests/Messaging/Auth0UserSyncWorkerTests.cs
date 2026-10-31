@@ -75,7 +75,7 @@ namespace Connection360.Infrastructure.Tests.Messaging
         }
 
         private static List<Auth0UserBasicDto> Users(Int32 count) =>
-            Enumerable.Range(1, count).Select(i => new Auth0UserBasicDto { Id = $"auth0|{i}", Document = $"900{i}", FullName = $"Usuario {i}", Phone = $"30000000{i:00}", Email = $"u{i}@correo.com" }).ToList();
+            Enumerable.Range(1, count).Select(i => new Auth0UserBasicDto { Id = $"auth0|{i}", Document = $"900{i}", FullName = $"Usuario {i}", Phone = $"30000000{i:00}", Email = $"u{i}@correo.com", RoleName = i % 2 == 1 ? "ADMIN" : "CLIENT" }).ToList();
 
         private static async Task RunUntil(Auth0UserSyncWorker worker, Task signal)
         {
@@ -122,8 +122,34 @@ namespace Connection360.Infrastructure.Tests.Messaging
 
             (String topic, Message<String, String> message) = _published.Single();
             topic.Should().Be("notification-users");
-            message.Value.Should().Contain("\"syncId\"").And.Contain("\"batchIndex\":0").And.Contain("\"document\":\"9001\"").And.Contain("\"fullName\":\"Usuario 1\"").And.Contain("\"phone\":\"3000000001\"").And.Contain("\"email\":\"u1@correo.com\"");
+            message.Value.Should().Contain("\"syncId\"").And.Contain("\"batchIndex\":0").And.Contain("\"document\":\"9001\"").And.Contain("\"fullName\":\"Usuario 1\"").And.Contain("\"phone\":\"3000000001\"").And.Contain("\"email\":\"u1@correo.com\"").And.Contain("\"roleName\":\"ADMIN\"");
             message.Value.Should().NotContain("identificacion");
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_PublicaElNombreDelRolDeCadaUsuario()
+        {
+            _auth0.Setup(s => s.GetBasicUsersAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Users(3));
+            using Auth0UserSyncWorker worker = BuildWorker();
+
+            await RunUntil(worker, _expectedPublished.Task);
+
+            Auth0UsersSyncMessage message = Parse(_published.Single().Message);
+            message.Users.Select(u => (u.Id, u.RoleName)).Should().Equal(("auth0|1", "ADMIN"), ("auth0|2", "CLIENT"), ("auth0|3", "ADMIN"));
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConUsuarioSinRol_PublicaElRolVacioSinOmitirElCampo()
+        {
+            _auth0.Setup(s => s.GetBasicUsersAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<Auth0UserBasicDto> { new() { Id = "auth0|1", Document = "900", FullName = "Ana", Phone = "300", Email = "a@b.com" } });
+            using Auth0UserSyncWorker worker = BuildWorker();
+
+            await RunUntil(worker, _expectedPublished.Task);
+
+            Message<String, String> message = _published.Single().Message;
+            message.Value.Should().Contain("\"roleName\":\"\"");
+            Parse(message).Users.Single().RoleName.Should().BeEmpty();
         }
 
         [Fact]
