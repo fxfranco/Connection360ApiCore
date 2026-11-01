@@ -133,7 +133,8 @@ namespace Connection360.Api.IntegrationTests.Caching
             Int64 oneEntry = MemoryCoordinatesCache.EstimateEntrySize($"{Api}|{PlaceN(1)}".ToUpperInvariant(), sample);
             Int64 limit = (oneEntry * 3) + 1;
 
-            using WebApplicationFactory<Program> small = _factory.WithWebHostBuilder(b => b.UseSetting("CoordinatesCache:MaxSizeBytes", limit.ToString()));
+            // Factory independiente (no WithWebHostBuilder): ver CoordinatesCacheWebApplicationFactory. Sus contadores de Nominatim son propios.
+            using CoordinatesCacheWebApplicationFactory small = CoordinatesCacheWebApplicationFactory.With("CoordinatesCache:MaxSizeBytes", limit.ToString());
             var cache = (MemoryCoordinatesCache)small.Services.GetRequiredService<ICoordinatesCache>();
 
             for (Int32 n = 1; n <= 3; n++)
@@ -141,7 +142,7 @@ namespace Connection360.Api.IntegrationTests.Caching
                 await GetInNewScope(small, PlaceN(n));
                 await Task.Delay(30);
             }
-            _factory.Nominatim.TotalRequests.Should().Be(3);
+            small.Nominatim.TotalRequests.Should().Be(3);
 
             // El cuarto lugar no cabe: sale el más viejo (L1) y los demás siguen en la caché.
             await GetInNewScope(small, PlaceN(4));
@@ -150,10 +151,10 @@ namespace Connection360.Api.IntegrationTests.Caching
             await GetInNewScope(small, PlaceN(2));
             await GetInNewScope(small, PlaceN(3));
             await GetInNewScope(small, PlaceN(4));
-            _factory.Nominatim.TotalRequests.Should().Be(4, "L2, L3 y L4 se sirven de la caché");
+            small.Nominatim.TotalRequests.Should().Be(4, "L2, L3 y L4 se sirven de la caché");
 
             await GetInNewScope(small, PlaceN(1));
-            _factory.Nominatim.RequestsFor(PlaceN(1)).Should().Be(2, "L1 fue expulsado y hay que volver a pedirlo");
+            small.Nominatim.RequestsFor(PlaceN(1)).Should().Be(2, "L1 fue expulsado y hay que volver a pedirlo");
             cache.CurrentSizeBytes.Should().BeLessThanOrEqualTo(limit);
         }
 
@@ -162,12 +163,12 @@ namespace Connection360.Api.IntegrationTests.Caching
         {
             String place = UniquePlace("Lima");
 
-            using WebApplicationFactory<Program> disabled = _factory.WithWebHostBuilder(b => b.UseSetting("CoordinatesCache:Enabled", "false"));
+            using CoordinatesCacheWebApplicationFactory disabled = CoordinatesCacheWebApplicationFactory.With("CoordinatesCache:Enabled", "false");
 
             await GetInNewScope(disabled, place);
             await GetInNewScope(disabled, place);
 
-            _factory.Nominatim.RequestsFor(place).Should().Be(2);
+            disabled.Nominatim.RequestsFor(place).Should().Be(2);
             disabled.Services.GetService<ICoordinatesCache>().Should().BeNull();
             using IServiceScope scope = disabled.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<IExternalApiOpenStreetMap>().Should().BeOfType<ExternalApiOpenStreetMap>();
@@ -176,7 +177,7 @@ namespace Connection360.Api.IntegrationTests.Caching
         [Fact]
         public void ConfiguracionDeCacheInvalida_ImpideCrearLaCache()
         {
-            using WebApplicationFactory<Program> invalid = _factory.WithWebHostBuilder(b => b.UseSetting("CoordinatesCache:MaxSizeBytes", "0"));
+            using CoordinatesCacheWebApplicationFactory invalid = CoordinatesCacheWebApplicationFactory.With("CoordinatesCache:MaxSizeBytes", "0");
 
             Action act = () => { _ = invalid.Services; };
 

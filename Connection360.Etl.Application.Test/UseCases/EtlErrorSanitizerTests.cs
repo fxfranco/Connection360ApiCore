@@ -3,6 +3,7 @@ using FluentAssertions;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Text;
 using System.Text.Json;
 using Xunit;
 
@@ -143,11 +144,16 @@ namespace Connection360.Etl.Application.Tests.UseCases
         [Fact]
         public void SanitizeText_EnmascaraTokensJwtYCadenasOpacasLargas()
         {
-            String jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTYifQ.c2lnbmF0dXJl";
+            // El JWT se arma en tiempo de ejecución (encabezado.carga.firma en Base64Url) para que no exista como literal en el código
+            // y los escáneres de secretos (GitLeaks) no lo confundan con un token real.
+            String jwt = String.Join('.', Base64Url("{\"alg\":\"HS256\"}"), Base64Url("{\"sub\":\"123456\"}"), Base64Url("signature"));
             String opaque = new('a', 40);
 
             EtlErrorSanitizer.SanitizeText($"token inválido {jwt} y llave {opaque}").Should().Be("token inválido [oculto] y llave [oculto]");
         }
+
+        private static String Base64Url(String text) =>
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(text)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
         [Fact]
         public void SanitizeText_NoTocaNombresDeTipoNiTextoNormal()

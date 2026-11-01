@@ -33,6 +33,10 @@ namespace Connection360.Api.IntegrationTests.Infrastructure
             FailWith = null;
         }
 
+        /// <summary>Punto de entrada para reenviadores (ver CoordinatesCacheWebApplicationFactory); SendAsync es protegido.</summary>
+        public Task<HttpResponseMessage> SendForwardedAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            SendAsync(request, cancellationToken);
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             String place = HttpUtility.ParseQueryString(request.RequestUri!.Query)["q"] ?? String.Empty;
