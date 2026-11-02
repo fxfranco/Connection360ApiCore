@@ -27,6 +27,7 @@ namespace Connection360Notification.Application.Mapping
             AppNotificationType.ChangeState => DomainNotificationType.ChangeState,
             AppNotificationType.Comment => DomainNotificationType.Comment,
             AppNotificationType.OtherInfo => DomainNotificationType.OtherInfo,
+            AppNotificationType.Alert => DomainNotificationType.Alert,
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Tipo de notificación no soportado.")
         };
 
@@ -42,6 +43,7 @@ namespace Connection360Notification.Application.Mapping
             DomainNotificationType.ChangeState => AppNotificationType.ChangeState,
             DomainNotificationType.Comment => AppNotificationType.Comment,
             DomainNotificationType.OtherInfo => AppNotificationType.OtherInfo,
+            DomainNotificationType.Alert => AppNotificationType.Alert,
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Tipo de notificación no soportado.")
         };
 

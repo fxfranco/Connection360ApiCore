@@ -72,7 +72,7 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
             BatchCount = batchCount,
             TotalUsers = ids.Length,
             GeneratedAtUtc = new DateTime(2024, 5, 6, 7, 8, 9, DateTimeKind.Utc),
-            Users = ids.Select(id => new BasicUserItem { Id = id, Document = "900", FullName = "Ana Perez", Phone = "+573001112233", Email = "a@b.com" }).ToList()
+            Users = ids.Select(id => new BasicUserItem { Id = id, Document = "900", FullName = "Ana Perez", Phone = "+573001112233", Email = "a@b.com", RoleName = "ADMIN" }).ToList()
         };
 
         private static String Json(BasicUsersSyncMessage message) => JsonSerializer.Serialize(message, Web);
@@ -148,7 +148,7 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
                 .ReturnsAsync(new BasicUsersSyncResult(1, 0, true, true, 0, 1));
             Guid syncId = Guid.NewGuid();
             String json = "{\"syncId\":\"" + syncId + "\",\"batchIndex\":0,\"batchCount\":1,\"totalUsers\":1,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
-                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900123\",\"fullName\":\"Ana Perez\",\"phone\":\"+573001112233\",\"email\":\"a@b.com\"}]}";
+                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900123\",\"fullName\":\"Ana Perez\",\"phone\":\"+573001112233\",\"email\":\"a@b.com\",\"roleName\":\"ADMIN\"}]}";
             ConfigurarConsumo(() => Resultado(json));
 
             await EjecutarHastaTerminar();
@@ -162,6 +162,25 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
             recibido.Users[0].FullName.Should().Be("Ana Perez");
             recibido.Users[0].Phone.Should().Be("+573001112233");
             recibido.Users[0].Email.Should().Be("a@b.com");
+            recibido.Users[0].RoleName.Should().Be("ADMIN");
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConMensajeDeUnaVersionAnteriorSinRoleName_LoProcesaConElRolVacio()
+        {
+            BasicUsersSyncMessage? recibido = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<BasicUsersSyncMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<BasicUsersSyncMessage, CancellationToken>((m, _) => recibido = m)
+                .ReturnsAsync(new BasicUsersSyncResult(1, 0, true, true, 0, 1));
+            String json = "{\"syncId\":\"" + Guid.NewGuid() + "\",\"batchIndex\":0,\"batchCount\":1,\"totalUsers\":1,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
+                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900123\",\"fullName\":\"Ana Perez\",\"phone\":\"+573001112233\",\"email\":\"a@b.com\"}]}";
+            ConfigurarConsumo(() => Resultado(json));
+
+            await EjecutarHastaTerminar();
+
+            recibido.Should().NotBeNull();
+            recibido!.Users.Should().ContainSingle().Which.RoleName.Should().BeEmpty();
         }
 
         [Fact]

@@ -32,5 +32,12 @@ namespace Connection360.Etl.Domain.Interfaces
         /// usa en connection360write.outbox_messages (event_type "OtherInfo").
         /// </summary>
         (String Title, String Message) GetOtherInfoChangeMessage();
+
+        /// <summary>
+        /// Título y mensaje de la alerta que se notifica cuando un error impide consultar las APIs externas del proceso ETL
+        /// (solo outbox_messages, event_type "Alert"). El título es fijo y el mensaje incluye el error.
+        /// </summary>
+        /// <param name="errorCapturado">Error ya sanitizado (sin datos sensibles) que describe el motivo del fallo.</param>
+        (String Title, String Message) GetEtlAlertMessage(String errorCapturado);
     }
 }

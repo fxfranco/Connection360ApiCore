@@ -2,7 +2,9 @@
 using Connection360Notification.Domain.Ports.Outbound;
 using Connection360Notification.Domain.Settings;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using System.Text.RegularExpressions;
 
 namespace Connection360Notification.Infrastructure.Persistence.Mongo
 {
@@ -47,6 +49,7 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
                         FullName = user.FullName,
                         Phone = user.Phone,
                         Email = user.Email,
+                        RoleName = user.RoleName,
                         SyncId = sync,
                         UpdatedAtUtc = now
                     })
@@ -69,7 +72,27 @@ namespace Connection360Notification.Infrastructure.Persistence.Mongo
 
             return found == null
                 ? null
-                : new BasicUserData(found.Id, found.Document, found.FullName, found.Phone, found.Email);
+                : new BasicUserData(found.Id, found.Document, found.FullName, found.Phone, found.Email, found.RoleName ?? String.Empty);
+        }
+
+        public async Task<IReadOnlyList<BasicUserData>> GetByRoleAsync(String roleName, CancellationToken cancellationToken)
+        {
+            if (String.IsNullOrWhiteSpace(roleName))
+            {
+                return Array.Empty<BasicUserData>();
+            }
+
+            // Coincidencia exacta sin distinguir mayúsculas: el rol llega de Auth0 tal cual lo escribió el administrador.
+            // Regex.Escape evita que el nombre del rol se interprete como una expresión regular.
+            var exactRole = new BsonRegularExpression($"^{Regex.Escape(roleName.Trim())}$", "i");
+
+            List<BasicUserDataDocument> found = await _collection
+                .Find(Builders<BasicUserDataDocument>.Filter.Regex(user => user.RoleName, exactRole))
+                .ToListAsync(cancellationToken);
+
+            return found
+                .Select(user => new BasicUserData(user.Id, user.Document, user.FullName, user.Phone, user.Email, user.RoleName ?? String.Empty))
+                .ToList();
         }
 
         public async Task<Int64> CountBySyncAsync(Guid syncId, CancellationToken cancellationToken)

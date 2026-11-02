@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using System.Text.Json;
 using Xunit;
 
 namespace Connection360Notification.Api.IntegrationTests.Hosting
@@ -118,6 +119,30 @@ namespace Connection360Notification.Api.IntegrationTests.Hosting
         }
 
         [Fact]
+        public async Task SyncBasicUsersUseCase_ResueltoDesdeElHost_PropagaElRolDelJsonQuePublicaElApiAlPuertoDeSalida()
+        {
+            // Mismo JSON (camelCase) que publica Auth0UserSyncWorker, con el nombre del rol de cada usuario.
+            Guid syncId = Guid.NewGuid();
+            String json = "{\"syncId\":\"" + syncId + "\",\"batchIndex\":0,\"batchCount\":1,\"totalUsers\":3,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
+                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900123\",\"fullName\":\"Ana Perez\",\"phone\":\"+573001112233\",\"email\":\"a@b.com\",\"roleName\":\"ADMIN\"},"
+                + "{\"id\":\"auth0|2\",\"document\":\"800456\",\"fullName\":\"Beto Dos\",\"phone\":\"+573004445566\",\"email\":\"b@b.com\",\"roleName\":\"CLIENT\"},"
+                + "{\"id\":\"auth0|3\",\"document\":\"700789\",\"fullName\":\"Carla Tres\",\"phone\":\"+573007778899\",\"email\":\"c@b.com\",\"roleName\":\"\"}]}";
+            BasicUsersSyncMessage message = JsonSerializer.Deserialize<BasicUsersSyncMessage>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+
+            IReadOnlyCollection<BasicUserData>? guardados = null;
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.UpsertBatchAsync(It.IsAny<IReadOnlyCollection<BasicUserData>>(), syncId, It.IsAny<CancellationToken>()))
+                .Callback<IReadOnlyCollection<BasicUserData>, Guid, CancellationToken>((users, _, _) => guardados = users)
+                .Returns(Task.CompletedTask);
+            using IServiceScope scope = _factory.Services.CreateScope();
+
+            await scope.ServiceProvider.GetRequiredService<ISyncBasicUsersUseCase>().ExecuteAsync(message, CancellationToken.None);
+
+            guardados.Should().NotBeNull();
+            guardados!.Select(u => (u.Id, u.RoleName)).Should().Equal(("auth0|1", "ADMIN"), ("auth0|2", "CLIENT"), ("auth0|3", String.Empty));
+        }
+
+        [Fact]
         public async Task ProcessIncomingNotificationUseCase_ResueltoDesdeElHost_GuardaYNotificaPorElPuertoDeSalida()
         {
             var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo");
@@ -208,6 +233,88 @@ namespace Connection360Notification.Api.IntegrationTests.Hosting
 
             await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("smtp caido");
             _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        private static NotificationMessage AlertaDelEtl() => new("", NotificationType.Alert,
+            "Se generó un error 'api caida' en el proceso de ETL", title: "Alerta en proceso de ETL",
+            notificationChannel: new NotificationChannelPreferences { Application = true, Email = true, TextMessages = true });
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConAlerta_GuardaUnRegistroPorAdministradorYLoEntregaPorLosTresCanales()
+        {
+            var ana = new BasicUserData("auth0|1", "900", "Ana Admin", "3001112233", "ana@correo.com", "ADMIN");
+            var luis = new BasicUserData("auth0|2", "901", "Luis Admin", "3004445566", "luis@correo.com", "ADMIN");
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.GetByRoleAsync("ADMIN", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<BasicUserData> { ana, luis });
+            NotificationMessage alerta = AlertaDelEtl();
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var contexto = scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>();
+            var correos = new List<BasicUserData?>();
+            var sms = new List<BasicUserData?>();
+            var guardadas = new List<NotificationMessage>();
+            var enAplicacion = new List<NotificationMessage>();
+            _factory.NotificationRepositoryMock.Setup(r => r.SaveAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback((NotificationMessage n, CancellationToken _) => guardadas.Add(n)).Returns(Task.CompletedTask);
+            _factory.ApplicationChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback((NotificationMessage n, CancellationToken _) => enAplicacion.Add(n)).Returns(Task.CompletedTask);
+            _factory.EmailChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback(() => correos.Add(contexto.Recipient)).Returns(Task.CompletedTask);
+            _factory.SmsChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback(() => sms.Add(contexto.Recipient)).Returns(Task.CompletedTask);
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(alerta, CancellationToken.None);
+
+            // Se guarda un registro por administrador (con su Document como ClientId) y no la alerta original sin ClientId.
+            _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(alerta, It.IsAny<CancellationToken>()), Times.Never);
+            guardadas.Select(n => n.ClientId).Should().Equal("900", "901");
+            guardadas.Select(n => n.Id).Should().OnlyHaveUniqueItems().And.NotContain(alerta.Id);
+            _factory.BasicUserDataRepositoryMock.Verify(r => r.GetByDocumentAsync(It.IsAny<String>(), It.IsAny<CancellationToken>()), Times.Never);
+            correos.Should().Equal(ana, luis);
+            sms.Should().Equal(ana, luis);
+            // SignalR enruta por ClientId: cada administrador recibe el mismo registro que se guardó, dirigido a su documento.
+            enAplicacion.Should().Equal(guardadas);
+            alerta.ClientId.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConAlertaSinAdministradores_EntregaUnaVezConElContextoVacio()
+        {
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.GetByRoleAsync("ADMIN", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<BasicUserData>());
+            NotificationMessage alerta = AlertaDelEtl();
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var contexto = scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>();
+            var destinatarios = new List<BasicUserData?>();
+            _factory.EmailChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback(() => destinatarios.Add(contexto.Recipient)).Returns(Task.CompletedTask);
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(alerta, CancellationToken.None);
+
+            destinatarios.Should().ContainSingle().Which.Should().BeNull();
+            _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            alerta.ClientId.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConAlertaYFalloDeMongoAlBuscarAdministradores_IgualLaEntregaUnaVez()
+        {
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.GetByRoleAsync("ADMIN", It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("mongo caido"));
+            NotificationMessage alerta = AlertaDelEtl();
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(alerta, CancellationToken.None);
+
+            _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>().Recipient.Should().BeNull();
         }
 
         [Fact]

@@ -12,6 +12,13 @@
         Comment,
 
         /// <summary>Cambio en la información general del envío (transportista, anticipo, fechas logísticas, demoras...). Se agrega al final para no alterar los valores numéricos existentes.</summary>
-        OtherInfo
+        OtherInfo,
+
+        /// <summary>
+        /// Alerta del sistema (por ejemplo, un error en el proceso de sincronización de la ETL). No pertenece a ningún cliente
+        /// (no trae ClientId): se entrega a los usuarios con rol administrador por todos los canales. Se agrega al final para no
+        /// alterar los valores numéricos existentes.
+        /// </summary>
+        Alert
     }
 }

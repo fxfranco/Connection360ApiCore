@@ -37,7 +37,7 @@ namespace Connection360Notification.Application.UseCases
                 .Where(user => user != null && !String.IsNullOrWhiteSpace(user.Id))
                 .GroupBy(user => user.Id.Trim(), StringComparer.Ordinal)
                 .Select(group => group.Last())
-                .Select(user => new BasicUserData(user.Id.Trim(), user.Document ?? String.Empty, user.FullName ?? String.Empty, user.Phone ?? String.Empty, user.Email ?? String.Empty))
+                .Select(user => new BasicUserData(user.Id.Trim(), user.Document ?? String.Empty, user.FullName ?? String.Empty, user.Phone ?? String.Empty, user.Email ?? String.Empty, user.RoleName ?? String.Empty))
                 .ToList();
 
             Int32 discarded = received.Count(user => user == null || String.IsNullOrWhiteSpace(user.Id));

@@ -137,6 +137,8 @@ namespace Connection360.Etl.Application.Tests.Support
             Catalog.Setup(c => c.GetCommentChangeMessage(It.IsAny<String>()))
                 .Returns((String comentario) => ("Titulo-Comentario", $"Mensaje-Comentario-{comentario}"));
             Catalog.Setup(c => c.GetOtherInfoChangeMessage()).Returns(("Titulo-OtraInfo", "Mensaje-OtraInfo"));
+            Catalog.Setup(c => c.GetEtlAlertMessage(It.IsAny<String>()))
+                .Returns((String error) => ("Titulo-Alerta", $"Mensaje-Alerta-{error}"));
 
             LogRepository.Setup(r => r.InsertBatchAsync(It.IsAny<IEnumerable<LogStatusTracking>>(), It.IsAny<CancellationToken>()))
                 .Callback((IEnumerable<LogStatusTracking> rows, CancellationToken _) =>

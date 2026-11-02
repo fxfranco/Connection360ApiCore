@@ -31,6 +31,7 @@ namespace Connection360Notification.Application.Tests.DTOs
             sut.FullName.Should().BeEmpty();
             sut.Phone.Should().BeEmpty();
             sut.Email.Should().BeEmpty();
+            sut.RoleName.Should().BeEmpty();
         }
 
         [Fact]
@@ -52,6 +53,29 @@ namespace Connection360Notification.Application.Tests.DTOs
             message.Users[0].Document.Should().Be("900");
             message.Users[0].FullName.Should().Be("Ana Perez");
             message.Users[0].Email.Should().Be("a@b.com");
+        }
+
+        [Fact]
+        public void BasicUsersSyncMessage_ConRoleName_SeDeserializaElRolDelUsuario()
+        {
+            String json = "{\"syncId\":\"" + Guid.NewGuid() + "\",\"batchIndex\":0,\"batchCount\":1,\"totalUsers\":2,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
+                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900\",\"fullName\":\"Ana Perez\",\"phone\":\"+57300\",\"email\":\"a@b.com\",\"roleName\":\"ADMIN\"},"
+                + "{\"id\":\"auth0|2\",\"document\":\"901\",\"fullName\":\"Beto\",\"phone\":\"+57301\",\"email\":\"b@b.com\",\"roleName\":\"\"}]}";
+
+            BasicUsersSyncMessage? message = JsonSerializer.Deserialize<BasicUsersSyncMessage>(json, WebOptions);
+
+            message!.Users.Select(u => u.RoleName).Should().Equal("ADMIN", String.Empty);
+        }
+
+        [Fact]
+        public void BasicUsersSyncMessage_DeUnaVersionAnteriorSinRoleName_DejaElRolVacio()
+        {
+            String json = "{\"syncId\":\"" + Guid.NewGuid() + "\",\"batchIndex\":0,\"batchCount\":1,\"totalUsers\":1,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
+                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900\",\"fullName\":\"Ana Perez\",\"phone\":\"+57300\",\"email\":\"a@b.com\"}]}";
+
+            BasicUsersSyncMessage? message = JsonSerializer.Deserialize<BasicUsersSyncMessage>(json, WebOptions);
+
+            message!.Users.Should().ContainSingle().Which.RoleName.Should().BeEmpty();
         }
 
         [Fact]

@@ -287,6 +287,8 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
         [InlineData("0", NotificationType.ChangeState)]
         [InlineData("\"OtherInfo\"", NotificationType.OtherInfo)]
         [InlineData("2", NotificationType.OtherInfo)]
+        [InlineData("\"Alert\"", NotificationType.Alert)]
+        [InlineData("3", NotificationType.Alert)]
         public async Task ExecuteAsync_EnlazaElEventTypeDelPayloadComoTextoONumero(String valorJson, NotificationType esperado)
         {
             NotificationMessage? recibida = null;
@@ -300,6 +302,32 @@ namespace Connection360Notification.Infrastructure.Tests.Messaging
 
             recibida.Should().NotBeNull();
             recibida!.EventType.Should().Be(esperado);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_ConAlertaDelEtlSinClientId_LaEnlazaYLaDelegaEnElCasoDeUso()
+        {
+            NotificationMessage? recibida = null;
+            _useCaseMock
+                .Setup(u => u.ExecuteAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<NotificationMessage, CancellationToken>((n, _) => recibida = n)
+                .Returns(Task.CompletedTask);
+            // Payload de alerta que escribe el ETL: solo Title, Message y MessageDate llenos, ClientId vacío y los tres canales en true.
+            const String payload = "{\"ClientId\":\"\",\"EventType\":\"Alert\",\"DocumentNumber\":\"\",\"Title\":\"Alerta en proceso de ETL\","
+                + "\"Message\":\"Se generó un error 'api caida' en el proceso de ETL\",\"MessageDate\":\"2026-10-04T08:00:00\","
+                + "\"Origen\":\"\",\"Destino\":\"\",\"Comentario\":\"\",\"FechaComentario\":\"0001-01-01T00:00:00\","
+                + "\"EstadoAnterior\":\"\",\"NuevoEstado\":\"\","
+                + "\"NotificationChannel\":{\"Application\":true,\"Email\":true,\"TextMessages\":true}}";
+            ConfigurarConsumo(() => Resultado(payload));
+
+            await EjecutarHastaTerminar();
+
+            recibida.Should().NotBeNull();
+            recibida!.EventType.Should().Be(NotificationType.Alert);
+            recibida.ClientId.Should().BeEmpty();
+            recibida.Title.Should().Be("Alerta en proceso de ETL");
+            recibida.Message.Should().Be("Se generó un error 'api caida' en el proceso de ETL");
+            recibida.NotificationChannel.GetEnabledChannels().Should().HaveCount(3);
         }
 
         [Fact]
