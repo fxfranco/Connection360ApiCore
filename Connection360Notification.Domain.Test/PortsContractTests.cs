@@ -32,6 +32,19 @@ namespace Connection360Notification.Domain.Tests
         }
 
         [Fact]
+        public async Task IBasicUserDataRepository_PermiteBuscarUsuariosPorRol()
+        {
+            var administrador = new BasicUserData("auth0|1", "900", "Ana", "300", "ana@correo.com", BasicUserRoles.Admin);
+            var mock = new Mock<IBasicUserDataRepository>();
+            mock.Setup(r => r.GetByRoleAsync(BasicUserRoles.Admin, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<BasicUserData> { administrador });
+
+            var usuarios = await mock.Object.GetByRoleAsync(BasicUserRoles.Admin, CancellationToken.None);
+
+            usuarios.Should().ContainSingle().Which.Should().Be(administrador);
+        }
+
+        [Fact]
         public async Task IKafkaProducerService_PermiteProducirNotificaciones()
         {
             var mock = new Mock<IKafkaProducerService>();

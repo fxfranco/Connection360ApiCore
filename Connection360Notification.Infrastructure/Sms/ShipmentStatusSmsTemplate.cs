@@ -9,6 +9,7 @@ namespace Connection360Notification.Infrastructure.Sms
     /// <item><description><see cref="NotificationType.ChangeState"/>: "Tu envío internacional con número de guía {guía} ha actualizado su estado a {nuevo estado}. Consulta los detalles y seguimiento en {URL}".</description></item>
     /// <item><description><see cref="NotificationType.OtherInfo"/>: "... ha actualizado su información. Consulta los detalles y seguimiento en {URL}".</description></item>
     /// <item><description><see cref="NotificationType.Comment"/>: "... se le ha registrado un comentario. Consulta los detalles y seguimiento en {URL}".</description></item>
+    /// <item><description><see cref="NotificationType.Alert"/>: "Alerta en el proceso de sincronización de la ETL: {mensaje}" (sin enlace, porque no hay un envío que consultar).</description></item>
     /// </list>
     /// Cualquier otro tipo (incluido uno futuro) usa el texto de cambio de estado, igual que la plantilla del correo.
     /// </summary>
@@ -25,13 +26,15 @@ namespace Connection360Notification.Infrastructure.Sms
         /// <summary>Texto cuando falta el número de guía o el nuevo estado.</summary>
         public const String EmptyValue = "-";
 
-        public static String Render(NotificationType eventType, String? documentNumber, String? newStatus)
+        public static String Render(NotificationType eventType, String? documentNumber, String? newStatus, String? message = null)
         {
             String guide = Clean(documentNumber);
             String link = "nuestro sitio web.";
 
             String body = eventType switch
             {
+                NotificationType.Alert =>
+                    $"Alerta en el proceso de sincronización de la ETL: {Clean(message)}",
                 NotificationType.OtherInfo =>
                     $"Tu envío internacional con número de guía {guide} ha actualizado su información. Consulta los detalles y seguimiento en {link}",
                 NotificationType.Comment =>

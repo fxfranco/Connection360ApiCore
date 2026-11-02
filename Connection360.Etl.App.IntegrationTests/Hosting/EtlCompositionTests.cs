@@ -381,6 +381,77 @@ namespace Connection360.Etl.App.IntegrationTests.Hosting
         }
 
         [Fact]
+        public async Task EtlPrincipal_ApiExternaResponde500_RegistraLaAlertaEnOutboxConElErrorSanitizado()
+        {
+            var store = new InMemoryEtlStore();
+            var handler = CreateHandler(bpms: _ => EmptyPage());
+            handler.Routes["bpms.test"] = _ => (HttpStatusCode.InternalServerError, "{\"error\":\"boom\"}");
+            using var provider = BuildProvider(store, handler);
+            await using var scope = provider.CreateAsyncScope();
+
+            var result = await scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync();
+
+            result.Success.Should().BeFalse();
+            OutboxMessage alert = store.Outbox.Should().ContainSingle().Subject;
+            alert.EventType.Should().Be(EtlChangeEventType.Alert.ToDbValue());
+
+            using JsonDocument payload = JsonDocument.Parse(alert.Payload);
+            JsonElement root = payload.RootElement;
+            root.GetProperty("EventType").GetString().Should().Be("Alert");
+            root.GetProperty("Title").GetString().Should().Be("Alerta en proceso de ETL");
+            root.GetProperty("Message").GetString().Should().Be("Se generó un error 'El API externo respondió con status 500' en el proceso de ETL");
+            root.GetProperty("MessageDate").GetDateTime().Should().NotBe(default(DateTime));
+            root.GetProperty("ClientId").GetString().Should().BeEmpty();
+            root.GetProperty("DocumentNumber").GetString().Should().BeEmpty();
+            JsonElement channels = root.GetProperty("NotificationChannel");
+            channels.GetProperty("Application").GetBoolean().Should().BeTrue();
+            channels.GetProperty("Email").GetBoolean().Should().BeTrue();
+            channels.GetProperty("TextMessages").GetBoolean().Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task EtlPrincipal_ApiExternaResponde500_ElMensajeNoExponeLaUrlDeLaApi()
+        {
+            var store = new InMemoryEtlStore();
+            var handler = CreateHandler(bpms: _ => EmptyPage());
+            handler.Routes["bpms.test"] = _ => (HttpStatusCode.InternalServerError, "{\"error\":\"boom\"}");
+            using var provider = BuildProvider(store, handler);
+            await using var scope = provider.CreateAsyncScope();
+
+            await scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync();
+
+            store.Outbox.Single().Payload.Should().NotContain("bpms.test").And.NotContain("boom");
+        }
+
+        [Fact]
+        public async Task EtlPrincipal_FallaLaBaseDeDatosEnUnaRonda_NoRegistraAlertaDeExtraccion()
+        {
+            var store = new InMemoryEtlStore { FailOnUpsert = true };
+            var handler = CreateHandler(bpms: _ => StubApiHandler.Page(OperationalFields, Row("HBL-001", "A")));
+            using var provider = BuildProvider(store, handler);
+            await using var scope = provider.CreateAsyncScope();
+
+            var result = await scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync();
+
+            result.Success.Should().BeFalse();
+            store.Outbox.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task EtlPrincipal_CorridaExitosa_NoRegistraAlerta()
+        {
+            var store = new InMemoryEtlStore();
+            var handler = CreateHandler(bpms: _ => StubApiHandler.Page(OperationalFields, Row("HBL-001", "A")));
+            using var provider = BuildProvider(store, handler);
+            await using var scope = provider.CreateAsyncScope();
+
+            var result = await scope.ServiceProvider.GetRequiredService<IRunEtlProcessUseCase>().ExecuteAsync();
+
+            result.Success.Should().BeTrue();
+            store.Outbox.Should().NotContain(o => o.EventType == EtlChangeEventType.Alert.ToDbValue());
+        }
+
+        [Fact]
         public async Task EtlPrincipal_FallaLaBaseDeDatosEnUnaRonda_HaceRollbackYMarcaFailed()
         {
             var store = new InMemoryEtlStore { FailOnUpsert = true };

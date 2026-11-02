@@ -26,7 +26,10 @@ namespace Connection360Notification.Domain
         /// <summary>Identificador secuencial de negocio, asignado por el repositorio al guardar (ver <see cref="AssignSequentialId"/>).</summary>
         public Int64 IdNotification { get; private set; }
 
-        /// <summary>Identificador del cliente destinatario de la notificación.</summary>
+        /// <summary>
+        /// Identificador del cliente destinatario de la notificación. Vacío únicamente en las alertas del sistema
+        /// (<see cref="NotificationType.Alert"/>), que no pertenecen a ningún cliente.
+        /// </summary>
         public String ClientId { get; private set; }
 
         /// <summary>Tipo de evento que originó la notificación (viene en el Payload como "EventType").</summary>
@@ -105,7 +108,8 @@ namespace Connection360Notification.Domain
             String estadoAnterior = "",
             String nuevoEstado = "")
         {
-            if (String.IsNullOrWhiteSpace(clientId))
+            // Las alertas del sistema (p. ej. un error de la ETL) no tienen cliente: es la única excepción a la regla.
+            if (String.IsNullOrWhiteSpace(clientId) && eventType != NotificationType.Alert)
                 throw new ArgumentException("El cliente destino de la notificación es obligatorio.", nameof(clientId));
 
             if (String.IsNullOrWhiteSpace(message))
@@ -113,7 +117,7 @@ namespace Connection360Notification.Domain
 
             Id = String.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString() : id;
             IdNotification = idNotification;
-            ClientId = clientId;
+            ClientId = String.IsNullOrWhiteSpace(clientId) ? String.Empty : clientId;
             EventType = eventType;
             Message = message;
             DocumentNumber = documentNumber ?? String.Empty;
@@ -132,6 +136,44 @@ namespace Connection360Notification.Domain
 
         /// <summary>Asignado por el repositorio al guardar: identificador secuencial de negocio, consistente con NotificationsListResponse.IdNotification.</summary>
         public void AssignSequentialId(Int64 idNotification) => IdNotification = idNotification;
+
+        /// <summary>
+        /// Crea la copia de una ALERTA del sistema (<see cref="NotificationType.Alert"/>, que llega sin ClientId) dirigida a un cliente
+        /// concreto (el documento de un administrador). La copia es una notificación nueva e independiente: tiene su propio
+        /// <see cref="Id"/> (se guarda como un registro aparte) y sin <see cref="IdNotification"/> (el repositorio le asigna el
+        /// suyo), conserva el contenido, las fechas, el estado y los canales de la original, y el ClientId indicado
+        /// (un valor en blanco lo deja vacío). La original no se modifica.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">La notificación no es una alerta.</exception>
+        public NotificationMessage CopyForClient(String? clientId)
+        {
+            if (EventType != NotificationType.Alert)
+                throw new InvalidOperationException("Solo se puede dirigir a otro cliente una alerta del sistema.");
+
+            return new NotificationMessage(
+                clientId: String.IsNullOrWhiteSpace(clientId) ? String.Empty : clientId.Trim(),
+                eventType: EventType,
+                message: Message,
+                documentNumber: DocumentNumber,
+                title: Title,
+                messageDate: MessageDate,
+                status: Status,
+                notificationDate: NotificationDate,
+                idNotification: 0,
+                id: null,
+                notificationChannel: new NotificationChannelPreferences
+                {
+                    Application = NotificationChannel.Application,
+                    Email = NotificationChannel.Email,
+                    TextMessages = NotificationChannel.TextMessages
+                },
+                origen: Origen,
+                destino: Destino,
+                comentario: Comentario,
+                fechaComentario: FechaComentario,
+                estadoAnterior: EstadoAnterior,
+                nuevoEstado: NuevoEstado);
+        }
 
         /// <summary>Marca la notificación como leída.</summary>
         public void MarkAsRead() => Status = NotificationStatus.Read;

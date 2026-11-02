@@ -22,6 +22,7 @@ namespace Connection360Notification.Infrastructure.Email
     /// <param name="CommentDate">Fecha del comentario (FechaComentario). <c>default</c> => "-".</param>
     /// <param name="UpdatedAt">Fecha y hora (MessageDate de la notificación).</param>
     /// <param name="Conexion360Url">URL de Conexion360 (SmtpSettings:Conexion360Url). Solo se vuelve enlace si es http/https.</param>
+    /// <param name="Message">Mensaje de la notificación (Message). Solo se usa en las alertas (<see cref="NotificationType.Alert"/>), donde se muestra como el error informado.</param>
     public sealed record ShipmentStatusEmailValues(
         String? ClientName,
         String? DocumentNumber,
@@ -33,7 +34,8 @@ namespace Connection360Notification.Infrastructure.Email
         String? Comment,
         DateTime CommentDate,
         DateTime UpdatedAt,
-        String? Conexion360Url);
+        String? Conexion360Url,
+        String? Message = null);
 
     /// <summary>
     /// Arma el cuerpo HTML del correo a partir de la plantilla incrustada en el ensamblado. El texto
@@ -43,6 +45,7 @@ namespace Connection360Notification.Infrastructure.Email
     /// <item><description><see cref="NotificationType.ChangeState"/>: "Estado anterior" y "Nuevo estado"; sin Comentario ni Fecha comentario.</description></item>
     /// <item><description><see cref="NotificationType.Comment"/>: un único "Estado" (el nuevo estado) más Comentario y Fecha comentario.</description></item>
     /// <item><description><see cref="NotificationType.OtherInfo"/>: un único "Estado" (el nuevo estado); sin Comentario ni Fecha comentario.</description></item>
+    /// <item><description><see cref="NotificationType.Alert"/>: alerta del sistema (no hay envío). Conserva el saludo (con el nombre solo si se encontró al usuario; si no, sin nombre) y "Le informamos que se ha generado una alerta en el proceso de sincronización de la ETL con el error: {mensaje}"; oculta la información del envío y el enlace; y deja de la despedida únicamente "Esta notificación fue generada automáticamente por Conexión360", seguida de "Cordialmente..." y el logo.</description></item>
     /// </list>
     /// El texto de introducción también cambia con el tipo. Cada valor variable se codifica
     /// como HTML (nada de lo que llegue en la notificación o en la base se interpreta como marcado) y la sustitución se
@@ -62,6 +65,9 @@ namespace Connection360Notification.Infrastructure.Email
 
         /// <summary>Texto cuando el cliente no tiene nombre registrado (no existe en basicUserData).</summary>
         public const String DefaultClientName = "cliente";
+
+        /// <summary>Introducción de una alerta; se completa con el mensaje (el error) de la notificación y no lleva la marca "Conexión360".</summary>
+        public const String IntroAlert = "se ha generado una alerta en el proceso de sincronización de la ETL con el error:";
 
         /// <summary>Texto cuando la notificación no trae número de guía.</summary>
         public const String EmptyValue = "-";
@@ -124,16 +130,26 @@ namespace Connection360Notification.Infrastructure.Email
             // Cualquier tipo distinto de Comment/OtherInfo (incluido uno futuro) conserva el formato original de cambio de estado.
             Boolean isComment = values.EventType == NotificationType.Comment;
             Boolean isOtherInfo = values.EventType == NotificationType.OtherInfo;
+            Boolean isAlert = values.EventType == NotificationType.Alert;
 
             var sections = new Dictionary<String, Boolean>(StringComparer.Ordinal)
             {
-                ["MostrarCambioEstado"] = !isComment && !isOtherInfo,
+                ["MostrarCambioEstado"] = !isComment && !isOtherInfo && !isAlert,
                 ["MostrarEstadoUnico"] = isComment || isOtherInfo,
-                ["MostrarComentario"] = isComment
+                ["MostrarComentario"] = isComment,
+                // Una alerta no habla de un envío: sin datos del envío, sin enlace, sin la marca ni el propósito de seguimiento.
+                ["MostrarEnvio"] = !isAlert,
+                ["MostrarMarca"] = !isAlert,
+                ["MostrarProposito"] = !isAlert
             };
 
             String introduction = IntroChangeState;
-            if (isComment)
+            if (isAlert)
+            {
+                // El mensaje viene de la notificación: se codifica como HTML (el texto fijo de IntroAlert no lo necesita).
+                introduction = $"{IntroAlert} {Encode(Or(values.Message, EmptyValue))}";
+            }
+            else if (isComment)
             {
                 introduction = IntroComment;
             }
@@ -145,6 +161,9 @@ namespace Connection360Notification.Infrastructure.Email
             var replacements = new Dictionary<String, String>(StringComparer.Ordinal)
             {
                 ["ClienteNombre"] = Encode(Or(values.ClientName, DefaultClientName)),
+                // Saludo "Estimado/a{ClienteSaludo},": " nombre" (con su espacio) o nada. En una alerta no se usa el nombre por
+                // defecto "cliente": si no se encontró al usuario el saludo queda sin nombre.
+                ["ClienteSaludo"] = BuildGreetingName(values, isAlert),
                 ["NumeroGuia"] = Encode(Or(values.DocumentNumber, EmptyValue)),
                 // Textos fijos del propio código (no vienen de la notificación): no necesitan codificarse y se conservan con sus tildes.
                 ["TextoIntroduccion"] = introduction,
@@ -186,6 +205,16 @@ namespace Connection360Notification.Infrastructure.Email
             }
 
             return Encode(trimmed);
+        }
+
+        private static String BuildGreetingName(ShipmentStatusEmailValues values, Boolean isAlert)
+        {
+            if (!isAlert)
+            {
+                return " " + Encode(Or(values.ClientName, DefaultClientName));
+            }
+
+            return String.IsNullOrWhiteSpace(values.ClientName) ? String.Empty : " " + Encode(values.ClientName.Trim());
         }
 
         private static String Or(String? value, String fallback) => String.IsNullOrWhiteSpace(value) ? fallback : value.Trim();

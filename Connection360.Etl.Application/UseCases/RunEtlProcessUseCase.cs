@@ -75,6 +75,13 @@ namespace Connection360.Etl.Application.UseCases
     /// si cualquier inserción falla, toda la ronda (carga + log + outbox + avance) se revierte junto,
     /// garantizando que las 3 tablas siempre queden consistentes entre sí.
     /// </para>
+    /// <para>
+    /// <b>Alerta por error de extracción:</b> si el error ocurre al CONSULTAR las APIs externas (no al transformar o cargar), además
+    /// de marcar la corrida como FAILED y devolver el mensaje, se inserta en connection360write.outbox_messages un mensaje con
+    /// event_type "Alert" (título "Alerta en proceso de ETL", mensaje con el error sanitizado y los tres canales habilitados) para
+    /// que el servicio de notificaciones avise a los administradores - ver <see cref="EtlAlertNotifier"/> y <see cref="EtlErrorSanitizer"/>.
+    /// Una cancelación pedida por el propio proceso no genera alerta, y un fallo al registrar la alerta solo se deja en el log.
+    /// </para>
     /// </summary>
     public class RunEtlProcessUseCase : IRunEtlProcessUseCase
     {
@@ -146,6 +153,11 @@ namespace Connection360.Etl.Application.UseCases
             var outboxMessageRepository = _unitOfWork.GetRepository<IOutboxMessageRepository>();
             var customerNotificationChannelsRepository = _unitOfWork.GetRepository<ICustomerNotificationChannelsRepository>();
             var changeNotifier = new EtlChangeNotifier(logStatusTrackingRepository, outboxMessageRepository, customerNotificationChannelsRepository, _messageCatalog, _changeTrackingSystemUser);
+            var alertNotifier = new EtlAlertNotifier(outboxMessageRepository, _messageCatalog);
+
+            // Error que impidió CONSULTAR las APIs externas (distinto de un fallo al transformar o cargar). Si queda lleno al
+            // llegar al catch, además de marcar la corrida como FAILED se registra una alerta para los administradores.
+            Exception? extractionFailure = null;
 
             try
             {
@@ -171,10 +183,37 @@ namespace Connection360.Etl.Application.UseCases
                 IEnumerable<(String ApiName, IAsyncEnumerable<DynamicDataSet> Pages)> sources = OperationalApis
                     .Select(apiName => (ApiName: apiName, Pages: _externalDataGateway.FetchDataPagedAsync(apiName, filters, cancellationToken)));
 
-                await using var pageRounds = new MergedPageEnumerator(sources, cancellationToken);
+                MergedPageEnumerator pageRoundsSource;
+                try
+                {
+                    pageRoundsSource = new MergedPageEnumerator(sources, cancellationToken);
+                }
+                catch (Exception ex) when (IsExtractionFailure(ex, cancellationToken))
+                {
+                    extractionFailure = ex;
+                    throw;
+                }
+
+                await using var pageRounds = pageRoundsSource;
+
+                // Avanza una ronda de extracción. Un error aquí es, por definición, un error al CONSULTAR las APIs externas
+                // (las páginas se piden bajo demanda a la pasarela): se recuerda para alertar y se vuelve a lanzar tal cual,
+                // así el manejo actual del error (FAILED, mensaje, log) no cambia.
+                async Task<IReadOnlyDictionary<String, DynamicDataSet>?> MoveNextRoundTrackingFailureAsync()
+                {
+                    try
+                    {
+                        return await pageRounds.MoveNextRoundAsync();
+                    }
+                    catch (Exception ex) when (IsExtractionFailure(ex, cancellationToken))
+                    {
+                        extractionFailure = ex;
+                        throw;
+                    }
+                }
 
                 IReadOnlyDictionary<String, DynamicDataSet>? round;
-                while ((round = await pageRounds.MoveNextRoundAsync()) is not null)
+                while ((round = await MoveNextRoundTrackingFailureAsync()) is not null)
                 {
                     pageNumber++;
                     cancellationToken.ThrowIfCancellationRequested();
@@ -330,6 +369,8 @@ namespace Connection360.Etl.Application.UseCases
                 {
                     _logger.LogError(failEx, "No se pudo marcar el registro de migración inicial (etl_job_control) como FAILED.");
                 }
+
+                await NotifyExtractionFailureAsync(alertNotifier, extractionFailure, cancellationToken);
             }
             finally
             {
@@ -337,6 +378,37 @@ namespace Connection360.Etl.Application.UseCases
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Un error de extracción no es una cancelación pedida por quien ejecuta el proceso (cierre del servicio, token
+        /// cancelado): esas no son un fallo de las APIs externas y no generan alerta. Un tiempo de espera del HttpClient sí
+        /// llega como OperationCanceledException pero con el token todavía vigente, y sí es un fallo.
+        /// </summary>
+        private static Boolean IsExtractionFailure(Exception error, CancellationToken cancellationToken)
+            => !(error is OperationCanceledException && cancellationToken.IsCancellationRequested);
+
+        /// <summary>
+        /// Registra la alerta del fallo de extracción en outbox_messages (si lo hubo). Es "adicional" al manejo actual del
+        /// error: si la inserción falla se deja constancia en el log y nunca se propaga ni cambia el resultado de la corrida.
+        /// No usa el token de la corrida: la alerta debe poder registrarse aunque esa corrida se esté cerrando.
+        /// </summary>
+        private async Task NotifyExtractionFailureAsync(EtlAlertNotifier alertNotifier, Exception? extractionFailure, CancellationToken cancellationToken)
+        {
+            if (extractionFailure is null || !IsExtractionFailure(extractionFailure, cancellationToken))
+            {
+                return;
+            }
+
+            try
+            {
+                await alertNotifier.NotifyExtractionFailureAsync(extractionFailure, CancellationToken.None);
+                _logger.LogInformation("Se registró en outbox_messages la alerta del error de extracción del proceso ETL.");
+            }
+            catch (Exception alertEx)
+            {
+                _logger.LogError(alertEx, "No se pudo registrar en outbox_messages la alerta del error de extracción del proceso ETL.");
+            }
         }
 
         /// <summary>

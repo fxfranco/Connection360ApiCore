@@ -17,6 +17,9 @@ namespace Connection360.Infrastructure.Tests.Messaging
     /// construye pero nunca llega a conectarse: los escenarios con mensajes se detienen por
     /// cancelacion antes de que ProduceAsync pueda terminar. Intervalo de sondeo de 1 segundo.
     /// </summary>
+    // Misma colección que OutboxPublisherWorkerTelemetryTests: ambas clases ejecutan el worker, cuyo Meter y ActivitySource
+    // son estáticos y globales. Si corrieran en paralelo, los ciclos de una clase contaminarían los listeners de la otra.
+    [Collection("TelemetriaOutbox")]
     public class OutboxPublisherWorkerTests
     {
         private static readonly TimeSpan Guard = TimeSpan.FromSeconds(20);

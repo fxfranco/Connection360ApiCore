@@ -94,5 +94,26 @@ namespace Connection360.Etl.Domain.Test.Services
         {
             _sut.GetOtherInfoChangeMessage().Should().Be(_sut.GetOtherInfoChangeMessage());
         }
+
+        [Fact]
+        public void GetEtlAlertMessage_TituloFijoYMensajeConElError()
+        {
+            var (title, message) = _sut.GetEtlAlertMessage("El API externo respondió con status 500");
+
+            title.Should().Be("Alerta en proceso de ETL");
+            message.Should().Be("Se generó un error 'El API externo respondió con status 500' en el proceso de ETL");
+        }
+
+        [Theory]
+        [InlineData("  con espacios  ", "Se generó un error 'con espacios' en el proceso de ETL")]
+        [InlineData("", "Se generó un error '' en el proceso de ETL")]
+        [InlineData(null, "Se generó un error '' en el proceso de ETL")]
+        public void GetEtlAlertMessage_RecortaEspaciosYToleraVacios(String? error, String esperado)
+        {
+            var (title, message) = _sut.GetEtlAlertMessage(error!);
+
+            title.Should().Be("Alerta en proceso de ETL");
+            message.Should().Be(esperado);
+        }
     }
 }

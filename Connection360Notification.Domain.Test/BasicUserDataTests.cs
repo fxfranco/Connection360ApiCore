@@ -19,6 +19,22 @@ namespace Connection360Notification.Domain.Tests
         }
 
         [Fact]
+        public void Constructor_ConRol_AsignaElNombreDelRol()
+        {
+            var sut = new BasicUserData("auth0|1", "900123", "Ana Perez", "+573001112233", "ana@correo.com", "ADMIN");
+
+            sut.RoleName.Should().Be("ADMIN");
+        }
+
+        [Fact]
+        public void Constructor_SinRol_DejaElRolVacio()
+        {
+            var sut = new BasicUserData("auth0|1", "900123", "Ana Perez", "+573001112233", "ana@correo.com");
+
+            sut.RoleName.Should().BeEmpty();
+        }
+
+        [Fact]
         public void Igualdad_SeBasaEnLosValores()
         {
             var a = new BasicUserData("auth0|1", "900123", "Ana Perez", "+573001112233", "ana@correo.com");
@@ -27,6 +43,8 @@ namespace Connection360Notification.Domain.Tests
             a.Should().Be(b);
             (a with { FullName = "Otra Persona" }).Should().NotBe(b);
             (a with { Email = "otro@correo.com" }).Should().NotBe(b);
+            (a with { RoleName = "ADMIN" }).Should().NotBe(b);
+            (a with { RoleName = "ADMIN" }).Should().Be(b with { RoleName = "ADMIN" });
         }
     }
 }

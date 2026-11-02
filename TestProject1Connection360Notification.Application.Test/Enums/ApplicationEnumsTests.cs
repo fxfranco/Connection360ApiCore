@@ -12,7 +12,8 @@ namespace Connection360Notification.Application.Tests.Enums
             ((Int32)NotificationType.ChangeState).Should().Be(0);
             ((Int32)NotificationType.Comment).Should().Be(1);
             ((Int32)NotificationType.OtherInfo).Should().Be(2);
-            System.Enum.GetValues<NotificationType>().Should().HaveCount(3);
+            ((Int32)NotificationType.Alert).Should().Be(3);
+            System.Enum.GetValues<NotificationType>().Should().HaveCount(4);
         }
 
         [Fact]

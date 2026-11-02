@@ -23,3 +23,7 @@ d0d2907b4c074153e8c25130b15e1adfb25d420f:Connection360.Api/appsettings.json:gene
 
 # Falso positivo: argumento de configuración de una prueba (no es una credencial). Commit que introdujo la línea.
 4221200d315fc84ca3cdde0ebb270c04ddbd94b9:Connection360.Etl.App.IntegrationTests/Hosting/ProgramTests.cs:generic-api-key:224
+
+# Falso positivo: JWT de ejemplo (encabezado.carga.firma sin valor real) en una prueba del sanitizador del ETL. Commit que introdujo el literal;
+# en el código actual el JWT ya se arma en tiempo de ejecución y no aparece como literal.
+5880eef01e354cd6087b6355e6735cd25d44f9eb:Connection360.Etl.Application.Test/UseCases/EtlErrorSanitizerTests.cs:jwt:146

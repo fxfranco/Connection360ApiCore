@@ -213,6 +213,14 @@ services:
       ExternalApi__Apis__OPENSTREETMAP__DataEndpoint: /search?q=
       ExternalApi__Apis__OPENSTREETMAP__ApiKey: ${OPENSTREETMAP_API_KEY:-}
       ExternalApi__Apis__OPENSTREETMAP__TimeoutSeconds: ${EXTERNAL_API_TIMEOUT_SECONDS:-30}
+      # Caché en memoria de coordenadas (OpenStreetMap) del detalle de envíos. El tope de memoria evita que crezca sin
+      # límite en la instancia; al llenarse se descartan primero las entradas más viejas. COORDINATES_CACHE_ENABLED=false la desactiva.
+      CoordinatesCache__Enabled: ${COORDINATES_CACHE_ENABLED:-true}
+      CoordinatesCache__MaxSizeBytes: ${COORDINATES_CACHE_MAX_SIZE_BYTES:-10485760}
+      CoordinatesCache__EvictionPercentage: ${COORDINATES_CACHE_EVICTION_PERCENTAGE:-0.2}
+      CoordinatesCache__AbsoluteExpiration: ${COORDINATES_CACHE_ABSOLUTE_EXPIRATION:-30.00:00:00}
+      CoordinatesCache__SlidingExpiration: ${COORDINATES_CACHE_SLIDING_EXPIRATION:-7.00:00:00}
+      CoordinatesCache__MaxKeyLength: ${COORDINATES_CACHE_MAX_KEY_LENGTH:-200}
     healthcheck:
       <<: *api-healthcheck
     networks:
