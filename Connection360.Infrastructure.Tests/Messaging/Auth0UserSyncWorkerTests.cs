@@ -285,6 +285,12 @@ namespace Connection360.Infrastructure.Tests.Messaging
             interval.Should().Be(TimeSpan.FromMinutes(expectedMinutes));
         }
 
+        [Fact]
+        public void RateLimitedRetryDelay_EsDeAlMenosUnMinuto_ParaNoPrologarElBloqueoPorLimiteDePeticiones()
+        {
+            Auth0UserSyncWorker.RateLimitedRetryDelay.Should().BeGreaterThanOrEqualTo(TimeSpan.FromSeconds(60));
+        }
+
         [Theory]
         [InlineData(0, 0)]
         [InlineData(5, 5)]

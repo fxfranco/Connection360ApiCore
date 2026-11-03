@@ -45,6 +45,42 @@ namespace Connection360.Infrastructure.Tests.Adapters
         }
 
         [Fact]
+        public void IsRateLimited_ConManagementApiExceptionDe429_EsVerdadero()
+        {
+            var error = new ManagementApiException("Global limit has been reached", 429, "cuerpo", null, null);
+
+            Auth0ManagementErrors.IsRateLimited(error).Should().BeTrue();
+        }
+
+        [Fact]
+        public void IsRateLimited_ConElErrorEnvuelto_EsVerdadero()
+        {
+            var inner = new ManagementApiException("Global limit has been reached", 429, "cuerpo", null, null);
+
+            Auth0ManagementErrors.IsRateLimited(new InvalidOperationException("envuelto", inner)).Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData(400)]
+        [InlineData(401)]
+        [InlineData(403)]
+        [InlineData(404)]
+        [InlineData(500)]
+        public void IsRateLimited_ConOtrosCodigosHttp_EsFalso(Int32 statusCode)
+        {
+            var error = new ManagementApiException("otro error", statusCode, "cuerpo", null, null);
+
+            Auth0ManagementErrors.IsRateLimited(error).Should().BeFalse();
+        }
+
+        [Fact]
+        public void IsRateLimited_ConNuloOExcepcionesNoDeAuth0_EsFalso()
+        {
+            Auth0ManagementErrors.IsRateLimited(null).Should().BeFalse();
+            Auth0ManagementErrors.IsRateLimited(new InvalidOperationException("x")).Should().BeFalse();
+        }
+
+        [Fact]
         public void RoleLookupScopes_NombraLosPermisosNecesarios()
         {
             Auth0ManagementErrors.RoleLookupScopes.Should().Contain("read:users").And.Contain("read:roles").And.Contain("read:role_members");

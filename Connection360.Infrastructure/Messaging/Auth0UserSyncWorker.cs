@@ -2,6 +2,7 @@
 using Connection360.Domain.Dtos;
 using Connection360.Domain.Interfaces;
 using Connection360.Domain.Time;
+using Connection360.Infrastructure.Adapters.Output;
 using Connection360.Observability.Domain.Telemetry;
 using Connection360Notification.Domain.Settings;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,12 +28,19 @@ namespace Connection360.Infrastructure.Messaging
         /// <summary>Intentos de la sincronización inicial si falla (p. ej. Auth0 o Kafka aún no disponibles al arrancar).</summary>
         private const Int32 StartupAttempts = 3;
 
+        /// <summary>
+        /// Espera mínima antes de reintentar cuando Auth0 respondió 429 (límite de peticiones). Reintentar a los pocos segundos solo
+        /// consume más del mismo límite y prolonga el bloqueo, así que se espera al menos esto aunque <c>StartupRetryDelaySeconds</c> sea menor.
+        /// </summary>
+        public static readonly TimeSpan RateLimitedRetryDelay = TimeSpan.FromSeconds(60);
+
         private static readonly JsonSerializerOptions MessageSerializerOptions = new(JsonSerializerDefaults.Web);
 
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<Auth0UserSyncWorker> _logger;
         private readonly IProducer<String, String> _producer;
         private readonly IOptionsMonitor<Auth0UserSyncSettings> _settings;
+        private volatile Boolean _lastFailureWasRateLimited;
 
         // Métricas propias del sincronizador (librería nativa System.Diagnostics.Metrics).
         private static readonly Counter<long> SyncedUsers = Connection360Telemetry.Meter.CreateCounter<long>(
@@ -91,7 +99,13 @@ namespace Connection360.Infrastructure.Messaging
 
                 if (attempt < StartupAttempts)
                 {
-                    await Task.Delay(GetStartupRetryDelay(), cancellationToken);
+                    TimeSpan delay = GetStartupRetryDelay();
+                    if (_lastFailureWasRateLimited && delay < RateLimitedRetryDelay)
+                    {
+                        delay = RateLimitedRetryDelay;
+                    }
+
+                    await Task.Delay(delay, cancellationToken);
                 }
             }
         }
@@ -109,6 +123,8 @@ namespace Connection360.Infrastructure.Messaging
                 _logger.LogInformation("Auth0UserSyncWorker deshabilitado (Auth0UserSync:Enabled = false); se omite la sincronización.");
                 return true;
             }
+
+            _lastFailureWasRateLimited = false;
 
             if (_logger.IsEnabled(LogLevel.Information))
             {
@@ -160,7 +176,17 @@ namespace Connection360.Infrastructure.Messaging
                 span?.AddException(ex);
                 span?.SetStatus(ActivityStatusCode.Error, ex.Message);
                 SyncCycles.Add(1, new KeyValuePair<String, Object?>("success", false));
-                _logger.LogError(ex, "Error no controlado Auth0UserSyncWorker {Ex}", ex);
+                _lastFailureWasRateLimited = Auth0ManagementErrors.IsRateLimited(ex);
+                if (_lastFailureWasRateLimited)
+                {
+                    _logger.LogWarning(ex,
+                        "Auth0 alcanzó el límite de peticiones de la Management API (429); se reintenta más tarde. Revisa que no haya otra instancia (por ejemplo una local) sincronizando contra el mismo tenant.");
+                }
+                else
+                {
+                    _logger.LogError(ex, "Error no controlado Auth0UserSyncWorker {Ex}", ex);
+                }
+
                 return false;
             }
         }
