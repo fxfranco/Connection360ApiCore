@@ -11,8 +11,28 @@ namespace Connection360.Infrastructure.Adapters.Output
 {
     public class Auth0UserService : IAuth0UserService
     {
-        /// <summary>Cantidad máxima de consultas simultáneas de rol contra la Management API al listar usuarios.</summary>
-        private const Int32 MaxConcurrentRoleLookups = 5;
+        /// <summary>
+        /// Cantidad máxima de consultas simultáneas de rol contra la Management API al listar usuarios (GetUsersAsync). Es baja a
+        /// propósito: los tenants gratuitos de Auth0 tienen un límite de peticiones por segundo muy bajo y superarlo da 429.
+        /// </summary>
+        private const Int32 MaxConcurrentRoleLookups = 2;
+
+        /// <summary>
+        /// Hasta esta cantidad de usuarios el rol se consulta por usuario (1 llamada cada uno); con más se usa la consulta por
+        /// pertenencia a roles, que cuesta lo mismo sin importar cuántos usuarios se listen. Se mantiene por debajo del cupo de ráfaga
+        /// (10 peticiones) que Auth0 aplica a los tenants gratuitos.
+        /// </summary>
+        private const Int32 PerUserRoleLookupMaxUsers = 5;
+
+        /// <summary>Miembros por página al listar los usuarios de un rol (<c>GET /api/v2/roles/{id}/users</c>).</summary>
+        private const Int32 RoleMembersPageSize = 100;
+
+        /// <summary>
+        /// Clientes de la Management API compartidos por proceso (uno por dominio/aplicación M2M). Cada <see cref="ManagementClient"/>
+        /// pide y guarda su propio token de acceso, así que crear uno por operación obligaba a pedir un token nuevo y a abrir una conexión
+        /// nueva en cada llamada (más peticiones al límite global del tenant y, con el tiempo, agotamiento de sockets).
+        /// </summary>
+        private static readonly ConcurrentDictionary<(String Domain, String ClientId, String ClientSecret), Lazy<ManagementClient>> SharedClients = new();
 
         /// <summary>Usuarios por página al sincronizar (máximo permitido por Auth0: 100).</summary>
         private const Int32 BasicUsersPageSize = 100;
@@ -35,16 +55,28 @@ namespace Connection360.Infrastructure.Adapters.Output
         private ManagementClient GetManagementApiClientAsync()
         {
             var domain = _config["Auth0Management:Domain"]!;
+            var clientId = _config["Auth0Management:ClientId"]!;
+            var clientSecret = _config["Auth0Management:ClientSecret"]!;
 
-            return new ManagementClient(new ManagementClientOptions
-            {
-                Domain = domain,
-                TokenProvider = new ClientCredentialsTokenProvider(
-                    domain: domain,
-                    clientId: _config["Auth0Management:ClientId"]!,
-                    clientSecret: _config["Auth0Management:ClientSecret"]!
-                )
-            });
+            // PublicationOnly: si la configuración es inválida (el SDK lanza ArgumentException) el error no queda guardado y se
+            // vuelve a evaluar en la siguiente llamada, por ejemplo después de corregir el appsettings.
+            Lazy<ManagementClient> shared = SharedClients.GetOrAdd(
+                (domain ?? String.Empty, clientId ?? String.Empty, clientSecret ?? String.Empty),
+                _ => new Lazy<ManagementClient>(() => new ManagementClient(new ManagementClientOptions
+                {
+                    Domain = domain,
+                    // HttpClient que prueba IPv4 primero (ver Auth0HttpClientFactory): sin él, una red con IPv6 roto agotaba el
+                    // timeout de 30 s del SDK antes de que .NET llegara a una dirección IPv4 que sí funciona.
+                    HttpClient = Auth0HttpClientFactory.Shared,
+                    TokenProvider = new ClientCredentialsTokenProvider(
+                        domain: domain,
+                        clientId: clientId,
+                        clientSecret: clientSecret,
+                        httpClient: Auth0HttpClientFactory.Shared
+                    )
+                }), LazyThreadSafetyMode.PublicationOnly));
+
+            return shared.Value;
         }
 
         /// <summary>
@@ -353,14 +385,71 @@ namespace Connection360.Infrastructure.Adapters.Output
                     }
                 }
 
-                // El rol tampoco viene en /users: se consulta por usuario, igual que en GetUsersAsync.
-                IReadOnlyDictionary<String, Auth0.ManagementApi.Role?> assignedRoles = await LookupRolesAsync(client, users.Keys, cancellationToken);
+                // El rol tampoco viene en /users. En vez de una consulta por usuario (N llamadas, que agotaba el límite de peticiones
+                // de Auth0 con 429), se listan los roles y los miembros de cada rol: 1 + (roles x páginas) llamadas.
+                IReadOnlyDictionary<String, Auth0.ManagementApi.Role> rolesByUser = await LookupRolesByMembershipAsync(client, cancellationToken);
                 Auth0UserBasicMapper.ApplyRoleNames(
                     users.Values,
-                    assignedRoles.ToDictionary(entry => entry.Key, entry => entry.Value?.Name, StringComparer.Ordinal));
+                    rolesByUser.ToDictionary(entry => entry.Key, entry => (String?)entry.Value.Name, StringComparer.Ordinal));
 
                 return users.Values.ToList();
             });
+        }
+
+        /// <summary>
+        /// Rol de cada usuario recorriendo los roles y sus miembros (<c>GET /api/v2/roles</c> y
+        /// <c>GET /api/v2/roles/{id}/users</c>) en lugar de consultar usuario por usuario. Las llamadas son secuenciales (pocos roles) para
+        /// respetar el límite de peticiones de la Management API. Si un usuario tuviera varios roles se conserva el primero que
+        /// devuelve Auth0 (la aplicación maneja un único rol por usuario). Si Auth0 responde 403 (faltan permisos de lectura de roles) se
+        /// registra una advertencia y se devuelve un diccionario vacío: los usuarios se sincronizan con el rol vacío. Cualquier otro
+        /// error (p. ej. 429) se propaga para que el ciclo falle y se reintente sin publicar datos parciales.
+        /// </summary>
+        private async Task<IReadOnlyDictionary<String, Auth0.ManagementApi.Role>> LookupRolesByMembershipAsync(ManagementClient client, CancellationToken cancellationToken)
+        {
+            Dictionary<String, Auth0.ManagementApi.Role> rolesByUser = new Dictionary<String, Auth0.ManagementApi.Role>(StringComparer.Ordinal);
+
+            try
+            {
+                var rolesPager = await client.Roles.ListAsync(
+                    new ListRolesRequestParameters { Page = 0, PerPage = 50, IncludeTotals = true },
+                    cancellationToken: cancellationToken);
+
+                await foreach (var rolesPage in rolesPager.AsPagesAsync(cancellationToken))
+                {
+                    foreach (Auth0.ManagementApi.Role role in rolesPage.Items)
+                    {
+                        if (String.IsNullOrEmpty(role.Id))
+                        {
+                            continue;
+                        }
+
+                        var membersPager = await client.Roles.Users.ListAsync(
+                            role.Id,
+                            new Auth0.ManagementApi.Roles.ListRoleUsersRequestParameters { Take = RoleMembersPageSize },
+                            cancellationToken: cancellationToken);
+
+                        await foreach (var membersPage in membersPager.AsPagesAsync(cancellationToken))
+                        {
+                            foreach (Auth0.ManagementApi.RoleUser member in membersPage.Items)
+                            {
+                                if (!String.IsNullOrEmpty(member.UserId))
+                                {
+                                    rolesByUser.TryAdd(member.UserId, role);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return rolesByUser;
+            }
+            catch (Exception ex) when (Auth0ManagementErrors.IsForbidden(ex))
+            {
+                _logger?.LogWarning(
+                    "Auth0 rechazó la consulta de los roles y sus miembros ({Message}). Autoriza a la aplicación M2M de Auth0Management en la Management API con los permisos {Scopes}; mientras tanto RoleName se sincroniza vacío.",
+                    ex.Message, Auth0ManagementErrors.RoleLookupScopes);
+                return new Dictionary<String, Auth0.ManagementApi.Role>(StringComparer.Ordinal);
+            }
         }
 
         /// <summary>
@@ -445,7 +534,23 @@ namespace Connection360.Infrastructure.Adapters.Output
         /// </summary>
         private async Task FillRolesAsync(ManagementClient client, IList<Auth0UserDto> users)
         {
-            IReadOnlyDictionary<String, Auth0.ManagementApi.Role?> roles = await LookupRolesAsync(client, users.Select(user => user.UserId));
+            List<String> userIds = users.Select(user => user.UserId).Where(id => !String.IsNullOrEmpty(id)).Distinct(StringComparer.Ordinal).ToList();
+
+            // Pocos usuarios: una consulta de rol por usuario. Muchos: una sola pasada por los roles y sus miembros (ver
+            // LookupRolesByMembershipAsync), para no gastar el cupo de peticiones de Auth0 (429 "Global limit has been reached").
+            IReadOnlyDictionary<String, Auth0.ManagementApi.Role?> roles;
+            if (userIds.Count <= PerUserRoleLookupMaxUsers)
+            {
+                roles = await LookupRolesAsync(client, userIds);
+            }
+            else
+            {
+                IReadOnlyDictionary<String, Auth0.ManagementApi.Role> byMembership = await LookupRolesByMembershipAsync(client, CancellationToken.None);
+                roles = userIds.ToDictionary(
+                    id => id,
+                    id => byMembership.TryGetValue(id, out Auth0.ManagementApi.Role? found) ? found : null,
+                    StringComparer.Ordinal);
+            }
 
             foreach (Auth0UserDto user in users)
             {
