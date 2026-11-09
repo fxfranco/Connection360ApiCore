@@ -31,7 +31,7 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
         public async Task GetAllNotifications_ConRolValido_Retorna200()
         {
             _factory.NotificationsUseCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
+                .Setup(u => u.ExecuteGetNotificationsByClientAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<NotificationsListResponse>());
 
             var request = AuthorizedRequest(HttpMethod.Get, "/api/v1/notifications/allnotifications?idClient=123", roles: "CLIENT");

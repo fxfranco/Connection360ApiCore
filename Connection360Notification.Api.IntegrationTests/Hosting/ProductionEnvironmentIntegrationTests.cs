@@ -1,4 +1,5 @@
 ﻿using Connection360Notification.Api.IntegrationTests.Infrastructure;
+using Connection360Notification.Application.DTOs;
 using FluentAssertions;
 using Moq;
 using System.Net;
@@ -60,10 +61,13 @@ namespace Connection360Notification.Api.IntegrationTests.Hosting
         public async Task ExcepcionNoControlada_EnProduccion_LaCapturaElMiddlewareDeExcepciones()
         {
             _factory.NotificationsUseCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
+                .Setup(u => u.ExecuteGetNotificationsByClientAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("detalle"));
+            var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/notifications/allnotifications?idClient=1");
+            request.Headers.Add("X-Test-Auth", "true");
+            request.Headers.Add("X-Test-Roles", "CLIENT");
 
-            HttpResponseMessage response = await _client.GetAsync("/api/v1/notifications/allnotificationslistTest");
+            HttpResponseMessage response = await _client.SendAsync(request);
 
             response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
             using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());

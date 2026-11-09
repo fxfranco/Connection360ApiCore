@@ -26,9 +26,9 @@ namespace Connection360Notification.Api.Tests.Controllers
         public async Task GetAllNotifications_RetornaOkConLaListaDelUseCase()
         {
             var expected = new List<NotificationsListResponse> { new() { IdNotification = 1 } };
-            _useCaseMock.Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(expected);
+            _useCaseMock.Setup(u => u.ExecuteGetNotificationsByClientAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>())).ReturnsAsync(expected);
 
-            IActionResult result = await _sut.GetAllNotificationsDB(CancellationToken.None);
+            IActionResult result = await _sut.GetAllNotifications("123", CancellationToken.None);
 
             var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
             okResult.Value.Should().BeSameAs(expected);

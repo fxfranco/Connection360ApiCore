@@ -111,40 +111,5 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
 
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
-
-        [Fact]
-        public async Task GetAllNotificationsDB_ListaTodasLasNotificacionesSinAutenticacion()
-        {
-            _factory.NotificationRepositoryMock
-                .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<NotificationMessage>
-                {
-                    Notification("c1", "a", new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), 1),
-                    Notification("c2", "b", new DateTime(2024, 2, 1, 0, 0, 0, DateTimeKind.Utc), 2)
-                });
-
-            HttpResponseMessage response = await _client.GetAsync("/api/v1/notifications/allnotificationslistTest");
-
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            JsonElement data = doc.RootElement.GetProperty("dataResponse");
-            data.GetArrayLength().Should().Be(2);
-            data[0].GetProperty("clientId").GetString().Should().Be("c2");
-        }
-
-        [Fact]
-        public async Task GetAllNotificationsDB_CuandoElRepositorioFalla_Retorna500ConElEnvoltorioDeError()
-        {
-            _factory.NotificationRepositoryMock
-                .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("mongo caido"));
-
-            HttpResponseMessage response = await _client.GetAsync("/api/v1/notifications/allnotificationslistTest");
-
-            response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-            using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            doc.RootElement.GetProperty("message").GetString().Should().Be("Error interno del servidor");
-            doc.RootElement.GetProperty("error").GetString().Should().Be("mongo caido");
-        }
     }
 }

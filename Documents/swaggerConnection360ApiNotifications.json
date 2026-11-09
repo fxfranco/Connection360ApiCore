@@ -81,30 +81,6 @@
           }
         }
       }
-    },
-    "/api/v1/notifications/allnotificationslistTest": {
-      "get": {
-        "tags": [
-          "Notifications"
-        ],
-        "summary": "Obtiene todas las notificaciones almacenadas, sin filtrar por cliente.",
-        "description": "Endpoint de prueba (nombre \"allnotificationslistTest\") habilitado con `[AllowAnonymous]`, es decir,\r\nno requiere autenticación. Devuelve directamente las entidades de dominio Connection360Notification.Domain.NotificationMessage\r\ntal como están almacenadas.",
-        "responses": {
-          "200": {
-            "description": "Lista completa de notificaciones.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Connection360Notification.Domain.NotificationMessage"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -164,70 +140,12 @@
       "Connection360Notification.Application.Enum.NotificationType": {
         "enum": [
           0,
-          1
+          1,
+          2,
+          3
         ],
         "type": "integer",
         "format": "int32"
-      },
-      "Connection360Notification.Domain.Enums.NotificationStatus": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
-      "Connection360Notification.Domain.Enums.NotificationType": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
-      "Connection360Notification.Domain.NotificationMessage": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "idNotification": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "clientId": {
-            "type": "string",
-            "nullable": true
-          },
-          "type": {
-            "$ref": "#/components/schemas/Connection360Notification.Domain.Enums.NotificationType"
-          },
-          "documentNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
-          "messageDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "$ref": "#/components/schemas/Connection360Notification.Domain.Enums.NotificationStatus"
-          },
-          "notificationDate": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "additionalProperties": false
       },
       "Microsoft.AspNetCore.Mvc.ProblemDetails": {
         "type": "object",

@@ -32,18 +32,16 @@ namespace Connection360.Api.Controllers
         private readonly ICustomerNotificationsSettingsUseCase _customerNotificationsSettingsUseCase;
         private readonly IMasterSettingsUseCase _masterSettingsUseCase;
         private readonly ICollaboratorUseCase _collaboratorUseCase;
-        private readonly IOutboxMessagesUseCase _outboxMessagesUseCase;
 
         public SettingsController(IGetUserManagementUseCase getUserManagementUseCase, ICustomerUseCase customerUseCase, 
             ICustomerNotificationsSettingsUseCase customerNotificationsSettingsUseCase,
-            IMasterSettingsUseCase masterSettingsUseCase, ICollaboratorUseCase collaboratorUseCase, IOutboxMessagesUseCase outboxMessagesUseCase)
+            IMasterSettingsUseCase masterSettingsUseCase, ICollaboratorUseCase collaboratorUseCase)
         {
             _getUserManagementUseCase = getUserManagementUseCase;
             _customerUseCase = customerUseCase;
             _customerNotificationsSettingsUseCase = customerNotificationsSettingsUseCase;
             _masterSettingsUseCase = masterSettingsUseCase;
             _collaboratorUseCase = collaboratorUseCase;
-            _outboxMessagesUseCase = outboxMessagesUseCase;
         }
 
         /// <summary>
@@ -519,26 +517,6 @@ namespace Connection360.Api.Controllers
         {
             List<CustomerCollaboratorRelationDtoResult> resultado = await _collaboratorUseCase.ListCustomerCollaboratorAsync(cancellationToken);
             return Ok(resultado);
-        }
-
-        /// <summary>
-        /// Endpoint de prueba: encola un mensaje de notificación en el patrón Outbox para su
-        /// posterior publicación. Endpoint anónimo pensado para pruebas, no para el flujo normal de
-        /// la aplicación.
-        /// </summary>
-        /// <param name="outboxMessages">Datos del mensaje a encolar.</param>
-        /// <param name="cancellationToken">Token de cancelación de la solicitud.</param>
-        /// <returns>El resultado de la operación.</returns>
-        /// <response code="204">Reservado para compatibilidad; en caso de éxito este endpoint responde 200 con el resultado.</response>
-        [HttpPost("generatenotificationOutboxTest")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<ActionResult> GeneratenotificationOutbox(CreateOutboxMessagesDto outboxMessages, CancellationToken cancellationToken)
-        {
-            Boolean result = await _outboxMessagesUseCase.CreateAsync(outboxMessages, cancellationToken);
-
-            return result ? Ok(result) : Problem(detail: ProcessFailedMessage,
-                   statusCode: StatusCodes.Status500InternalServerError,
-                   title: "Error al generar notificacion outbox en el api core");
         }
     }
 }
