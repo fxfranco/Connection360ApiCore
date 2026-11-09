@@ -1365,39 +1365,6 @@
           }
         }
       }
-    },
-    "/api/v1/settings/generatenotificationOutboxTest": {
-      "post": {
-        "tags": [
-          "Settings"
-        ],
-        "summary": "Endpoint de prueba: encola un mensaje de notificación en el patrón Outbox para su\r\nposterior publicación. Endpoint anónimo pensado para pruebas, no para el flujo normal de\r\nla aplicación.",
-        "requestBody": {
-          "description": "Datos del mensaje a encolar.",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOutboxMessagesDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOutboxMessagesDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateOutboxMessagesDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Reservado para compatibilidad; en caso de éxito este endpoint responde 200 con el resultado."
-          }
-        }
-      }
     }
   },
   "components": {
@@ -1688,37 +1655,6 @@
           "dataRetentionDays": {
             "type": "integer",
             "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "CreateOutboxMessagesDto": {
-        "type": "object",
-        "properties": {
-          "clientId": {
-            "type": "string",
-            "nullable": true
-          },
-          "eventType": {
-            "type": "string",
-            "nullable": true
-          },
-          "documentNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
-          "messageDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
           }
         },
         "additionalProperties": false
