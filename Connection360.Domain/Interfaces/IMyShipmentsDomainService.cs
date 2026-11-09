@@ -1,0 +1,15 @@
+﻿using Connection360.Domain.Dtos;
+using Connection360.Domain.Entities;
+using Connection360.Domain.Services;
+
+namespace Connection360.Domain.Interfaces
+{
+    public interface IMyShipmentsDomainService
+    {
+        MyShipmentsDomainResult GetAllShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size);
+        MyShipmentsDomainResult GetFiltersShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size, MyShipmentsFiltersDto filters);        
+        MyShipmentsDomainResult GetHistoryAllShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size);
+        MyShipmentsDomainResult GetFiltersHistoryShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, Int64 page, Int64 size, MyShipmentsFiltersDto filters);
+        DetailsShipmentsDomainDtoResult GetDetailsShipments(DynamicDataSet dataSet, String clientId, List<CustomersOfCollaboratorDtoResult>? customersOfCollaborator, String DocumentNumber);
+    }
+}

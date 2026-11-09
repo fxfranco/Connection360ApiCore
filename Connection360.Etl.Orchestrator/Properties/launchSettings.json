@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "Connection360.Etl.Orchestrator": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

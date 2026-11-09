@@ -1,0 +1,432 @@
+﻿using Connection360Notification.Api.IntegrationTests.Infrastructure;
+using Connection360Notification.Application.DTOs;
+using Connection360Notification.Application.Ports;
+using Connection360Notification.Application.Ports.Inbound;
+using Connection360Notification.Application.Ports.Output;
+using Connection360Notification.Application.Services;
+using Connection360Notification.Application.UseCases;
+using Connection360Notification.Domain;
+using Connection360Notification.Domain.Enums;
+using Connection360Notification.Domain.Settings;
+using Connection360Notification.Infrastructure.Adapters.Input;
+using Connection360Notification.Infrastructure.Messaging;
+using Connection360Notification.Infrastructure.Persistence.Mongo;
+using FluentAssertions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Moq;
+using System.Text.Json;
+using Xunit;
+
+namespace Connection360Notification.Api.IntegrationTests.Hosting
+{
+    /// <summary>
+    /// Pruebas del arranque real (Program.cs): contenedor de DI, binding de configuración y servicios hospedados.
+    /// </summary>
+    public class ProgramHostIntegrationTests : IClassFixture<CustomWebApplicationFactory>
+    {
+        private readonly CustomWebApplicationFactory _factory;
+
+        public ProgramHostIntegrationTests(CustomWebApplicationFactory factory)
+        {
+            _factory = factory;
+            _factory.ResetMocks();
+        }
+
+        // ---------- Contenedor de DI ----------
+
+        [Fact]
+        public void Host_ResuelveLosCasosDeUsoRealesDeLaCapaDeAplicacion()
+        {
+            using IServiceScope scope = _factory.Services.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>().Should().NotBeNull();
+            scope.ServiceProvider.GetRequiredService<INotificationUseCase>().Should().NotBeNull();
+            scope.ServiceProvider.GetRequiredService<IGetNotificationsUseCase>().Should().NotBeNull();
+        }
+
+        [Fact]
+        public void Host_ResuelveElProveedorDeIdDeUsuarioPersonalizadoParaSignalR()
+        {
+            _factory.Services.GetRequiredService<IUserIdProvider>().Should().BeOfType<CustomUserIdProvider>();
+        }
+
+        [Fact]
+        public void Host_ResuelveElHubContextDeNotificaciones()
+        {
+            _factory.Services.GetRequiredService<IHubContext<NotificationHub>>().Should().NotBeNull();
+        }
+
+        [Fact]
+        public void Host_RegistraElConsumidorDeKafkaYElInicializadorDeIndicesComoServiciosHospedados()
+        {
+            _factory.CreateClient();
+
+            _factory.RegisteredHostedServiceTypes.Should().Contain(typeof(KafkaConsumerHostedService));
+            _factory.RegisteredHostedServiceTypes.Should().Contain(typeof(MongoIndexInitializer));
+        }
+
+        [Fact]
+        public void Host_RegistraElConsumidorYElInicializadorDeIndicesDeUsuariosBasicos()
+        {
+            _factory.CreateClient();
+
+            _factory.RegisteredHostedServiceTypes.Should().Contain(typeof(BasicUserDataConsumerHostedService));
+            _factory.RegisteredHostedServiceTypes.Should().Contain(typeof(BasicUserDataIndexInitializer));
+        }
+
+        [Fact]
+        public void Host_ResuelveElCasoDeUsoDeSincronizacionDeUsuariosBasicos()
+        {
+            using IServiceScope scope = _factory.Services.CreateScope();
+
+            scope.ServiceProvider.GetRequiredService<ISyncBasicUsersUseCase>().Should().BeOfType<SyncBasicUsersUseCase>();
+        }
+
+        [Fact]
+        public void Configuracion_BindeaBasicUserSyncDesdeAppsettings()
+        {
+            BasicUserSyncSettings settings = _factory.Services.GetRequiredService<IOptions<BasicUserSyncSettings>>().Value;
+
+            settings.Topic.Should().Be("notification-users");
+            settings.CollectionName.Should().Be("basicUserData");
+        }
+
+        [Fact]
+        public async Task SyncBasicUsersUseCase_ResueltoDesdeElHost_GuardaPorElPuertoDeSalida()
+        {
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<ISyncBasicUsersUseCase>();
+            Guid syncId = Guid.NewGuid();
+            var message = new BasicUsersSyncMessage
+            {
+                SyncId = syncId,
+                BatchIndex = 0,
+                BatchCount = 1,
+                TotalUsers = 1,
+                Users = new List<BasicUserItem> { new() { Id = "auth0|1", Document = "900123", FullName = "Ana Perez", Phone = "+573001112233", Email = "a@b.com" } }
+            };
+            _factory.BasicUserDataRepositoryMock.Setup(r => r.CountBySyncAsync(syncId, It.IsAny<CancellationToken>())).ReturnsAsync(1L);
+
+            BasicUsersSyncResult result = await useCase.ExecuteAsync(message, CancellationToken.None);
+
+            result.CleanupPerformed.Should().BeTrue();
+            _factory.BasicUserDataRepositoryMock.Verify(
+                r => r.UpsertBatchAsync(It.Is<IReadOnlyCollection<BasicUserData>>(u => u.Count == 1), syncId, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.BasicUserDataRepositoryMock.Verify(r => r.DeleteNotInSyncAsync(syncId, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SyncBasicUsersUseCase_ResueltoDesdeElHost_PropagaElRolDelJsonQuePublicaElApiAlPuertoDeSalida()
+        {
+            // Mismo JSON (camelCase) que publica Auth0UserSyncWorker, con el nombre del rol de cada usuario.
+            Guid syncId = Guid.NewGuid();
+            String json = "{\"syncId\":\"" + syncId + "\",\"batchIndex\":0,\"batchCount\":1,\"totalUsers\":3,\"generatedAtUtc\":\"2024-05-06T07:08:09Z\","
+                + "\"users\":[{\"id\":\"auth0|1\",\"document\":\"900123\",\"fullName\":\"Ana Perez\",\"phone\":\"+573001112233\",\"email\":\"a@b.com\",\"roleName\":\"ADMIN\"},"
+                + "{\"id\":\"auth0|2\",\"document\":\"800456\",\"fullName\":\"Beto Dos\",\"phone\":\"+573004445566\",\"email\":\"b@b.com\",\"roleName\":\"CLIENT\"},"
+                + "{\"id\":\"auth0|3\",\"document\":\"700789\",\"fullName\":\"Carla Tres\",\"phone\":\"+573007778899\",\"email\":\"c@b.com\",\"roleName\":\"\"}]}";
+            BasicUsersSyncMessage message = JsonSerializer.Deserialize<BasicUsersSyncMessage>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+
+            IReadOnlyCollection<BasicUserData>? guardados = null;
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.UpsertBatchAsync(It.IsAny<IReadOnlyCollection<BasicUserData>>(), syncId, It.IsAny<CancellationToken>()))
+                .Callback<IReadOnlyCollection<BasicUserData>, Guid, CancellationToken>((users, _, _) => guardados = users)
+                .Returns(Task.CompletedTask);
+            using IServiceScope scope = _factory.Services.CreateScope();
+
+            await scope.ServiceProvider.GetRequiredService<ISyncBasicUsersUseCase>().ExecuteAsync(message, CancellationToken.None);
+
+            guardados.Should().NotBeNull();
+            guardados!.Select(u => (u.Id, u.RoleName)).Should().Equal(("auth0|1", "ADMIN"), ("auth0|2", "CLIENT"), ("auth0|3", String.Empty));
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ResueltoDesdeElHost_GuardaYNotificaPorElPuertoDeSalida()
+        {
+            var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo");
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            // Sin canales configurados en la notificación se usa el canal por defecto: aplicación.
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+            _factory.SmsChannelMock.Verify(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ResueltoDesdeElHost_ConsultaElUsuarioPorElClientId()
+        {
+            var notification = new NotificationMessage("900123", NotificationType.Comment, "hola", title: "titulo");
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.GetByDocumentAsync("900123", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new BasicUserData("auth0|1", "900123", "Ana Perez", "3001112233", "ana@correo.com"));
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            _factory.BasicUserDataRepositoryMock.Verify(r => r.GetByDocumentAsync("900123", It.IsAny<CancellationToken>()), Times.Once);
+            scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>().Recipient!.Email.Should().Be("ana@correo.com");
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConClienteSinRegistro_SeEntregaIgualConElContextoVacio()
+        {
+            var notification = new NotificationMessage("sin-registro", NotificationType.Comment, "hola", title: "titulo");
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>().Recipient.Should().BeNull();
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConCorreoYSmsHabilitados_NotificaSoloPorEsosCanales()
+        {
+            var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo",
+                notificationChannel: new NotificationChannelPreferences { Email = true, TextMessages = true });
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.SmsChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConLosTresCanalesHabilitados_NotificaPorLosTres()
+        {
+            var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo",
+                notificationChannel: new NotificationChannelPreferences { Application = true, Email = true, TextMessages = true });
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.SmsChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_SiElCorreoFalla_ElCanalDeAplicacionIgualSeEntregaYSePropagaElError()
+        {
+            var notification = new NotificationMessage("cliente-1", NotificationType.Comment, "hola", title: "titulo",
+                notificationChannel: new NotificationChannelPreferences { Application = true, Email = true });
+            _factory.EmailChannelMock
+                .Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("smtp caido"));
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            Func<Task> act = () => useCase.ExecuteAsync(notification, CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("smtp caido");
+            _factory.ApplicationChannelMock.Verify(c => c.SendAsync(notification, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        private static NotificationMessage AlertaDelEtl() => new("", NotificationType.Alert,
+            "Se generó un error 'api caida' en el proceso de ETL", title: "Alerta en proceso de ETL",
+            notificationChannel: new NotificationChannelPreferences { Application = true, Email = true, TextMessages = true });
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConAlerta_GuardaUnRegistroPorAdministradorYLoEntregaPorLosTresCanales()
+        {
+            var ana = new BasicUserData("auth0|1", "900", "Ana Admin", "3001112233", "ana@correo.com", "ADMIN");
+            var luis = new BasicUserData("auth0|2", "901", "Luis Admin", "3004445566", "luis@correo.com", "ADMIN");
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.GetByRoleAsync("ADMIN", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<BasicUserData> { ana, luis });
+            NotificationMessage alerta = AlertaDelEtl();
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var contexto = scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>();
+            var correos = new List<BasicUserData?>();
+            var sms = new List<BasicUserData?>();
+            var guardadas = new List<NotificationMessage>();
+            var enAplicacion = new List<NotificationMessage>();
+            _factory.NotificationRepositoryMock.Setup(r => r.SaveAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback((NotificationMessage n, CancellationToken _) => guardadas.Add(n)).Returns(Task.CompletedTask);
+            _factory.ApplicationChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback((NotificationMessage n, CancellationToken _) => enAplicacion.Add(n)).Returns(Task.CompletedTask);
+            _factory.EmailChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback(() => correos.Add(contexto.Recipient)).Returns(Task.CompletedTask);
+            _factory.SmsChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback(() => sms.Add(contexto.Recipient)).Returns(Task.CompletedTask);
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(alerta, CancellationToken.None);
+
+            // Se guarda un registro por administrador (con su Document como ClientId) y no la alerta original sin ClientId.
+            _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(alerta, It.IsAny<CancellationToken>()), Times.Never);
+            guardadas.Select(n => n.ClientId).Should().Equal("900", "901");
+            guardadas.Select(n => n.Id).Should().OnlyHaveUniqueItems().And.NotContain(alerta.Id);
+            _factory.BasicUserDataRepositoryMock.Verify(r => r.GetByDocumentAsync(It.IsAny<String>(), It.IsAny<CancellationToken>()), Times.Never);
+            correos.Should().Equal(ana, luis);
+            sms.Should().Equal(ana, luis);
+            // SignalR enruta por ClientId: cada administrador recibe el mismo registro que se guardó, dirigido a su documento.
+            enAplicacion.Should().Equal(guardadas);
+            alerta.ClientId.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConAlertaSinAdministradores_EntregaUnaVezConElContextoVacio()
+        {
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.GetByRoleAsync("ADMIN", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<BasicUserData>());
+            NotificationMessage alerta = AlertaDelEtl();
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var contexto = scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>();
+            var destinatarios = new List<BasicUserData?>();
+            _factory.EmailChannelMock.Setup(c => c.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()))
+                .Callback(() => destinatarios.Add(contexto.Recipient)).Returns(Task.CompletedTask);
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(alerta, CancellationToken.None);
+
+            destinatarios.Should().ContainSingle().Which.Should().BeNull();
+            _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            alerta.ClientId.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ProcessIncomingNotificationUseCase_ConAlertaYFalloDeMongoAlBuscarAdministradores_IgualLaEntregaUnaVez()
+        {
+            _factory.BasicUserDataRepositoryMock
+                .Setup(r => r.GetByRoleAsync("ADMIN", It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("mongo caido"));
+            NotificationMessage alerta = AlertaDelEtl();
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<IProcessIncomingNotificationUseCase>();
+
+            await useCase.ExecuteAsync(alerta, CancellationToken.None);
+
+            _factory.NotificationRepositoryMock.Verify(r => r.SaveAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            _factory.EmailChannelMock.Verify(c => c.SendAsync(alerta, It.IsAny<CancellationToken>()), Times.Once);
+            scope.ServiceProvider.GetRequiredService<INotificationRecipientContext>().Recipient.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task NotificationUseCase_ResueltoDesdeElHost_ProduceElMensajeEnKafka()
+        {
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<INotificationUseCase>();
+            var request = new CreateNotificationRequest("cliente-2", "contenido", "comment", "DOC-9", "Titulo");
+
+            await useCase.ExecuteSendAsync(request, CancellationToken.None);
+
+            _factory.KafkaProducerMock.Verify(k => k.ProduceNotificationAsync(
+                It.Is<NotificationMessage>(n => n.ClientId == "cliente-2" && n.Message == "contenido" && n.EventType == NotificationType.Comment && n.DocumentNumber == "DOC-9"),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task NotificationUseCase_ConTipoInvalido_LanzaArgumentExceptionYNoProduce()
+        {
+            using IServiceScope scope = _factory.Services.CreateScope();
+            var useCase = scope.ServiceProvider.GetRequiredService<INotificationUseCase>();
+            var request = new CreateNotificationRequest("cliente-2", "contenido", "tipo-que-no-existe");
+
+            Func<Task> act = () => useCase.ExecuteSendAsync(request, CancellationToken.None);
+
+            await act.Should().ThrowAsync<ArgumentException>();
+            _factory.KafkaProducerMock.VerifyNoOtherCalls();
+        }
+
+        // ---------- Binding de configuración ----------
+
+        [Fact]
+        public void Configuracion_EnDevelopment_BindeaKafkaSettingsDesdeAppsettings()
+        {
+            KafkaSettings settings = _factory.Services.GetRequiredService<IOptions<KafkaSettings>>().Value;
+
+            settings.BootstrapServers.Should().NotBeNullOrWhiteSpace();
+            settings.GroupId.Should().NotBeNullOrWhiteSpace();
+            settings.Topic.Should().NotBeNullOrWhiteSpace();
+        }
+
+        [Fact]
+        public void Configuracion_EnDevelopment_BindeaMongoDbSettingsDesdeAppsettings()
+        {
+            MongoDbSettings settings = _factory.Services.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+
+            settings.DatabaseName.Should().NotBeNullOrWhiteSpace();
+            settings.CollectionName.Should().NotBeNullOrWhiteSpace();
+        }
+
+        [Fact]
+        public void Configuracion_JwtBearerSeRegistraConLosValoresDeAppsettings()
+        {
+            JwtBearerOptions options = _factory.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+                .Get(JwtBearerDefaults.AuthenticationScheme);
+
+            options.Authority.Should().NotBeNullOrWhiteSpace();
+            options.Audience.Should().NotBeNullOrWhiteSpace();
+            options.TokenValidationParameters.RoleClaimType.Should().NotBeNullOrWhiteSpace();
+            options.Events.Should().NotBeNull();
+        }
+    }
+
+    public class ProgramConfigurationBindingIntegrationTests : IClassFixture<CustomConfigurationWebApplicationFactory>
+    {
+        private readonly CustomConfigurationWebApplicationFactory _factory;
+
+        public ProgramConfigurationBindingIntegrationTests(CustomConfigurationWebApplicationFactory factory)
+        {
+            _factory = factory;
+        }
+
+        [Fact]
+        public void Configuracion_ValoresPersonalizados_SeBindeanAKafkaSettings()
+        {
+            KafkaSettings settings = _factory.Services.GetRequiredService<IOptions<KafkaSettings>>().Value;
+
+            settings.BootstrapServers.Should().Be("kafka-test:9999");
+            settings.GroupId.Should().Be("grupo-de-prueba");
+            settings.Topic.Should().Be("topic-de-prueba");
+        }
+
+        [Fact]
+        public void Configuracion_ValoresPersonalizados_SeBindeanAMongoDbSettings()
+        {
+            MongoDbSettings settings = _factory.Services.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+
+            settings.ConnectionString.Should().Be("mongodb://mongo-test:27017");
+            settings.DatabaseName.Should().Be("db_prueba");
+            settings.CollectionName.Should().Be("coleccion_prueba");
+        }
+
+        [Fact]
+        public void Configuracion_JwtRoles_SeUsaComoTipoDeClaimDeRol()
+        {
+            JwtBearerOptions options = _factory.Services.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+                .Get(JwtBearerDefaults.AuthenticationScheme);
+
+            options.TokenValidationParameters.RoleClaimType.Should().Be("https://test/roles");
+        }
+    }
+
+    public class ProgramStartupFailureIntegrationTests
+    {
+        [Fact]
+        public void Arranque_ConProveedorDePersistenciaNoSoportado_LanzaNotSupportedException()
+        {
+            using var factory = new UnsupportedPersistenceWebApplicationFactory();
+
+            Action act = () => { _ = factory.Services; };
+
+            act.Should().Throw<NotSupportedException>().WithMessage("*DynamoDB*");
+        }
+    }
+}

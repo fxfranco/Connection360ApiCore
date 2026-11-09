@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Version>1.0.0-alphaBaseInit.1</Version>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Confluent.Kafka" Version="2.15.0" />		
+		<PackageReference Include="MailKit" Version="4.18.2" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.12" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
+		<PackageReference Include="MongoDB.Driver" Version="3.11.1" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Plantilla HTML del correo de cambio de estado y logo (copia de Documents/logoConexion360.png), incrustados en el
+		     ensamblado para que viajen en la imagen de Docker sin depender de rutas de archivos. -->
+		<EmbeddedResource Include="Email\Templates\ShipmentStatusEmail.html" LogicalName="ShipmentStatusEmail.html" />
+		<EmbeddedResource Include="Email\Assets\logoConexion360.png" LogicalName="logoConexion360.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Connection360Notification.Application\Connection360Notification.Application.csproj" />
+		<ProjectReference Include="..\Connection360Notification.Domain\Connection360Notification.Domain.csproj" />
+		<ProjectReference Include="..\Connection360.Observability.Domain\Connection360.Observability.Domain.csproj" />
+	</ItemGroup>
+
+</Project>
