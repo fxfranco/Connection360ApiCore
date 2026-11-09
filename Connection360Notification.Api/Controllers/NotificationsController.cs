@@ -2,7 +2,6 @@
 using Connection360Notification.Application.DTOs;
 using Connection360Notification.Application.Ports;
 using Connection360Notification.Application.Ports.Inbound;
-using Connection360Notification.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -75,27 +74,6 @@ namespace Connection360Notification.Api.Controllers
             }
 
             return NoContent();
-        }
-
-        /// <summary>
-        /// Obtiene todas las notificaciones almacenadas, sin filtrar por cliente.
-        /// </summary>
-        /// <remarks>
-        /// Endpoint de prueba (nombre "allnotificationslistTest") habilitado con <c>[AllowAnonymous]</c>, es decir,
-        /// no requiere autenticación. Devuelve directamente las entidades de dominio <see cref="NotificationMessage"/>
-        /// tal como están almacenadas.
-        /// </remarks>
-        /// <param name="cancellationToken">Token de cancelación de la operación.</param>
-        /// <returns>La lista completa de notificaciones almacenadas.</returns>
-        /// <response code="200">Lista completa de notificaciones.</response>
-        [HttpGet("allnotificationslistTest")]
-        [AllowAnonymous]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(IEnumerable<NotificationMessage>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllNotificationsDB(CancellationToken cancellationToken)
-        {
-            var notifications = await _getNotificationsUseCase.ExecuteGetNotificationsAllAsync(cancellationToken);
-            return Ok(notifications);
         }
     }
 }

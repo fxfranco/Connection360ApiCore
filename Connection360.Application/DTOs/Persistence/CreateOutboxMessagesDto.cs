@@ -4,7 +4,6 @@ namespace Connection360.Application.DTOs.Persistence
 {
     /// <summary>
     /// Mensaje a encolar en el patrón Outbox para su posterior publicación (por ejemplo, a Kafka).
-    /// Cuerpo de la solicitud de prueba <c>SettingsController.GeneratenotificationOutbox</c>.
     /// </summary>
     /// <param name="ClientId">Identificador del cliente destinatario del mensaje.</param>
     /// <param name="EventType">Tipo de evento de negocio que origina el mensaje.</param>

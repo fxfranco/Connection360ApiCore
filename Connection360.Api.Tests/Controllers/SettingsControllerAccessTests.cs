@@ -27,14 +27,13 @@ namespace Connection360.Api.Tests.Controllers
         private readonly Mock<ICustomerNotificationsSettingsUseCase> _notificationsSettingsMock = new();
         private readonly Mock<IMasterSettingsUseCase> _masterSettingsMock = new();
         private readonly Mock<ICollaboratorUseCase> _collaboratorUseCaseMock = new();
-        private readonly Mock<IOutboxMessagesUseCase> _outboxMessagesUseCase = new();
 
         private static String[] Split(String csv) => csv.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
         private SettingsController BuildSut(params String[] roles)
         {
             return new SettingsController(_userManagementMock.Object, _customerUseCaseMock.Object, _notificationsSettingsMock.Object,
-                _masterSettingsMock.Object, _collaboratorUseCaseMock.Object, _outboxMessagesUseCase.Object)
+                _masterSettingsMock.Object, _collaboratorUseCaseMock.Object)
             {
                 ControllerContext = ControllerContextFactory.Create(roles)
             };
@@ -470,34 +469,6 @@ namespace Connection360.Api.Tests.Controllers
             await sut.UpdateUsersByIdSettings("u9", dto, CancellationToken.None);
 
             _userManagementMock.Verify(u => u.UpdateUserAsync("u9", dto), Times.Once);
-        }
-
-        // ---------- Outbox de prueba ----------
-
-        [Fact]
-        public async Task GeneratenotificationOutbox_ConExito_RetornaOkConTrue()
-        {
-            var dto = new CreateOutboxMessagesDto("CLI-1", "EVT", "DOC-1", "Titulo", "Mensaje");
-            _outboxMessagesUseCase.Setup(u => u.CreateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(true);
-            SettingsController sut = BuildSut();
-
-            ActionResult result = await sut.GeneratenotificationOutbox(dto, CancellationToken.None);
-
-            result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(true);
-        }
-
-        [Fact]
-        public async Task GeneratenotificationOutbox_SiFalla_RetornaProblemDetails500()
-        {
-            var dto = new CreateOutboxMessagesDto("CLI-1", "EVT", "DOC-1", "Titulo", "Mensaje");
-            _outboxMessagesUseCase.Setup(u => u.CreateAsync(dto, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-            SettingsController sut = BuildSut();
-
-            ActionResult result = await sut.GeneratenotificationOutbox(dto, CancellationToken.None);
-
-            var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-            objectResult.StatusCode.Should().Be(500);
-            objectResult.Value.Should().BeAssignableTo<ProblemDetails>().Which.Title.Should().Be("Error al generar notificacion outbox en el api core");
         }
 
         [Fact]

@@ -156,54 +156,14 @@ namespace Connection360Notification.Api.Tests.Controllers
             await act.Should().ThrowAsync<KeyNotFoundException>();
         }
 
-        // ---------- GetAllNotificationsDB (endpoint de prueba) ----------
-
-        [Fact]
-        public async Task GetAllNotificationsDB_PropagaElCancellationTokenAlUseCase()
-        {
-            using var cts = new CancellationTokenSource();
-            _useCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(cts.Token))
-                .ReturnsAsync(new List<NotificationsListResponse>());
-
-            await _sut.GetAllNotificationsDB(cts.Token);
-
-            _useCaseMock.Verify(u => u.ExecuteGetNotificationsAllAsync(cts.Token), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetAllNotificationsDB_ConListaVacia_RetornaOkConListaVacia()
-        {
-            _useCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<NotificationsListResponse>());
-
-            IActionResult result = await _sut.GetAllNotificationsDB(CancellationToken.None);
-
-            var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-            ok.Value.Should().BeAssignableTo<IEnumerable<NotificationsListResponse>>().Which.Should().BeEmpty();
-        }
-
-        [Fact]
-        public async Task GetAllNotificationsDB_CuandoElUseCaseLanzaExcepcion_LaPropaga()
-        {
-            _useCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("bd caida"));
-
-            Func<Task> act = () => _sut.GetAllNotificationsDB(CancellationToken.None);
-
-            await act.Should().ThrowAsync<InvalidOperationException>();
-        }
-
         [Fact]
         public async Task Controlador_NoInteractuaConElCasoDeUsoDeEnvioDeNotificaciones()
         {
             _useCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
+                .Setup(u => u.ExecuteGetNotificationsByClientAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<NotificationsListResponse>());
 
-            await _sut.GetAllNotificationsDB(CancellationToken.None);
+            await _sut.GetAllNotifications("123", CancellationToken.None);
 
             _notificationUseCaseMock.VerifyNoOtherCalls();
         }
@@ -226,7 +186,6 @@ namespace Connection360Notification.Api.Tests.Controllers
         [Theory]
         [InlineData(nameof(NotificationsController.GetAllNotifications), typeof(HttpGetAttribute), "allnotifications")]
         [InlineData(nameof(NotificationsController.UpdateReadNotification), typeof(HttpPatchAttribute), "readnotification/{idClient}/{idNotification}")]
-        [InlineData(nameof(NotificationsController.GetAllNotificationsDB), typeof(HttpGetAttribute), "allnotificationslistTest")]
         public void Metodos_TienenElVerboYLaRutaHttpEsperados(String methodName, Type attributeType, String template)
         {
             MethodInfo method = typeof(NotificationsController).GetMethod(methodName)!;
@@ -250,23 +209,14 @@ namespace Connection360Notification.Api.Tests.Controllers
         }
 
         [Fact]
-        public void GetAllNotificationsDB_PermiteAccesoAnonimo()
-        {
-            MethodInfo method = typeof(NotificationsController).GetMethod(nameof(NotificationsController.GetAllNotificationsDB))!;
-
-            method.GetCustomAttribute<AllowAnonymousAttribute>().Should().NotBeNull();
-        }
-
-        [Fact]
-        public void Controlador_ExponeExactamenteTresAccionesPublicas()
+        public void Controlador_ExponeExactamenteDosAccionesPublicas()
         {
             MethodInfo[] actions = typeof(NotificationsController)
                 .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
             actions.Select(a => a.Name).Should().BeEquivalentTo(
                 nameof(NotificationsController.GetAllNotifications),
-                nameof(NotificationsController.UpdateReadNotification),
-                nameof(NotificationsController.GetAllNotificationsDB));
+                nameof(NotificationsController.UpdateReadNotification));
         }
 
         [Fact]
