@@ -61,7 +61,7 @@ namespace Connection360.Api.Tests.Controllers
             useCase.Setup(u => u.CreateCustomerNotificationSettings(It.IsAny<CustomerNotificationsSettingsResponse>(), It.IsAny<UserRoleApplication>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(created);
             var sut = new SettingsController(Mock.Of<IGetUserManagementUseCase>(), Mock.Of<ICustomerUseCase>(), useCase.Object,
-                Mock.Of<IMasterSettingsUseCase>(), Mock.Of<ICollaboratorUseCase>(), Mock.Of<IOutboxMessagesUseCase>())
+                Mock.Of<IMasterSettingsUseCase>(), Mock.Of<ICollaboratorUseCase>())
             {
                 ControllerContext = ControllerContextFactory.Create("CLIENT")
             };
@@ -86,7 +86,7 @@ namespace Connection360.Api.Tests.Controllers
                     NotificationEvents = new NotificationEventsResponse { ClientId = "CLI-2", NotificationEventId = 2 }
                 });
             var sut = new SettingsController(Mock.Of<IGetUserManagementUseCase>(), Mock.Of<ICustomerUseCase>(), useCase.Object,
-                Mock.Of<IMasterSettingsUseCase>(), Mock.Of<ICollaboratorUseCase>(), Mock.Of<IOutboxMessagesUseCase>())
+                Mock.Of<IMasterSettingsUseCase>(), Mock.Of<ICollaboratorUseCase>())
             {
                 ControllerContext = ControllerContextFactory.Create("ADMIN")
             };

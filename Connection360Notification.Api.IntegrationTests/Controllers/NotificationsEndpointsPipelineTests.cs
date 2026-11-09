@@ -16,7 +16,7 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
     {
         private const String AllNotificationsUrl = "/api/v1/notifications/allnotifications?idClient=123";
         private const String ReadUrl = "/api/v1/notifications/readnotification/123/1";
-        private const String TestEndpointUrl = "/api/v1/notifications/allnotificationslistTest";
+        private const String RemovedTestEndpointUrl = "/api/v1/notifications/allnotificationslistTest";
 
         private readonly CustomWebApplicationFactory _factory;
         private readonly HttpClient _client;
@@ -207,21 +207,15 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
             response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
-        // ---------- Endpoint anónimo ----------
+        // ---------- Endpoint de prueba retirado ----------
 
         [Fact]
-        public async Task GetAllNotificationsDB_SinAutenticacion_Retorna200ConLaListaEnvuelta()
+        public async Task EndpointDePruebaAllNotificationsListTest_YaNoEstaExpuesto_Retorna404()
         {
-            _factory.NotificationsUseCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<NotificationsListResponse> { new() { IdNotification = 1 }, new() { IdNotification = 2 } });
+            HttpResponseMessage response = await _client.GetAsync(RemovedTestEndpointUrl);
 
-            HttpResponseMessage response = await _client.GetAsync(TestEndpointUrl);
-
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            JsonElement body = await ReadJson(response);
-            body.GetProperty("dataResponse").GetArrayLength().Should().Be(2);
-            body.GetProperty("path").GetString().Should().Be("/api/v1/notifications/allnotificationslistTest");
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            _factory.NotificationsUseCaseMock.VerifyNoOtherCalls();
         }
 
         // ---------- ExceptionHandlingMiddleware ----------
@@ -235,10 +229,10 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
         {
             var exception = (Exception)Activator.CreateInstance(exceptionType, "detalle-del-fallo")!;
             _factory.NotificationsUseCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
+                .Setup(u => u.ExecuteGetNotificationsByClientAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(exception);
 
-            HttpResponseMessage response = await _client.GetAsync(TestEndpointUrl);
+            HttpResponseMessage response = await _client.SendAsync(Authorized(HttpMethod.Get, AllNotificationsUrl));
 
             response.StatusCode.Should().Be(expectedStatus);
             response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
@@ -246,7 +240,7 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
             body.GetProperty("status").GetInt32().Should().Be((Int32)expectedStatus);
             body.GetProperty("message").GetString().Should().Be(expectedMessage);
             body.GetProperty("error").GetString().Should().Contain("detalle-del-fallo");
-            body.GetProperty("path").GetString().Should().Be("/api/v1/notifications/allnotificationslistTest");
+            body.GetProperty("path").GetString().Should().Be("/api/v1/notifications/allnotifications");
         }
 
         // ---------- NotFoundMiddleware / rutas ----------
@@ -298,10 +292,10 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
         public async Task Respuesta_IncluyeElEncabezadoConLasVersionesSoportadas()
         {
             _factory.NotificationsUseCaseMock
-                .Setup(u => u.ExecuteGetNotificationsAllAsync(It.IsAny<CancellationToken>()))
+                .Setup(u => u.ExecuteGetNotificationsByClientAsync(It.IsAny<ClientSummaryRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<NotificationsListResponse>());
 
-            HttpResponseMessage response = await _client.GetAsync(TestEndpointUrl);
+            HttpResponseMessage response = await _client.SendAsync(Authorized(HttpMethod.Get, AllNotificationsUrl));
 
             response.Headers.TryGetValues("api-supported-versions", out IEnumerable<String>? versions).Should().BeTrue();
             versions!.Should().Contain(v => v.Contains("1.0"));
@@ -310,7 +304,7 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
         [Fact]
         public async Task VersionDeApiNoSoportada_NoLlegaAlControlador()
         {
-            HttpResponseMessage response = await _client.GetAsync("/api/v2/notifications/allnotificationslistTest");
+            HttpResponseMessage response = await _client.SendAsync(Authorized(HttpMethod.Get, "/api/v2/notifications/allnotifications?idClient=123"));
 
             ((Int32)response.StatusCode).Should().BeOneOf(400, 404);
             _factory.NotificationsUseCaseMock.VerifyNoOtherCalls();
@@ -319,7 +313,7 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
         [Fact]
         public async Task RutaSinSegmentoDeVersion_Retorna404()
         {
-            HttpResponseMessage response = await _client.GetAsync("/api/notifications/allnotificationslistTest");
+            HttpResponseMessage response = await _client.SendAsync(Authorized(HttpMethod.Get, "/api/notifications/allnotifications?idClient=123"));
 
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
@@ -361,7 +355,7 @@ namespace Connection360Notification.Api.IntegrationTests.Controllers
             JsonElement paths = doc.GetProperty("paths");
             paths.TryGetProperty("/api/v1/notifications/allnotifications", out _).Should().BeTrue();
             paths.TryGetProperty("/api/v1/notifications/readnotification/{idClient}/{idNotification}", out _).Should().BeTrue();
-            paths.TryGetProperty("/api/v1/notifications/allnotificationslistTest", out _).Should().BeTrue();
+            paths.TryGetProperty("/api/v1/notifications/allnotificationslistTest", out _).Should().BeFalse();
             JsonElement bearer = doc.GetProperty("components").GetProperty("securitySchemes").GetProperty("Bearer");
             bearer.GetProperty("scheme").GetString().Should().Be("Bearer");
             bearer.GetProperty("bearerFormat").GetString().Should().Be("JWT");

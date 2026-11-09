@@ -21,12 +21,11 @@ namespace Connection360.Api.Tests.Controllers
         private readonly Mock<ICustomerNotificationsSettingsUseCase> _notificationsSettingsMock = new();
         private readonly Mock<IMasterSettingsUseCase> _masterSettingsMock = new();
         private readonly Mock<ICollaboratorUseCase> _collaboratorUseCaseMock = new();
-        private readonly Mock<IOutboxMessagesUseCase> _outboxMessagesUseCase = new();
         private readonly SettingsController _sut;
 
         public SettingsControllerTests()
         {
-            _sut = new SettingsController(_userManagementMock.Object, _customerUseCaseMock.Object, _notificationsSettingsMock.Object, _masterSettingsMock.Object, _collaboratorUseCaseMock.Object, _outboxMessagesUseCase.Object)
+            _sut = new SettingsController(_userManagementMock.Object, _customerUseCaseMock.Object, _notificationsSettingsMock.Object, _masterSettingsMock.Object, _collaboratorUseCaseMock.Object)
             {
                 // El controlador consulta User.IsInRole(...): sin un HttpContext con rol lanzaria NullReferenceException.
                 ControllerContext = ControllerContextFactory.Create("ADMIN")

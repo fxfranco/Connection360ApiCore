@@ -405,7 +405,7 @@ Todas las rutas van detrás del gateway y requieren `Authorization: Bearer <JWT>
 | PATCH | `readnotification/{idClient}/{idNotification}` | Marca una notificación como leída. |
 | WS | `/api/v1/hubs/notifications` | Hub SignalR de notificaciones en tiempo real (token por query string). |
 
-La especificación completa está en `Documents/swaggerConnection360ApiCore.json` y `Documents/swaggerConnection360ApiNotifications.json`. Algunos endpoints `*Test` existen solo para pruebas de desarrollo y deben deshabilitarse en producción.
+La especificación completa está en `Documents/swaggerConnection360ApiCore.json` y `Documents/swaggerConnection360ApiNotifications.json`.
 
 ## 15. Notas técnicas relevantes
 
